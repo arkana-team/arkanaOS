@@ -1,4 +1,4 @@
-![Placeholder Banner](https://picsum.photos/1024/256)
+![Banner](https://raw.githubusercontent.com/arkana-team/branding/refs/heads/main/arkana_banner.png)
 
 <h1 align="center">arkanaOS Source Files</h1>
 <p>Here is everything you'll need to compile our project.</p>
