@@ -1,0 +1,100 @@
+#!/bin/sh
+
+# Ensure this script runs as PID 1
+if [ "$$" -ne 1 ]; then
+    echo "You cannot initialize a running system"
+    exit 1
+fi
+
+# Mount essential filesystems
+echo "Mounting filesystems"
+mount -t proc none /proc
+mount -t sysfs none /sys
+mount -t devtmpfs none /dev
+
+# Populate devices needed for system startup
+echo "Populating devices"
+mdev -s
+
+# Stop pollution of printk output
+echo "1 1 1 1" > /proc/sys/kernel/printk
+
+# Enable kernel modules needed for system startup
+echo "Loading squashfs"
+modprobe squashfs
+echo "Loading overlay"
+modprobe overlay
+
+# Create working paths for system startup
+echo "Creating paths"
+mkdir -p /mnt/overlay /mnt/squashfs /mnt/newroot /mnt/upper /mnt/work /mnt/cdrom
+
+# Set up the writable environment
+mount_filesystems() {
+    echo "Mounting CD-ROM"
+    if ! mount /dev/sr0 /mnt/cdrom; then
+        echo "Unable to mount CD-ROM."
+        umount -l /mnt/cdrom
+    	return 1
+    fi
+
+    echo "Mounting filesystem"
+    if ! mount -t squashfs /mnt/cdrom/boot/rootfs.sfs /mnt/squashfs; then
+        echo "Unable to mount filesystem."
+        umount -l /mnt/squashfs
+        return 1
+    fi
+
+    echo "Setting up overlay"
+    if ! mount -t tmpfs -o size=50% tmpfs /mnt/overlay; then
+        echo "Unable to set up overlay."
+        umount -l /mnt/overlay
+        return 1
+    fi
+
+    echo "Mounting overlay"
+    if ! mount -t overlay overlay -o lowerdir=/mnt/squashfs,upperdir=/mnt/upper,workdir=/mnt/work /mnt/newroot; then
+        echo "Unable to mount overlay."
+        umount -l /mnt/overlay /mnt/squashfs
+        return 1
+    fi
+    
+    return 0
+}
+
+# Instead of kernel panic, go to an emergency shell
+# You can fix minor issues in there
+recovery_shell() {
+    echo ":: Dropping to emergency shell"
+    echo "Fix errors and type 'exit' or press <CTRL+D> to retry boot."
+    
+    sh
+}
+
+# Init task that repeats on failure
+sysinit() {
+    if grep -q "recovery=true" /proc/cmdline; then
+        echo ":: Requested an emergency shell"
+        echo "Type 'exit' or press <CTRL+D> to continue startup."
+
+        sh
+    fi
+    
+    while true; do
+        if mount_filesystems; then        
+            umount -l /proc /sys /dev
+            if [ -f /mnt/newroot/sbin/init ]; then
+                echo "Initializing successful, continuing boot"
+            	exec switch_root /mnt/newroot /sbin/init
+            else
+            	echo "error: no init found, do you have the right filesystem?"
+            	echo "note: please ensure /sbin/init is found in the filesystem"
+            fi
+        else
+            recovery_shell
+        fi
+    done
+}
+
+# Initialize the system
+sysinit

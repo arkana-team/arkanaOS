@@ -1,0 +1,12 @@
+.*-done
+.*-obtained
+
+exes.found
+libs.found
+libs.missing
+
+cpio-staging
+iso-staging
+staging
+src
+output
