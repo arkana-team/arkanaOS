@@ -117,10 +117,15 @@ LIBPNG_PATCH_URL = https://downloads.sourceforge.net/sourceforge/libpng-apng/lib
 LIBPNG_VER = 1.6.47
 LIBPNG_PATH = $(SRC_PATH)/libpng-$(LIBPNG_VER)
 
+# squashfs-tools
+SQUASHFS_TOOLS_URL = http://ftp.debian.org/debian/pool/main/s/squashfs-tools/squashfs-tools_4.6.1.orig.tar.gz
+SQUASHFS_TOOLS_VER = 4.6.1
+SQUASHFS_TOOLS_PATH = $(SRC_PATH)/squashfs-tools-$(SQUASHFS_TOOLS_VER)
+
 # Targets
 all: build initramfs iso
 
-build: cpio busybox linux grub freetype harfbuzz glib libffi elfutils brotli pcre2 cairo fontconfig expat graphite2 pixman libpng libisoburn libburn libisofs mtools
+build: cpio busybox linux grub freetype harfbuzz glib libffi elfutils brotli pcre2 cairo fontconfig expat graphite2 pixman libpng libisoburn libburn libisofs mtools squashfs-tools
 
 # Download cpio
 download-cpio: .cpio-obtained
@@ -137,9 +142,9 @@ cpio: download-cpio .cpio-done
 	makeinfo --html -o doc/html doc/cpio.texi && \
 	makeinfo --html --no-split -o doc/cpio.html doc/cpio.texi && \
 	makeinfo --plaintext -o doc/cpio.txt doc/cpio.texi && \
-	$(MAKE) DESTDIR=$(STAGING_PATH) install && install -v -m755 -d $(STAGING_PATH)/usr/share/doc/cpio-2.15/html && \
-	install -v -m644 doc/html/* $(STAGING_PATH)/usr/share/doc/cpio-2.15/html && \
-	install -v -m644 doc/cpio.{html,txt} $(STAGING_PATH)/usr/share/doc/cpio-2.15
+	$(MAKE) DESTDIR=$(STAGING_PATH) install && install -v -m755 -d $(STAGING_PATH)/usr/share/doc/cpio-$(CPIO_VER)/html && \
+	install -v -m644 doc/html/* $(STAGING_PATH)/usr/share/doc/cpio-$(CPIO_VER)/html && \
+	install -v -m644 doc/cpio.{html,txt} $(STAGING_PATH)/usr/share/doc/cpio-$(CPIO_VER)
 	touch .cpio-done
 
 # Download libisoburn
@@ -197,7 +202,7 @@ mtools: download-mtools .mtools-done
 
 .mtools-done:
     # floppyd excluded from this build, Arkana does not package X11
-	cd $(MTOOLS_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && rm -rf $(STAGING_PATH)/usr/bin/floppyd
+	cd $(MTOOLS_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && rm -f $(STAGING_PATH)/usr/bin/floppyd
 	touch .mtools-done
 
 # Download Busybox
@@ -283,7 +288,7 @@ harfbuzz: download-harfbuzz .harfbuzz-done
 .harfbuzz-done:
     # hb-view excluded from this build, Arkana does not package X11
 	mkdir -p $(HARFBUZZ_PATH)/build	&& cd $(HARFBUZZ_PATH)/build && meson setup .. --prefix=/usr --buildtype=release \
-	-D graphite2=enabled && ninja && DESTDIR=$(STAGING_PATH) ninja install && rm -rf $(STAGING_PATH)/usr/bin/hb-view
+	-D graphite2=enabled && ninja && DESTDIR=$(STAGING_PATH) ninja install && rm -f $(STAGING_PATH)/usr/bin/hb-view
 	touch .harfbuzz-done
 
 # Download glib
@@ -326,9 +331,10 @@ download-elfutils: .elfutils-obtained
 elfutils: download-elfutils .elfutils-done
 
 .elfutils-done:
-	cd $(ELFUTILS_PATH) && ./configure --prefix=/usr --disable-debuginfod --enable-libdebuginfod=dummy && \
-	$(MAKE) -j$(THREADS) && $(MAKE) -C libelf DESTDIR=$(STAGING_PATH) install && install -m644 config/libelf.pc \
-	$(STAGING_PATH)/usr/lib/pkgconfig
+	cd $(ELFUTILS_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && install -m644 config/libelf.pc $(STAGING_PATH)/usr/lib/pkgconfig
+	for lib in libelf debuginfod libdw; do \
+		$(MAKE) -C $(SRC_PATH)/elfutils-$(ELFUTILS_VER)/$$lib DESTDIR=$(STAGING_PATH) install; \
+	done
 	touch .elfutils-done
 
 # Download brotli
@@ -357,7 +363,7 @@ download-pcre2: .pcre2-obtained
 pcre2: download-pcre2 .pcre2-done
 
 .pcre2-done:
-	cd $(PCRE2_PATH) && ./configure --prefix=/usr --docdir=/usr/share/doc/pcre2-10.45 --enable-unicode --enable-jit --enable-pcre2-16 \
+	cd $(PCRE2_PATH) && ./configure --prefix=/usr --docdir=/usr/share/doc/pcre2-$(PCRE2_VER) --enable-unicode --enable-jit --enable-pcre2-16 \
 	--enable-pcre2-32 --enable-pcre2grep-libz --enable-pcre2grep-libbz2 --enable-pcre2test-libreadline --disable-static && $(MAKE) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .pcre2-done
@@ -389,7 +395,7 @@ fontconfig: download-fontconfig .fontconfig-done
 
 .fontconfig-done:
 	cd $(FONTCONFIG_PATH) && ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --disable-docs \
-	--docdir=/usr/share/doc/fontconfig-$(FONTCONFIG_CER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	--docdir=/usr/share/doc/fontconfig-$(FONTCONFIG_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .fontconfig-done
 
 # Download expat
@@ -449,8 +455,20 @@ libpng: download-libpng .libpng-done
 
 .libpng-done:
 	cd $(LIBPNG_PATH) && ./configure --prefix=/usr --disable-static && $(MAKE) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
-	mkdir $(STAGING_PATH)/usr/share/doc/libpng-1.6.47 && cp README libpng-manual.txt $(STAGING_PATH)/usr/share/doc/libpng-1.6.47
+	mkdir $(STAGING_PATH)/usr/share/doc/libpng-$(LIBPNG_VER) && cp README libpng-manual.txt $(STAGING_PATH)/usr/share/doc/libpng-$(LIBPNG_VER)
 	touch .libpng-done
+
+# Download squashfs-tools
+download-squashfs-tools: .squashfs-tools-obtained
+.squashfs-tools-obtained:
+	cd $(SRC_PATH) && wget -O squashfs-tools-$(SQUASHFS_TOOLS_VER).tar.gz $(SQUASHFS_TOOLS_URL) && tar xf squashfs-tools-$(SQUASHFS_TOOLS_VER).tar.gz
+	touch .squashfs-tools-obtained
+
+# Compile squashfs-tools
+squashfs-tools: download-squashfs-tools .squashfs-tools-done
+.squashfs-tools-done:
+	cd $(SQUASHFS_TOOLS_PATH)/squashfs-tools && $(MAKE) -j$(THREADS) && $(MAKE) INSTALL_PREFIX=$(STAGING_PATH)/usr install
+	touch .squashfs-tools-done
 
 # Assemble initramfs
 .PHONY: initramfs
@@ -458,11 +476,17 @@ initramfs:
 	mkdir -p $(ISO_STAGING_PATH)/boot/grub
 	cp init $(CPIO_STAGING_PATH)
 	$(MAKE) -C $(LINUX_PATH) INSTALL_MOD_PATH=$(CPIO_STAGING_PATH) modules_install
-	cd $(CPIO_STAGING_PATH) && find . | $(STAGING_PATH)/usr/bin/cpio -oH newc | $(STAGING_PATH)/usr/bin/gzip > $(ISO_STAGING_PATH)/boot/initramfs.img
+	cd $(CPIO_STAGING_PATH) && find . | cpio -oH newc | gzip > $(ISO_STAGING_PATH)/boot/initramfs.img
 
 # Create ISO file for booting (not installable yet)
 .PHONY: iso
 iso:
+	ln -sf /usr/bin/bzdiff $(STAGING_PATH)/usr/bin/bzcmp
+	ln -sf /usr/bin/bzgrep $(STAGING_PATH)/usr/bin/bzegrep
+	ln -sf /usr/bin/bzgrep $(STAGING_PATH)/usr/bin/bzfgrep
+	ln -sf /usr/bin/bzmore $(STAGING_PATH)/usr/bin/bzless
+	ln -sf /usr/lib/p11-kit/trust-extract-compat $(STAGING_PATH)/usr/bin/update-ca-certificates
+
 	find $(STAGING_PATH) -name "*.a" -delete
 	mksquashfs $(STAGING_PATH) $(ISO_STAGING_PATH)/boot/rootfs.sfs -noappend || true
 	cp $(LINUX_PATH)/arch/x86/boot/bzImage $(ISO_STAGING_PATH)/boot/vmlinuz
@@ -474,4 +498,4 @@ iso:
 	echo '    initrd /boot/initramfs.img' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
 	echo '}' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
 
-	$(STAGING_PATH)/usr/bin/grub-mkrescue -o $(OUTPUT_PATH)/arkana.iso $(ISO_STAGING_PATH) -- -volid "ARKANA"
+	grub-mkrescue -o $(OUTPUT_PATH)/arkana.iso $(ISO_STAGING_PATH) -- -volid "ARKANA"

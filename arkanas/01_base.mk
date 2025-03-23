@@ -238,7 +238,7 @@ KBD_PATH = $(SRC_PATH)/kbd-$(KBD_VER)
 
 # Targets
 .PHONY: all
-all: dirs gmp zlib libgpg-error libgcrypt libxcrypt libcap libcap-ng acl attr libaio libtirpc libnsl lmdb keyutils krb5 libfuse glibc ncurses readline file json-c popt linux-audit linux-pam shadow cyrus-sasl openldap bzip2 xz-utils lz4 zstd gzip openssl cryptsetup coreutils util-linux bash e2fsprogs systemd lvm2 gcc libseccomp dbus kbd
+all: dirs gmp zlib libgpg-error libgcrypt libxcrypt libcap libcap-ng acl attr libaio libtirpc libnsl lmdb keyutils krb5 libfuse glibc ncurses readline file json-c popt linux-audit linux-pam shadow cyrus-sasl openldap bzip2 xz-utils lz4 zstd gzip openssl cryptsetup coreutils util-linux bash e2fsprogs systemd lvm2 gcc libseccomp dbus dbus-broker kbd
 
 # Create system hierarchy
 .PHONY: dirs
@@ -351,7 +351,7 @@ util-linux: download-util-linux .util-linux-done
 	cd $(UTIL_LINUX_PATH) && ./configure --bindir=/usr/bin --libdir=/usr/lib --sbindir=/usr/sbin \
 	--runstatedir=/run --disable-chfn-chsh -disable-login --disable-nologin --disable-su --disable-setpriv \
 	--disable-runuser --disable-pylibmount --disable-liblastlog2 --disable-static --without-python \
-	ADJTIME_PATH=/var/lib/hwclock/adjtime --docdir=/usr/share/doc/util-linux-2.40.4 && $(MAKE) -j$(THREADS) && \
+	ADJTIME_PATH=/var/lib/hwclock/adjtime --docdir=/usr/share/doc/util-linux-$(UTIL_LINUX_VER) && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .util-linux-done
 
@@ -435,8 +435,8 @@ download-gcc: .gcc-obtained
 gcc: download-gcc .gcc-done
 
 .gcc-done:
-	mkdir -p $(GCC_PATH)/build && cd $(GCC_PATH) && ./contrib/download_prerequisites && cd build && ../configure --prefix=$(STAGING_PATH)/usr --disable-multilib \
-	--enable-languages=c,c++ --disable-bootstrap && make -j$(THREADS) && $(MAKE) install-target-libstdc++-v3 install-target-libgcc
+	mkdir -p $(GCC_PATH)/build && cd $(GCC_PATH) && ./contrib/download_prerequisites && cd build && ../configure --prefix=/usr --disable-multilib \
+	--enable-languages=c,c++ --disable-bootstrap && make -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install-target-libstdc++-v3 install-target-libgcc
 	touch .gcc-done
 
 # Download ncurses
@@ -471,7 +471,7 @@ download-acl: .acl-obtained
 acl: download-acl .acl-done
 
 .acl-done:
-	cd $(ACL_PATH) && ./configure --prefix=/usr --disable-static --docdir=/usr/share/doc/acl-2.3.2 && \
+	cd $(ACL_PATH) && ./configure --prefix=/usr --disable-static --docdir=/usr/share/doc/acl-$(ACL_VER) && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .acl-done
 
@@ -522,7 +522,7 @@ download-gmp: .gmp-obtained
 gmp: download-gmp .gmp-done
 
 .gmp-done:
-	cd $(GMP_PATH) && ./configure --prefix=/usr --enable-cxx --disable-static --docdir=/usr/share/doc/gmp-6.2.0 && \
+	cd $(GMP_PATH) && ./configure --prefix=/usr --enable-cxx --disable-static --docdir=/usr/share/doc/gmp-$(GMP_VER) && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .gmp-done
 
@@ -577,7 +577,7 @@ linux-pam: download-linux-pam .linux-pam-done
 	rm $(STAGING_PATH)/etc/security || true
 	mkdir -p $(STAGING_PATH)/etc/pam.d
 	cd $(LINUX_PAM_PATH) && autoreconf -fi && ./configure --prefix=/usr --sbindir=/usr/sbin --sysconfdir=/etc \
-	--libdir=/usr/lib --enable-securedir=/usr/lib/security --docdir=/usr/share/doc/Linux-PAM-1.6.1 && $(MAKE) -j$(THREADS) && \
+	--libdir=/usr/lib --enable-securedir=/usr/lib/security --docdir=/usr/share/doc/Linux-PAM-$(LINUX_PAM_VER) && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install && chmod 4755 $(STAGING_PATH)/usr/sbin/unix_chkpwd && cp -a /etc/pam.d/* $(STAGING_PATH)/etc/pam.d/ && \
 	cp ../../passwd $(STAGING_PATH)/etc/passwd && cp ../../shadow $(STAGING_PATH)/etc/shadow && cp ../../group $(STAGING_PATH)/etc/group
 
@@ -614,7 +614,7 @@ download-attr: .attr-obtained
 attr: download-attr .attr-done
 
 .attr-done:
-	cd $(ATTR_PATH) && ./configure --prefix=/usr --disable-static --sysconfdir=/etc --docdir=/usr/share/doc/attr-2.5.2 && $(MAKE) -j$(THREADS) && \
+	cd $(ATTR_PATH) && ./configure --prefix=/usr --disable-static --sysconfdir=/etc --docdir=/usr/share/doc/attr-$(ATTR_VER) && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .attr-done
 
@@ -701,10 +701,10 @@ libgcrypt: download-libgcrypt .libgcrypt-done
 .libgcrypt-done:
 	cd $(LIBGCRYPT_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) -j$(THREADS) -C doc html && \
 	makeinfo --html --no-split -o doc/gcrypt_nochunks.html doc/gcrypt.texi && makeinfo --plaintext -o doc/gcrypt.txt doc/gcrypt.texi && \
-	$(MAKE) DESTDIR=$(STAGING_PATH) install && install -dm755 $(STAGING_PATH)/usr/share/doc/libgcrypt-1.11.0 && \
-	install -m644    README doc/{README.apichanges,fips*,libgcrypt*} $(STAGING_PATH)/usr/share/doc/libgcrypt-1.11.0 && \
-	install -dm755 $(STAGING_PATH)/usr/share/doc/libgcrypt-1.11.0/html && install -m644 doc/gcrypt.html/* \
-	$(STAGING_PATH)/usr/share/doc/libgcrypt-1.11.0/html && install -m644 doc/gcrypt_nochunks.html $(STAGING_PATH)/usr/share/doc/libgcrypt-1.11.0 && \
+	$(MAKE) DESTDIR=$(STAGING_PATH) install && install -dm755 $(STAGING_PATH)/usr/share/doc/libgcrypt-$(LIBGCRYPT_VER) && \
+	install -m644 README doc/{README.apichanges,fips*,libgcrypt*} $(STAGING_PATH)/usr/share/doc/libgcrypt-$(LIBGCRYPT_VER) && \
+	install -dm755 $(STAGING_PATH)/usr/share/doc/libgcrypt-$(LIBGCRYPT_VER)/html && install -m644 doc/gcrypt.html/* \
+	$(STAGING_PATH)/usr/share/doc/libgcrypt-$(LIBGCRYPT_VER)/html && install -m644 doc/gcrypt_nochunks.html $(STAGING_PATH)/usr/share/doc/libgcrypt-$(LIBGCRYPT_VER) && \
 	install -m644 doc/gcrypt.{txt,texi} $(STAGING_PATH)/usr/share/doc/libgcrypt-1.11.0
 	touch .libgcrypt-done
 
@@ -722,7 +722,7 @@ libgpg-error: download-libgpg-error .libgpg-error-done
 
 .libgpg-error-done:
 	cd $(LIBGPG_ERROR_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
-	install -m644 -D README /usr/share/doc/libgpg-error-1.51/README
+	install -m644 -D README /usr/share/doc/libgpg-error-$(LIBGPG_ERROR_VER)/README
 	touch .libgpg-error-done
 
 # Download readline
@@ -738,8 +738,8 @@ download-readline: .readline-obtained
 readline: download-readline .readline-done
 
 .readline-done:
-	cd $(READLINE_PATH) && ./configure --prefix=/usr --disable-static --with-curses --docdir=/usr/share/doc/readline-8.1 && $(MAKE) SHLIB_LIBS="-lncursesw" -j$(THREADS) && \
-	$(MAKE) DESTDIR=$(STAGING_PATH) SHLIB_LIBS="-lncursesw" install && install -m644 doc/*.{ps,pdf,html,dvi} $(STAGING_PATH)/usr/share/doc/readline-8.1
+	cd $(READLINE_PATH) && ./configure --prefix=/usr --disable-static --with-curses --docdir=/usr/share/doc/readline-$(READLINE_VER) && $(MAKE) SHLIB_LIBS="-lncursesw" -j$(THREADS) && \
+	$(MAKE) DESTDIR=$(STAGING_PATH) SHLIB_LIBS="-lncursesw" install && install -m644 doc/*.{ps,pdf,html,dvi} $(STAGING_PATH)/usr/share/doc/readline-$(READLINE_VER)
 	touch .readline-done
 
 # Download cryptsetup
@@ -773,9 +773,9 @@ cyrus-sasl: download-cyrus-sasl .cyrus-sasl-done
 .cyrus-sasl-done:
 	cd $(CYRUS_SASL_PATH) && sed '/saslint/a #include <time.h>' -i lib/saslutil.c && sed '/plugin_common/a #include <time.h>' -i plugins/cram.c && \
 	./configure --prefix=/usr --sysconfdir=/etc --enable-auth-sasldb --with-dblib=lmdb --with-dbpath=/var/lib/sasl/sasldb2 --with-sphinx-build=no \
-	--with-saslauthd=/var/run/saslauthd && $(MAKE) && $(MAKE) DESTDIR=$(STAGING_PATH) install && install -dm755 $(STAGING_PATH)/usr/share/doc/cyrus-sasl-2.1.28/html && \
-	install -m644 saslauthd/LDAP_SASLAUTHD $(STAGING_PATH)/usr/share/doc/cyrus-sasl-2.1.28 && install -m644 doc/legacy/*.html \
-	$(STAGING_PATH)/usr/share/doc/cyrus-sasl-2.1.28/html && install -dm700 $(STAGING_PATH)/var/lib/sasl
+	--with-saslauthd=/var/run/saslauthd && $(MAKE) && $(MAKE) DESTDIR=$(STAGING_PATH) install && install -dm755 $(STAGING_PATH)/usr/share/doc/cyrus-sasl-$(CYRUS_SASL_VER)/html && \
+	install -m644 saslauthd/LDAP_SASLAUTHD $(STAGING_PATH)/usr/share/doc/cyrus-sasl-$(CYRUS_SASL_VER) && install -m644 doc/legacy/*.html \
+	$(STAGING_PATH)/usr/share/doc/cyrus-sasl-$(CYRUS_SASL_VER)/html && install -dm700 $(STAGING_PATH)/var/lib/sasl
 	touch .cyrus-sasl-done
 
 # Download popt
@@ -844,9 +844,9 @@ bzip2: download-bzip2 .bzip2-done
 	cd $(BZIP2_PATH) && sed -i 's@\(ln -s -f \)$(PREFIX)/bin/@\1@' Makefile && \
 	$(MAKE) -f Makefile-libbz2_so && $(MAKE) clean && $(MAKE) -j$(THREADS) && \
 	$(MAKE) PREFIX=$(STAGING_PATH)/usr install && cp -a libbz2.so.* $(STAGING_PATH)/usr/lib && \
-	ln -sf libbz2.so.1.0.8 $(STAGING_PATH)/usr/lib/libbz2.so && cp bzip2-shared $(STAGING_PATH)/usr/bin/bzip2
-	for i in $(STAGING_PATH)/usr/bin/{bzcat,bunzip2}; do \
-	  ln -sf bzip2 $$i; \
+	ln -sf libbz2.so.1.0.8 /usr/lib/libbz2.so && cp bzip2-shared $(STAGING_PATH)/usr/bin/bzip2
+	for i in /usr/bin/{bzcat,bunzip2}; do \
+	  cd $(STAGING_PATH) && ln -sf bzip2 $$i; \
 	done
 	touch .bzip2-done
 
@@ -863,7 +863,7 @@ download-xz-utils: .xz-utils-obtained
 xz-utils: download-xz-utils .xz-utils-done
 
 .xz-utils-done:
-	cd $(XZ_UTILS_PATH) && ./configure --prefix=/usr --disable-static --docdir=/usr/share/doc/xz-5.6.4 && \
+	cd $(XZ_UTILS_PATH) && ./configure --prefix=/usr --disable-static --docdir=/usr/share/doc/xz-$(XZ_VER) && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .xz-utils-done
 
@@ -930,7 +930,7 @@ krb5: download-krb5 .krb5-done
 .krb5-done:
 	cd $(KRB5_PATH)/src && ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var/lib --runstatedir=/run --with-system-et \
 	--with-system-ss --with-system-verto=no --enable-dns-for-realm --disable-rpath && $(MAKE) -j$(THREADS) && \
-	$(MAKE) DESTDIR=$(STAGING_PATH) install && cp -fr ../doc $(STAGING_PATH)/usr/share/doc/krb5-1.21.3
+	$(MAKE) DESTDIR=$(STAGING_PATH) install && cp -fr ../doc $(STAGING_PATH)/usr/share/doc/krb5-$(KRB5_VER)
 	touch .krb5-done
 
 # Download libnsl
@@ -979,8 +979,7 @@ download-keyutils: .keyutils-obtained
 keyutils: download-keyutils .keyutils-done
 
 .keyutils-done:
-	cd $(KEYUTILS_PATH) && $(MAKE) -j$(THREADS) && $(MAKE) NO_ARLIB=1 LIBDIR=$(STAGING_PATH)/usr/lib BINDIR=$(STAGING_PATH)/usr/bin \
-	SBINDIR=$(STAGING_PATH)/usr/sbin install
+	cd $(KEYUTILS_PATH) && $(MAKE) -j$(THREADS) && $(MAKE) NO_ARLIB=1 DESTDIR=$(STAGING_PATH) install
 	touch .keyutils-done
 
 # Download lmdb
@@ -1014,7 +1013,7 @@ libfuse: download-libfuse .libfuse-done
 .libfuse-done:
 	mkdir -p $(LIBFUSE_PATH)/build && cd $(LIBFUSE_PATH)/build && meson setup --prefix=/usr --buildtype=release .. && ninja && \
 	DESTDIR=$(STAGING_PATH) ninja install && chmod u+s $(STAGING_PATH)/usr/bin/fusermount3 && cd .. && \
-	cp -R doc/html -T $(STAGING_PATH)/usr/share/doc/fuse-3.16.2 && install -v -m644 doc/{README.NFS,kernel.txt} $(STAGING_PATH)/usr/share/doc/fuse-3.16.2
+	cp -R doc/html -T $(STAGING_PATH)/usr/share/doc/fuse-$(LIBFUSE_VER) && install -v -m644 doc/{README.NFS,kernel.txt} $(STAGING_PATH)/usr/share/doc/fuse-$(LIBFUSE_VER)
 	touch .libfuse-done
 
 # Download D-Bus
@@ -1030,8 +1029,8 @@ dbus: download-dbus .dbus-done
 .dbus-done:
 	mkdir -p $(DBUS_PATH)/build && cd $(DBUS_PATH)/build && meson setup --prefix=/usr --buildtype=release --wrap-mode=nofallback .. && ninja && \
 	DESTDIR=$(STAGING_PATH) ninja install && chown 0:18 $(STAGING_PATH)/usr/lib/dbus-daemon-launch-helper && \
-	chmod 4750 $(STAGING_PATH)/usr/lib/dbus-daemon-launch-helper && if [ -e $(STAGING_PATH)/usr/share/doc/dbus ]; then rm -rf $(STAGING_PATH)/usr/share/doc/dbus-1.16.0 && \
-	mv $(STAGING_PATH)/usr/share/doc/dbus{,-1.16.0}; fi && ln -sf /dev/null /etc/systemd/system/dbus.service && rm -rf $(STAGING_PATH)/usr/bin/dbus-launch
+	chmod 4750 $(STAGING_PATH)/usr/lib/dbus-daemon-launch-helper && if [ -e $(STAGING_PATH)/usr/share/doc/dbus ]; then rm -rf $(STAGING_PATH)/usr/share/doc/dbus-$(DBUS_VER) && \
+	mv $(STAGING_PATH)/usr/share/doc/dbus{,-$(DBUS_VER)}; fi && rm -rf $(STAGING_PATH)/usr/bin/dbus-launch
 	touch .dbus-done
 
 # Download dbus-broker
@@ -1046,7 +1045,7 @@ download-dbus-broker: .dbus-broker-obtained
 dbus-broker: download-dbus-broker .dbus-broker-done
 .dbus-broker-done:
 	mkdir -p $(DBUS_BROKER_PATH)/build && cd $(DBUS_BROKER_PATH)/build && meson setup --prefix=/usr --buildtype=release .. && \
-	ninja && DESTDIR=$(STAGING_PATH) ninja install
+	ninja && DESTDIR=$(STAGING_PATH) ninja install && mv $(STAGING_PATH)/usr/lib/systemd/system/dbus-broker.service $(STAGING_PATH)/usr/lib/systemd/system/dbus.service 
 	touch .dbus-broker-done
 
 # Download Kbd
