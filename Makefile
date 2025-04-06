@@ -25,7 +25,7 @@ MISSING_LIBS = ./libs.missing
 
 # Every required binary
 # arkana's packager is optional, compile the ark.c file to get it
-DEPENDENCIES = cmake meson ninja make gcc g++ ld as cc autoconf autoreconf automake sed awk tar wget grep gzip bzip2 xz mksquashfs makeinfo expect glib-mkenums rst2man pod2man curl xorriso mformat install xsltproc help2man
+DEPENDENCIES = cmake meson ninja make gcc g++ ld as cc autoconf autoreconf automake sed awk tar wget grep gzip bzip2 xz mksquashfs makeinfo expect glib-mkenums rst2man pod2man curl xorriso mformat install xsltproc help2man python3 pip
 
 # Targets
 .PHONY: all
@@ -39,7 +39,7 @@ arkanas:
 	done
 	$(MAKE) check-libs
 
-	ark -c $(STAGING_PATH) -o $(OUTPUT_PATH)/base.ark || echo "warning: arkana packager not found, not making an arkana package."
+	# ark -c $(STAGING_PATH) -o $(OUTPUT_PATH)/base.ark || echo "warning: arkana packager not found, not making an arkana package."
 
 # Check dependencies
 .PHONY: check-deps

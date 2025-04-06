@@ -43,3 +43,4 @@ systemd-oom:x:978:
 systemd-journal-remote:x:977:
 systemd-resolve:x:976:
 systemd-timesync:x:975:
+rsyncd:x:48:

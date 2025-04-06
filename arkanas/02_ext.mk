@@ -2,10 +2,6 @@
 SHELL = bash
 THREADS = $(shell nproc)
 
-# Build the Arkana toolchain?
-# We know we build it here, but we'll move it.
-BUILD_TOOLCHAIN = false
-
 # Paths used in the build
 SRC_PATH = $(shell realpath ./src)
 STAGING_PATH = $(shell realpath ./staging)
@@ -176,21 +172,38 @@ FASTFETCH_URL = https://github.com/fastfetch-cli/fastfetch/archive/refs/tags/2.3
 FASTFETCH_VER = 2.39.1
 FASTFETCH_PATH = $(SRC_PATH)/fastfetch-$(FASTFETCH_VER)
 
-# Binutils
-BINUTILS_URL = https://ftp.gnu.org/gnu/binutils/binutils-2.44.tar.gz
-BINUTILS_VER = 2.44
-BINUTILS_PATH = $(SRC_PATH)/binutils-$(BINUTILS_VER)
+# Sudo
+SUDO_URL = https://www.sudo.ws/dist/sudo-1.9.16p2.tar.gz
+SUDO_VER = 1.9.16p2
+SUDO_PATH = $(SRC_PATH)/sudo-$(SUDO_VER)
 
-# GCC
-# URL not specified because GCC was pre-compiled beforehand
-GCC_VER = 14.2.0
-GCC_PATH = $(SRC_PATH)/gcc-$(GCC_VER)
+# Vim (this changes often!)
+VIM_URL = https://github.com/vim/vim/archive/v9.1.1166/vim-9.1.1166.tar.gz
+VIM_VER = 9.1.1166
+VIM_PATH = $(SRC_PATH)/vim-$(VIM_VER)
 
-all: less procps-ng iproute2 iputils iptables networkmanager libbpf libmnl libidn2 libunistring libnfnetlink libpsl newt libndp gnutls nettle libtasn1 p11-kit slang curl nghttp2 jansson flex libnvme fastfetch findutils sed grep diffutils gawk mpfr nano tar toolchain
+# Rsync
+RSYNC_URL = https://www.samba.org/ftp/rsync/src/rsync-3.4.1.tar.gz
+RSYNC_VER = 3.4.1
+RSYNC_PATH = $(SRC_PATH)/rsync-$(RSYNC_VER)
 
-# Do you want to make a toolchain? This will be extended.
-toolchain: 
-	[ $(BUILD_TOOLCHAIN) = true ] && make -f arkanas/02_ext.mk gcc-compilers binutils || echo "Arkana toolchain turned off."
+# Dosfstools
+DOSFSTOOLS_URL = https://github.com/dosfstools/dosfstools/releases/download/v4.2/dosfstools-4.2.tar.gz
+DOSFSTOOLS_VER = 4.2
+DOSFSTOOLS_PATH = $(SRC_PATH)/dosfstools-$(DOSFSTOOLS_VER)
+
+# TZDB
+TZDB_URL = https://data.iana.org/time-zones/tzdb-latest.tar.lz
+TZDB_VER = 2025b
+TZDB_PATH = $(SRC_PATH)/tzdb-$(TZDB_VER)
+
+# Parted
+PARTED_URL = https://ftp.gnu.org/gnu/parted/parted-3.6.tar.xz
+PARTED_VER = 3.6
+PARTED_PATH = $(SRC_PATH)/parted-$(PARTED_VER)
+
+all: less procps-ng iproute2 iputils iptables networkmanager libbpf libmnl libidn2 libunistring libnfnetlink libpsl newt libndp gnutls nettle libtasn1 p11-kit slang curl nghttp2 jansson flex libnvme fastfetch findutils sed grep diffutils gawk mpfr nano tar sudo vim rsync dosfstools tzdb parted
+
 
 # Download less
 download-less: .less-obtained
@@ -213,7 +226,7 @@ download-procps-ng: .procps-ng-obtained
 # Compile procps-ng
 procps-ng: download-procps-ng .procps-ng-done
 .procps-ng-done:
-	cd $(PROCPS_NG_PATH) && ./autogen.sh && ./configure --prefix=/usr --docdir=/usr/share/doc/procps-ng-$(PROCPS_NG_VER) --disable-static --disable-kill \
+	cd $(PROCPS_NG_PATH) && ./autogen.sh && ./configure --prefix=/usr --docdir=/usr/share/doc/procps-ng-$(PROCPS_NG_VER) --disable-kill \
 	--enable-watch8bit && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .procps-ng-done
 
@@ -256,7 +269,7 @@ networkmanager: download-networkmanager .networkmanager-done
 	-D qt=false -D session_tracking=systemd -D modem_manager=false -D introspection=false -D crypto=gnutls && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	echo "[main]" > $(STAGING_PATH)/etc/NetworkManager/NetworkManager.conf
 	echo "plugins=keyfile" >> $(STAGING_PATH)/etc/NetworkManager/NetworkManager.conf
-	ln -sf /usr/lib/systemd/system/NetworkManager.service $(STAGING_PATH)/etc/systemd/system/NetworkManager.service
+	ln -sf /usr/lib/systemd/system/NetworkManager.service $(STAGING_PATH)/etc/systemd/system/multi-user.target.wants/NetworkManager.service
 	touch .networkmanager-done
 
 # Download libbpf
@@ -292,7 +305,7 @@ download-libidn2: .libidn2-obtained
 # Compile libidn2
 libidn2: download-libidn2 .libidn2-done
 .libidn2-done:
-	cd $(LIBIDN2_PATH) && ./configure --prefix=/usr --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBIDN2_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libidn2-done
 
 # Download libunistring
@@ -304,14 +317,14 @@ download-libunistring: .libunistring-obtained
 # Compile libunistring
 libunistring: download-libunistring .libunistring-done
 .libunistring-done:
-	cd $(LIBUNISTRING_PATH) && ./configure --prefix=/usr --disable-static --docdir=/usr/share/doc/libunistring-$(LIBUNISTRING_VER) && \
+	cd $(LIBUNISTRING_PATH) && ./configure --prefix=/usr --docdir=/usr/share/doc/libunistring-$(LIBUNISTRING_VER) && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libunistring-done
 
 # Download libnfnetlink
 download-libnfnetlink: .libnfnetlink-obtained
 .libnfnetlink-obtained:
-	cd $(SRC_PATH) && wget -O libnfnetlink-$(LIBNFNETLINK).tar.bz2 $(LIBNFNETLINK_URL) && tar xf libnfnetlink-$(LIBNFNETLINK).tar.bz2
+	cd $(SRC_PATH) && wget -O libnfnetlink-$(LIBNFNETLINK_VER).tar.bz2 $(LIBNFNETLINK_URL) && tar xf libnfnetlink-$(LIBNFNETLINK).tar.bz2
 	touch .libnfnetlink-obtained
 
 # Compile libnfnetlink
@@ -353,7 +366,7 @@ download-libndp: .libndp-obtained
 # Compile libndp
 libndp: download-libndp .libndp-done
 .libndp-done:
-	cd $(LIBNDP_PATH) && ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBNDP_PATH) && ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libndp-done
 
 # Download GnuTLS
@@ -377,7 +390,7 @@ download-nettle: .nettle-obtained
 # Compile nettle
 nettle: download-nettle .nettle-done
 .nettle-done:
-	cd $(NETTLE_PATH) && ./configure --prefix=/usr --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && chmod -v 755 $(STAGING_PATH)/usr/lib/lib{hogweed,nettle}.so
+	cd $(NETTLE_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && chmod -v 755 $(STAGING_PATH)/usr/lib/lib{hogweed,nettle}.so
 	touch .nettle-done
 
 # Download libtasn1
@@ -389,7 +402,7 @@ download-libtasn1: .libtasn1-obtained
 # Compile libtasn1
 libtasn1: download-libtasn1 .libtasn1-done
 .libtasn1-done:
-	cd $(LIBTASN1_PATH) && ./configure --prefix=/usr --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBTASN1_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libtasn1-done
 
 # Download P11-kit
@@ -428,7 +441,7 @@ download-curl: .curl-obtained
 # Compile curl
 curl: download-curl .curl-done
 .curl-done:
-	cd $(CURL_PATH) && ./configure --prefix=/usr --disable-static --with-gssapi --with-openssl --with-ca-path=/etc/ssl/certs && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(CURL_PATH) && ./configure --prefix=/usr --enable-versioned-symbols --with-gssapi --with-openssl --with-ca-path=/etc/ssl/certs && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .curl-done
 
 # Download nghttp2
@@ -440,7 +453,7 @@ download-nghttp2: .nghttp2-obtained
 # Compile nghttp2
 nghttp2: download-nghttp2 .nghttp2-done
 .nghttp2-done:
-	cd $(NGHTTP2_PATH) && ./configure --prefix=/usr --disable-static --enable-lib-only --docdir=/usr/share/doc/nghttp2-$(NGHTTP_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(NGHTTP2_PATH) && ./configure --prefix=/usr --enable-lib-only --docdir=/usr/share/doc/nghttp2-$(NGHTTP_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .nghttp2-done
 
 # Download jansson
@@ -452,7 +465,7 @@ download-jansson: .jansson-obtained
 # Compile jansson
 jansson: download-jansson .jansson-done
 .jansson-done:
-	cd $(JANSSON_PATH) && ./configure --prefix=/usr --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(JANSSON_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .jansson-done
 
 # Download iptables
@@ -477,7 +490,7 @@ download-flex: .flex-obtained
 # Compile flex
 flex: download-flex .flex-done
 .flex-done:
-	cd $(FLEX_PATH) && ./configure --prefix=/usr --docdir=/usr/share/doc/flex-$(FLEX_VER) --disable-static && $(MAKE) -j$(THREADS) && \
+	cd $(FLEX_PATH) && ./configure --prefix=/usr --docdir=/usr/share/doc/flex-$(FLEX_VER) && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install && ln -sf flex $(STAGING_PATH)/usr/bin/lex && \
 	ln -sf flex.1 $(STAGING_PATH)/usr/share/man/man1/lex.1
 	touch .flex-done
@@ -576,7 +589,7 @@ download-mpfr: .mpfr-obtained
 # Compile mpfr
 mpfr: download-mpfr .mpfr-done
 .mpfr-done:
-	cd $(MPFR_PATH) && ./configure --prefix=/usr --disable-static --enable-thread-safe --docdir=/usr/share/doc/mpfr-$(MPFR_VER) && $(MAKE) -j$(THREADS) && \
+	cd $(MPFR_PATH) && ./configure --prefix=/usr --enable-thread-safe --docdir=/usr/share/doc/mpfr-$(MPFR_VER) && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .mpfr-done
 
@@ -606,21 +619,76 @@ tar: download-tar .tar-done
 	cd $(TAR_PATH) && FORCE_UNSAFE_CONFIGURE=1 ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .tar-done
 
-# Install the GCC compilers
-gcc-compilers: .gcc-compilers-done
-.gcc-compilers-done:
-    # GCC has been pre-compiled before in 01_base.mk to obtain the libgcc_s and libstdc++, the compilers can be installed directly.
-	cd $(GCC_PATH)/build && $(MAKE) DESTDIR=$(STAGING_PATH) install
-	touch .gcc-compilers-done
+# Download sudo
+download-sudo: .sudo-obtained
+.sudo-obtained:
+	cd $(SRC_PATH) && wget -O sudo-$(SUDO_VER).tar.gz $(SUDO_URL) && tar xf sudo-$(SUDO_VER).tar.gz
+	touch .sudo-obtained
 
-# Download binutils
-download-binutils: .binutils-obtained
-.binutils-obtained:
-	cd $(SRC_PATH) && wget -O binutils-$(BINUTILS_VER).tar.gz $(BINUTILS_URL) && tar xf binutils-$(BINUTILS_VER).tar.gz
-	touch .binutils-obtained
+# Compile sudo
+sudo: download-sudo .sudo-done
+.sudo-done:
+	cd $(SUDO_PATH) && ./configure --prefix=/usr --libexecdir=/usr/lib --with-secure-path --with-env-editor --docdir=/usr/share/doc/sudo-$(SUDO_VER) \
+	--with-all-insults --with-passprompt="[sudo] password for %p: " && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .sudo-done
 
-# Compile binutils
-binutils: download-binutils .binutils-done
-.binutils-done:
-	cd $(BINUTILS_PATH) && ./configure --prefix=/usr --enable-gold --enable-ld=default --enable-plugins --enable-shared --disable-werror --enable-64bit-bfd --with-system-zlib && $(MAKE) tooldir=/usr -j$(THREADS) && $(MAKE) tooldir=/usr DESTDIR=$(STAGING_PATH) install
-	touch .binutils-done
+# Download vim
+download-vim: .vim-obtained
+.vim-obtained:
+	cd $(SRC_PATH) && wget -O vim-$(VIM_VER).tar.gz $(VIM_URL) && tar xf vim-$(VIM_VER).tar.gz
+	touch .vim-obtained
+
+# Compile vim
+vim: download-vim .vim-done
+.vim-done:
+	cd $(VIM_PATH) && echo '#define SYS_VIMRC_FILE  "/etc/vimrc"' >> src/feature.h && ./configure --prefix=/usr --with-features=huge --enable-gui=no --without-x --disable-libsodium --disable-gpm --with-tlib=ncursesw && \
+	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && ln -snf ../vim/vim91/doc $(STAGING_PATH)/usr/share/doc/vim-$(VIM_VER)
+	touch .vim-done
+
+# Download rsync
+download-rsync: .rsync-obtained
+.rsync-obtained:
+	cd $(SRC_PATH) && wget -O rsync-$(RSYNC_VER).tar.gz $(RSYNC_URL) && tar xf rsync-$(RSYNC_VER).tar.gz
+	touch .rsync-obtained
+
+# Compile rsync
+rsync: download-rsync .rsync-done
+.rsync-done:
+	cd $(RSYNC_PATH) && ./configure --prefix=/usr --disable-xxhash --without-included-zlib && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .rsync-done
+
+# Download dosfstools
+download-dosfstools: .dosfstools-obtained
+.dosfstools-obtained:
+	cd $(SRC_PATH) && wget -O dosfstools-$(DOSFSTOOLS_VER).tar.gz $(DOSFSTOOLS_URL) && tar xf dosfstools-$(DOSFSTOOLS_VER).tar.gz
+	touch .dosfstools-obtained
+
+# Compile dosfstools
+dosfstools: download-dosfstools .dosfstools-done
+.dosfstools-done:
+	cd $(DOSFSTOOLS_PATH) && ./configure --prefix=/usr --enable-compat-symlinks --mandir=/usr/share/man -docdir=/usr/share/doc/dosfstools-$(DOSFSTOOLS_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .dosfstools-done
+
+# Download tzdb
+download-tzdb: .tzdb-obtained
+.tzdb-obtained:
+	cd $(SRC_PATH) && wget -O tzdb-$(TZDB_VER).tar.lz $(TZDB_URL) && tar xf tzdb-$(TZDB_VER).tar.lz
+	touch .tzdb-obtained
+
+# Compile tzdb
+tzdb: download-tzdb .tzdb-done
+.tzdb-done:
+	cd $(TZDB_PATH) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .tzdb-done
+
+# Download parted
+download-parted: .parted-obtained
+.parted-obtained:
+	cd $(SRC_PATH) && wget -O parted-$(PARTED_VER).tar.xz $(PARTED_URL) && tar xf parted-$(PARTED_VER).tar.xz
+	touch .parted-obtained
+
+# Compile parted
+parted: download-parted .parted-done
+.parted-done:
+	cd $(PARTED_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .parted-done

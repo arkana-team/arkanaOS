@@ -40,8 +40,8 @@ BUSYBOX_VER = 1.37.0
 BUSYBOX_PATH = $(SRC_PATH)/busybox-$(BUSYBOX_VER)
 
 # Linux kernel
-LINUX_URL = https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.13.7.tar.gz
-LINUX_VER = 6.13.7
+LINUX_URL = https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.14.tar.gz
+LINUX_VER = 6.14
 LINUX_PATH = $(SRC_PATH)/linux-$(LINUX_VER)
 
 # GRUB (bootloader)
@@ -158,7 +158,7 @@ download-libisoburn: .libisoburn-obtained
 libisoburn: download-libisoburn .libisoburn-done
 
 .libisoburn-done:
-	cd $(LIBISOBURN_PATH) && ./configure --prefix=/usr --disable-static --enable-pkg-check-modules && $(MAKE) -j$(THREADS) && \
+	cd $(LIBISOBURN_PATH) && ./configure --prefix=/usr --enable-pkg-check-modules && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libisoburn-done
 
@@ -356,7 +356,7 @@ brotli: download-brotli .brotli-done
 download-pcre2: .pcre2-obtained
 
 .pcre2-obtained:
-	cd $(SRC_PATH) && wget -O pcre2-$(PCRE2_VER).tar.gz $(PCRE2_URL) && tar xf pcre2-$(PCRE2_VER).tar.gz
+	cd $(SRC_PATH) && wget -O pcre2-$(PCRE2_VER).tar.bz2 $(PCRE2_URL) && tar xf pcre2-$(PCRE2_VER).tar.bz2
 	touch .pcre2-obtained
 
 # Compile PCRE2
@@ -478,16 +478,19 @@ initramfs:
 	$(MAKE) -C $(LINUX_PATH) INSTALL_MOD_PATH=$(CPIO_STAGING_PATH) modules_install
 	cd $(CPIO_STAGING_PATH) && find . | cpio -oH newc | gzip > $(ISO_STAGING_PATH)/boot/initramfs.img
 
-# Create ISO file for booting (not installable yet)
+# Create ISO file for booting
 .PHONY: iso
 iso:
+	cp -a arkana-install $(STAGING_PATH)/usr/bin/arkana-install
+	cp -a genfstab $(STAGING_PATH)/usr/bin/genfstab
+    
 	ln -sf /usr/bin/bzdiff $(STAGING_PATH)/usr/bin/bzcmp
 	ln -sf /usr/bin/bzgrep $(STAGING_PATH)/usr/bin/bzegrep
 	ln -sf /usr/bin/bzgrep $(STAGING_PATH)/usr/bin/bzfgrep
 	ln -sf /usr/bin/bzmore $(STAGING_PATH)/usr/bin/bzless
 	ln -sf /usr/lib/p11-kit/trust-extract-compat $(STAGING_PATH)/usr/bin/update-ca-certificates
 
-	find $(STAGING_PATH) -name "*.a" -delete
+	find $(STAGING_PATH) -name "*.a" -name "*.la" -delete
 	mksquashfs $(STAGING_PATH) $(ISO_STAGING_PATH)/boot/rootfs.sfs -noappend || true
 	cp $(LINUX_PATH)/arch/x86/boot/bzImage $(ISO_STAGING_PATH)/boot/vmlinuz
 

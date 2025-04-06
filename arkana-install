@@ -1,0 +1,180 @@
+#!/bin/bash
+set -euo pipefail
+
+BLOCK_DEVICES=("sda" "sdb" "sdc" "hda" "hdb" "hdc" "vda" "vdb" "vdc" "mmcblk0" "mmcblk1" "mmcblk2" "nvme0n1" "nvme0n2" "nvme0n3")
+BINARIES=("mkfs.vfat" "mkfs.ext4" "rsync" "genfstab" "grub-install" "grub-mkconfig" "sed" "visudo" "awk" "parted")
+FOUND_BLK=0
+FOUND_DEVS=()
+
+echo "Sanity check..."
+
+if [ "$EUID" == 0 ]; then
+  echo "Running as $(id $EUID)"
+else
+  echo "Error: $(id $EUID) is not a superuser!"
+  false
+fi
+
+for bin in "${BINARIES[@]}"; do
+  if command -v "$bin" &>/dev/null; then
+    echo "Found binary $bin at $(command -v "$bin")"
+  else
+    echo "Error: binary $bin not found."
+    false
+  fi
+done
+
+echo "Detecting block devices..."
+
+for blkdev in "${BLOCK_DEVICES[@]}"; do
+  if [ -e "/dev/$blkdev" ]; then
+    if [ "$(($(blockdev --getsize64 "/dev/$blkdev") / 1048576))" -gt 8192 ]; then
+      FOUND_BLK=$((FOUND_BLK + 1))
+      FOUND_DEVS+=("/dev/$blkdev")
+    else
+      echo "Disk /dev/$blkdev is too small or not a block device."
+    fi
+  fi
+done
+
+if [ "$FOUND_BLK" -gt 1 ]; then
+  echo "Available block devices:"
+
+  if [ "${#FOUND_DEVS[@]}" -gt 1 ]; then
+    while :; do
+      for ((i = 1; i <= "${#FOUND_DEVS[@]}"; i++)) do
+        echo "$i. ${FOUND_DEVS[i-1]}"
+      done
+
+      read -rp "Which one to install onto? " SELECTION
+
+      if [[ "$SELECTION" -gt "${#FOUND_DEVS[@]}" || "$SELECTION" -lt 1 ]]; then
+        echo "Invalid selection."
+        continue
+      fi
+      break
+    done
+    SELDEV="${FOUND_DEVS[$SELECTION-1]}"
+  fi
+elif [ "$FOUND_BLK" -eq 1 ]; then
+  echo "The only block device present is ${FOUND_DEVS[0]}, using it for installation."
+  SELDEV="${FOUND_DEVS[0]}"
+else
+  echo "No block devices found."
+  false
+fi
+
+read -rp "All data on block device $SELDEV will be REMOVED! Continue? [y/N] " CONFIRM
+[[ "$CONFIRM" =~ ^[Yy]$ ]] || false
+
+# shellcheck disable=SC1091
+source /etc/os-release
+
+echo "Making sure you can install..."
+BLKDEV_MOUNTEDAS=$(awk '$2 == "/" { print $3 }' /proc/mounts)
+
+if [ "$BLKDEV_MOUNTEDAS" != "overlay" ]; then
+  echo "Incorrect environment! / is mounted as $BLKDEV_MOUNTEDAS, cannot install $PRETTY_NAME here."
+  false
+fi
+
+if [ "$SELDEV" == "/dev/nvme0n1" ]; then
+  BLKDEV_ISPART=1
+elif [ "$SELDEV" == "/dev/mmcblk0" ]; then
+  BLKDEV_ISPART=1
+else
+  BLKDEV_ISPART=0
+fi
+
+trap "umount -R /mnt &>/dev/null || true" ERR
+echo "Installing $PRETTY_NAME on $SELDEV"
+echo "Partitoning..."
+
+if [ -e /sys/firmware/efi/efivars ]; then
+  echo "Found an EFI system."
+  parted "${SELDEV}" \ mklabel gpt \ mkpart primary 1 120M \ mkpart primary 120M 100% -s
+  if [ "$BLKDEV_ISPART" == 0 ]; then
+    mkfs.vfat "${SELDEV}1"
+    mkfs.ext4 "${SELDEV}2"
+    mount "${SELDEV}2" /mnt
+    mkdir -p /mnt/boot/efi
+    mkdir /mnt/etc
+    mount "${SELDEV}1" /mnt/boot/efi
+  else
+    mkfs.vfat "${SELDEV}p1"
+    mkfs.ext4 "${SELDEV}p2"
+    mount "${SELDEV}p2" /mnt
+    mkdir -p /mnt/boot/efi
+    mkdir /mnt/etc
+    mount "${SELDEV}p1" /mnt/boot/efi
+  fi
+else
+  echo "Found a legacy system."
+  parted "${SELDEV}" \ mklabel msdos \ mkpart primary 1 120M \ mkpart primary 120M 100% -s
+  if [ "$BLKDEV_ISPART" == 0 ]; then
+    mkfs.vfat "${SELDEV}1"
+    mkfs.ext4 "${SELDEV}2"
+    mount "${SELDEV}2" /mnt
+    mkdir -p /mnt/boot
+    mkdir /mnt/etc
+    mount "${SELDEV}1" /mnt/boot
+  else
+    mkfs.vfat "${SELDEV}p1"
+    mkfs.ext4 "${SELDEV}p2"
+    mount "${SELDEV}p2" /mnt
+    mkdir -p /mnt/boot
+    mkdir /mnt/etc
+    mount "${SELDEV}p1" /mnt/boot
+  fi
+fi
+
+echo "Copying system..."
+mkdir -p /mnt/{dev,proc,sys,run,mnt}
+
+rsync -av --exclude="/dev" --exclude="/sys" --exclude="/proc" --exclude="/run" --exclude="/tmp" / /mnt
+
+echo "Setting up bootloader..."
+if [ -e /sys/firmware/efi/efivars ]; then
+  chroot /mnt grub-install --target=x86_64-efi --force "$SELDEV"
+else
+  chroot /mnt grub-install --target=i386-pc --force "$SELDEV"
+fi
+chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
+
+echo "Generating /etc/fstab..."
+# This script is provided by Arch Linux
+genfstab -U > /mnt/etc/fstab
+
+read -rp "Enter a hostname: " HOSTNAME
+echo "$HOSTNAME" > /mnt/etc/hostname
+
+echo "Please enter your root password: "
+read -rs ROOTPASS
+echo "root:$ROOTPASS" | chroot /mnt chpasswd
+
+read -rp "Enter the username of your user: " USERNAME
+chroot /mnt useradd -m "$USERNAME"
+chroot /mnt usermod -aG wheel "$USERNAME"
+echo "Please enter your user password: "
+read -rs USERPASS
+echo "$USERNAME:$USERPASS" | chroot /mnt chpasswd
+
+while :; do
+  read -rp "Enter your timezone here: " TIMEZONE
+  if [ -e "/usr/share/zoneinfo/$TIMEZONE" ]; then
+    ln -sf "/usr/share/zoneinfo/$TIMEZONE" /mnt/etc/localtime
+    break
+  else
+    echo "Timezone $TIMEZONE not found. Available timezones:"
+    find /usr/share/zoneinfo -type f | sed 's|/usr/share/zoneinfo/||'
+  fi
+done
+
+echo "Setting up sudouser permissions..."
+sed -i 's/^#\s*\(%wheel ALL=(ALL:ALL) ALL\)/\1/; t; q1' /mnt/etc/sudoers || chroot /mnt visudo
+
+echo "Removing live environment files..."
+rm -rf /mnt/etc/systemd/system/getty@tty1.service.d
+rm /mnt/usr/bin/arkana-install
+
+echo "Installed $PRETTY_NAME successfully. You can reboot the system now."

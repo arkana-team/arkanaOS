@@ -308,8 +308,8 @@ systemd: download-systemd .systemd-done
 	echo "ID=arkana" >> $(STAGING_PATH)/etc/os-release
 	echo "ID_LIKE=lfs" >> $(STAGING_PATH)/etc/os-release
 	echo "VERSION_ID=dev" >> $(STAGING_PATH)/etc/os-release
-	echo "PRETTY_NAME=arkanaOS Dev" >> $(STAGING_PATH)/etc/os-release
-	echo "ANSI_COLOR=38;5;6" >> $(STAGING_PATH)/etc/os-release
+	echo "PRETTY_NAME='arkanaOS Dev'" >> $(STAGING_PATH)/etc/os-release
+	echo "ANSI_COLOR='38;5;6'" >> $(STAGING_PATH)/etc/os-release
 
 	mkdir -p $(STAGING_PATH)/etc/systemd/system/getty@tty1.service.d
 	echo "[Service]" > $(STAGING_PATH)/etc/systemd/system/getty@tty1.service.d/override.conf
@@ -350,7 +350,7 @@ util-linux: download-util-linux .util-linux-done
 .util-linux-done:
 	cd $(UTIL_LINUX_PATH) && ./configure --bindir=/usr/bin --libdir=/usr/lib --sbindir=/usr/sbin \
 	--runstatedir=/run --disable-chfn-chsh -disable-login --disable-nologin --disable-su --disable-setpriv \
-	--disable-runuser --disable-pylibmount --disable-liblastlog2 --disable-static --without-python \
+	--disable-runuser --disable-pylibmount --disable-liblastlog2 --without-python \
 	ADJTIME_PATH=/var/lib/hwclock/adjtime --docdir=/usr/share/doc/util-linux-$(UTIL_LINUX_VER) && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .util-linux-done
@@ -471,7 +471,7 @@ download-acl: .acl-obtained
 acl: download-acl .acl-done
 
 .acl-done:
-	cd $(ACL_PATH) && ./configure --prefix=/usr --disable-static --docdir=/usr/share/doc/acl-$(ACL_VER) && \
+	cd $(ACL_PATH) && ./configure --prefix=/usr --docdir=/usr/share/doc/acl-$(ACL_VER) && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .acl-done
 
@@ -506,7 +506,7 @@ download-libseccomp: .libseccomp-obtained
 libseccomp: download-libseccomp .libseccomp-done
 
 .libseccomp-done:
-	cd $(LIBSECCOMP_PATH) && ./configure --prefix=/usr --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBSECCOMP_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libseccomp-done
 
 # Download GMP
@@ -522,7 +522,7 @@ download-gmp: .gmp-obtained
 gmp: download-gmp .gmp-done
 
 .gmp-done:
-	cd $(GMP_PATH) && ./configure --prefix=/usr --enable-cxx --disable-static --docdir=/usr/share/doc/gmp-$(GMP_VER) && \
+	cd $(GMP_PATH) && ./configure --prefix=/usr --enable-cxx --docdir=/usr/share/doc/gmp-$(GMP_VER) && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .gmp-done
 
@@ -540,7 +540,7 @@ libxcrypt: download-libxcrypt .libxcrypt-done
 
 .libxcrypt-done:
 	cd $(LIBXCRYPT_PATH) && ./configure --prefix=/usr --enable-hashes=strong,glibc --enable-obsolete-api=no \
-	--disable-static --disable-failure-tokens && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	--disable-failure-tokens && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libxcrypt-done
 
 # Download OpenSSL
@@ -598,7 +598,7 @@ shadow: download-shadow .shadow-done
 	find man -name Makefile.in -exec sed -i 's/getspnam\.3 / /' {} \; && \
 	find man -name Makefile.in -exec sed -i 's/passwd\.5 / /' {} \; && \
 	sed -e 's@#ENCRYPT_METHOD DES@ENCRYPT_METHOD YESCRYPT@' -e 's@/var/spool/mail@/var/mail@' -e '/PATH=/{s@/sbin:@@;s@/bin:@@}' -i etc/login.defs && \
-	./configure --sysconfdir=/etc --disable-static --without-libbsd --with-{b,yes}crypt && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	./configure --sysconfdir=/etc --without-libbsd --with-{b,yes}crypt && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .shadow-done
 
 # Download attr
@@ -614,7 +614,7 @@ download-attr: .attr-obtained
 attr: download-attr .attr-done
 
 .attr-done:
-	cd $(ATTR_PATH) && ./configure --prefix=/usr --disable-static --sysconfdir=/etc --docdir=/usr/share/doc/attr-$(ATTR_VER) && $(MAKE) -j$(THREADS) && \
+	cd $(ATTR_PATH) && ./configure --prefix=/usr --sysconfdir=/etc --docdir=/usr/share/doc/attr-$(ATTR_VER) && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .attr-done
 
@@ -681,8 +681,8 @@ download-openldap: .openldap-obtained
 openldap: download-openldap .openldap-done
 
 .openldap-done:
-	cd $(OPENLDAP_PATH) && autoconf && ./configure --prefix=/usr --sysconfdir=/etc --disable-static --enable-dynamic \
-	--disable-debug --disable-static && $(MAKE) -j$(THREADS) depend && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
+	cd $(OPENLDAP_PATH) && autoconf && ./configure --prefix=/usr --sysconfdir=/etc --enable-dynamic \
+	--disable-debug && $(MAKE) -j$(THREADS) depend && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
 	ln -sf /dev/null $(STAGING_PATH)/etc/systemd/system/slapd.service
 	touch .openldap-done
 
@@ -691,7 +691,7 @@ openldap: download-openldap .openldap-done
 download-libgcrypt: .libgcrypt-obtained
 
 .libgcrypt-obtained:
-	cd $(SRC_PATH) && wget -O libgcrypt-$(LIBGCRYPT_VER).tar.gz $(LIBGCRYPT_URL) && tar xf libgcrypt-$(LIBGCRYPT_VER).tar.gz
+	cd $(SRC_PATH) && wget -O libgcrypt-$(LIBGCRYPT_VER).tar.bz2 $(LIBGCRYPT_URL) && tar xf libgcrypt-$(LIBGCRYPT_VER).tar.bz2
 	touch .libgcrypt-obtained
 
 # Compile libgcrypt
@@ -738,7 +738,7 @@ download-readline: .readline-obtained
 readline: download-readline .readline-done
 
 .readline-done:
-	cd $(READLINE_PATH) && ./configure --prefix=/usr --disable-static --with-curses --docdir=/usr/share/doc/readline-$(READLINE_VER) && $(MAKE) SHLIB_LIBS="-lncursesw" -j$(THREADS) && \
+	cd $(READLINE_PATH) && ./configure --prefix=/usr --with-curses --docdir=/usr/share/doc/readline-$(READLINE_VER) && $(MAKE) SHLIB_LIBS="-lncursesw" -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) SHLIB_LIBS="-lncursesw" install && install -m644 doc/*.{ps,pdf,html,dvi} $(STAGING_PATH)/usr/share/doc/readline-$(READLINE_VER)
 	touch .readline-done
 
@@ -791,7 +791,7 @@ download-popt: .popt-obtained
 popt: download-popt .popt-done
 
 .popt-done:
-	cd $(POPT_PATH) && ./configure --prefix=/usr --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(POPT_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .popt-done
 
 # Download JSON-C
@@ -808,7 +808,7 @@ json-c: download-json-c .json-c-done
 
 .json-c-done:
 	mkdir -p $(JSON_C_PATH)/build
-	cd $(JSON_C_PATH)/build && cmake -D CMAKE_INSTALL_PREFIX=/usr -D CMAKE_BUILD_TYPE=Release -D BUILD_STATIC_LIBS=OFF .. && $(MAKE) -j$(THREADS) && \
+	cd $(JSON_C_PATH)/build && cmake -D CMAKE_INSTALL_PREFIX=/usr -D CMAKE_BUILD_TYPE=Release .. && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .json-c-done
 
@@ -863,7 +863,7 @@ download-xz-utils: .xz-utils-obtained
 xz-utils: download-xz-utils .xz-utils-done
 
 .xz-utils-done:
-	cd $(XZ_UTILS_PATH) && ./configure --prefix=/usr --disable-static --docdir=/usr/share/doc/xz-$(XZ_VER) && \
+	cd $(XZ_UTILS_PATH) && ./configure --prefix=/usr --docdir=/usr/share/doc/xz-$(XZ_VER) && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .xz-utils-done
 
@@ -880,7 +880,7 @@ download-lz4: .lz4-obtained
 lz4: download-lz4 .lz4-done
 
 .lz4-done:
-	cd $(LZ4_PATH) && $(MAKE) -j$(THREADS) BUILD_STATIC=no PREFIX=/usr && $(MAKE) BUILD_STATIC=no PREFIX=$(STAGING_PATH)/usr install
+	cd $(LZ4_PATH) && $(MAKE) -j$(THREADS) PREFIX=/usr && $(MAKE) PREFIX=$(STAGING_PATH)/usr install
 	touch .lz4-done
 
 # Download gzip
@@ -946,7 +946,7 @@ download-libnsl: .libnsl-obtained
 libnsl: download-libnsl .libnsl-done
 
 .libnsl-done:
-	cd $(LIBNSL_PATH) && ./configure --sysconfdir=/etc --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBNSL_PATH) && ./configure --sysconfdir=/etc && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libnsl-done
 
 # Download libtirpc
@@ -962,7 +962,7 @@ download-libtirpc: .libtirpc-obtained
 libtirpc: download-libtirpc .libtirpc-done
 
 .libtirpc-done:
-	cd $(LIBTIRPC_PATH) && ./configure --prefix=/usr --sysconfdir=/etc --disable-static && $(MAKE) -j$(THREADS) && \
+	cd $(LIBTIRPC_PATH) && ./configure --prefix=/usr --sysconfdir=/etc && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libtirpc-done
 

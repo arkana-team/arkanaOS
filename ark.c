@@ -14,12 +14,13 @@
 #define ARK_MAGIC "ARK\0"
 #define ARK_MAGIC_LEN 4
 #define BUFFER_SIZE (1024 * 1024)  // 1MB buffer
-#define ARK_SEMVER "0.0.1a"
+#define ARK_SEMVER "0.0.1b"
 
 // Function declarations
 int create_archive(const char *input_path, const char *output_path);
 int extract_archive(const char *input_path, const char *output_path);
 void print_usage(const char *program_name);
+char* create_temp_filename(const char *prefix);
 
 int main(int argc, char *argv[]) {
     int compress_flag = 0;
@@ -141,11 +142,31 @@ void print_usage(const char *program_name) {
     printf("  -v, --version        Display version information\n");
 }
 
+char* create_temp_filename(const char *prefix) {
+    const char *tmpdir = getenv("TMPDIR");
+    if (tmpdir == NULL) {
+        tmpdir = "/tmp";
+    }
+    
+    size_t len = strlen(tmpdir) + strlen(prefix) + 7; // 6 for XXXXXX + 1 for /
+    char *temp_filename = malloc(len + 1); // +1 for null terminator
+    if (temp_filename == NULL) {
+        return NULL;
+    }
+    
+    snprintf(temp_filename, len + 1, "%s/%sXXXXXX", tmpdir, prefix);
+    return temp_filename;
+}
+
 // Create a temporary tar file from a directory
 char* create_temp_tar(const char *directory) {
-    char *temp_filename = strdup("/tmp/ark_temp_XXXXXX");
-    int fd = mkstemp(temp_filename);
+    char *temp_filename = create_temp_filename("ark_temp_");
+    if (temp_filename == NULL) {
+        fprintf(stderr, "error: failed to allocate memory for temporary filename\n");
+        return NULL;
+    }
 
+    int fd = mkstemp(temp_filename);
     if (fd == -1) {
         fprintf(stderr, "error: failed to create temporary file: %s\n", strerror(errno));
         free(temp_filename);
@@ -365,7 +386,13 @@ int extract_archive(const char *input_path, const char *output_path) {
     fclose(ark_file);
 
     // Create temporary file for decompressed tar
-    char *temp_tar = strdup("/tmp/ark_extract_XXXXXX");
+    char *temp_tar = create_temp_filename("ark_extract_");
+    if (temp_tar == NULL) {
+        fprintf(stderr, "error: failed to allocate memory for temporary filename\n");
+        free(compressed_buffer);
+        return 1;
+    }
+
     int temp_fd = mkstemp(temp_tar);
     if (temp_fd == -1) {
         fprintf(stderr, "error: failed to create temporary file: %s\n", strerror(errno));
@@ -507,3 +534,4 @@ int extract_archive(const char *input_path, const char *output_path) {
 
     return 0;
 }
+
