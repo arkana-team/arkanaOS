@@ -129,21 +129,29 @@ else
 fi
 
 echo "Copying system..."
-mkdir -p /mnt/{dev,proc,sys,run,mnt}
+mkdir -p /mnt/{dev,proc,sys,run,mnt,tmp}
 
 rsync -av --exclude="/dev" --exclude="/sys" --exclude="/proc" --exclude="/run" --exclude="/tmp" / /mnt
 
 echo "Setting up bootloader..."
+mount --bind /dev /mnt/dev
+mount --bind /sys /mnt/sys
+mount --bind /proc /mnt/proc
+mount --bind /run /mnt/run
+mount --bind /tmp /mnt/tmp
+
+GRUB_MODULES="part_msdos part_gpt ext2 normal linux biosdisk reboot fat chain"
+
 if [ -e /sys/firmware/efi/efivars ]; then
-  chroot /mnt grub-install --target=x86_64-efi --force "$SELDEV"
+  chroot /mnt grub-install --modules="$GRUB_MODULES" --target=x86_64-efi --force "$SELDEV"
 else
-  chroot /mnt grub-install --target=i386-pc --force "$SELDEV"
+  chroot /mnt grub-install --modules="$GRUB_MODULES" --target=i386-pc --force "$SELDEV"
 fi
 chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
 
 echo "Generating /etc/fstab..."
 # This script is provided by Arch Linux
-genfstab -U > /mnt/etc/fstab
+genfstab -U /mnt > /mnt/etc/fstab
 
 read -rp "Enter a hostname: " HOSTNAME
 echo "$HOSTNAME" > /mnt/etc/hostname
@@ -171,10 +179,10 @@ while :; do
 done
 
 echo "Setting up sudouser permissions..."
-sed -i 's/^#\s*\(%wheel ALL=(ALL:ALL) ALL\)/\1/; t; q1' /mnt/etc/sudoers || chroot /mnt visudo
+chroot /mnt visudo
 
 echo "Removing live environment files..."
 rm -rf /mnt/etc/systemd/system/getty@tty1.service.d
-rm /mnt/usr/bin/arkana-install
+rm -rf /mnt/usr/bin/arkana-install
 
 echo "Installed $PRETTY_NAME successfully. You can reboot the system now."

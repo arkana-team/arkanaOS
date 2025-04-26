@@ -1,0 +1,121 @@
+#!/bin/sh
+
+# Ensure this script runs as PID 1
+if [ "$$" -ne 1 ]; then
+    printf "\x1b[31mYou cannot initialize a running system.\x1b[0m\n"
+    exit 1
+fi
+
+# Define status indicators without relying on echo -e
+SYSTEMD_OK="[  \x1b[32mOK  \x1b[0m]"
+SYSTEMD_FAIL="[\x1b[31mFAILED\x1b[0m]"
+
+# Mount essential filesystems
+printf '         Mounting filesystems...\n'
+mount -t proc none /proc && printf '%b Mounted proc filesystem\n' "$SYSTEMD_OK"
+mount -t sysfs none /sys && printf '%b Mounted sysfs filesystem\n' "$SYSTEMD_OK"
+mount -t devtmpfs none /dev && printf '%b Mounted devtmpfs filesystem\n' "$SYSTEMD_OK"
+
+# Populate devices needed for system startup
+printf '         Populating devices...\n'
+if mdev -s; then
+    printf '\r%b Populated devices\n' "$SYSTEMD_OK"
+else
+    printf '\r%b Failed to populate devices\n' "$SYSTEMD_FAIL"
+fi
+
+# Stop pollution of printk output
+printf '         Configuring kernel printk...\n'
+if echo "1 1 1 1" > /proc/sys/kernel/printk; then
+    printf '%b Configured kernel printk\n' "$SYSTEMD_OK"
+else
+    printf '%b Failed to configure kernel printk\n' "$SYSTEMD_FAIL"
+fi
+
+# Enable kernel modules needed for system startup
+for module in squashfs overlay; do
+    printf '         Loading %s module...\n' "$module"
+    if modprobe squashfs; then
+        printf '%b Loaded %s module\n' "$SYSTEMD_OK" "$module"
+    else
+        printf '%b Failed to load %s module\n' "$SYSTEMD_FAIL" "$module"
+    fi
+done
+
+# Create working paths for system startup
+printf '         Creating working directories...\n'
+if mkdir -p /mnt/overlay /mnt/squashfs /mnt/newroot /mnt/upper /mnt/work /mnt/cdrom; then
+    printf '%b Created working directories\n' "$SYSTEMD_OK"
+else
+    printf '%b Failed to create working directories\n' "$SYSTEMD_FAIL"
+fi
+
+# Set up the writable environment
+mount_filesystems() {
+    printf '         Mounting CD-ROM...\n'
+    if ! mount /dev/sr0 /mnt/cdrom; then
+        printf '%b Unable to mount CD-ROM\n' "$SYSTEMD_FAIL"
+        umount -Rl /mnt/cdrom >/dev/null 2>&1
+        return 1
+    fi
+    printf '%b Mounted CD-ROM\n' "$SYSTEMD_OK"
+
+    printf '         Mounting squashfs filesystem...\n'
+    if ! mount -t squashfs /mnt/cdrom/boot/rootfs.sfs /mnt/squashfs; then
+        printf '%b Unable to mount filesystem\n' "$SYSTEMD_FAIL"
+        umount -Rl /mnt/squashfs >/dev/null 2>&1
+        return 1
+    fi
+    printf '%b Mounted squashfs filesystem\n' "$SYSTEMD_OK"
+
+    printf '         Setting up tmpfs overlay...\n'
+    if ! mount -t tmpfs -o size=50% tmpfs /mnt/overlay; then
+        printf '%b Unable to set up overlay\n' "$SYSTEMD_FAIL"
+        umount -Rl /mnt/overlay >/dev/null 2>&1
+        return 1
+    fi
+    printf '%b Set up tmpfs overlay\n' "$SYSTEMD_OK"
+
+    printf '         Mounting overlay filesystem...\n'
+    if ! mount -t overlay overlay -o lowerdir=/mnt/squashfs,upperdir=/mnt/upper,workdir=/mnt/work /mnt/newroot; then
+        printf '%b Unable to mount overlay\n' "$SYSTEMD_FAIL"
+        umount -Rl /mnt/overlay /mnt/squashfs >/dev/null 2>&1
+        return 1
+    fi
+    printf '%b Mounted overlay filesystem\n' "$SYSTEMD_OK"
+    
+    return 0
+}
+
+# Instead of kernel panic, go to an emergency shell
+recovery_shell() {
+    printf 'Dropping to emergency shell\n'
+    printf 'Fix errors and type "exit" or press <CTRL+D> to retry boot.\n'
+    
+    sh
+}
+
+# Init task that repeats on failure
+sysinit() {
+    if grep -q "recovery=true" /proc/cmdline; then
+        printf 'Requested emergency shell\n'
+        printf 'Type "exit" or press <CTRL+D> to continue startup.\n'
+        sh
+    fi
+    
+    while true; do
+        if mount_filesystems; then        
+            umount -Rl /proc /sys /dev >/dev/null 2>&1
+            if [ -f /mnt/newroot/sbin/init ]; then
+                exec switch_root /mnt/newroot /sbin/init
+            else
+                printf '%b No init found in filesystem\n' "$SYSTEMD_FAIL"
+            fi
+        else
+            recovery_shell
+        fi
+    done
+}
+
+# Initialize the system
+sysinit

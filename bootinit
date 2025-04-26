@@ -32,19 +32,10 @@ else
     printf '%b Failed to configure kernel printk\n' "$SYSTEMD_FAIL"
 fi
 
-# Enable kernel modules needed for system startup
-for module in squashfs overlay; do
-    printf '         Loading %s module...\n' "$module"
-    if modprobe squashfs; then
-        printf '%b Loaded %s module\n' "$SYSTEMD_OK" "$module"
-    else
-        printf '%b Failed to load %s module\n' "$SYSTEMD_FAIL" "$module"
-    fi
-done
 
 # Create working paths for system startup
 printf '         Creating working directories...\n'
-if mkdir -p /mnt/overlay /mnt/squashfs /mnt/newroot /mnt/upper /mnt/work /mnt/cdrom; then
+if mkdir -p /mnt/newroot; then
     printf '%b Created working directories\n' "$SYSTEMD_OK"
 else
     printf '%b Failed to create working directories\n' "$SYSTEMD_FAIL"
@@ -52,37 +43,15 @@ fi
 
 # Set up the writable environment
 mount_filesystems() {
-    printf '         Mounting CD-ROM...\n'
-    if ! mount /dev/sr0 /mnt/cdrom; then
-        printf '%b Unable to mount CD-ROM\n' "$SYSTEMD_FAIL"
-        umount -l /mnt/cdrom >/dev/null 2>&1
+	rootfs=$(grep -o '\broot=[^ ]*' /proc/cmdline | sed 's/^root=//')
+	
+    printf '         Mounting root filesystem...\n'
+    if ! mount "$rootfs" /mnt/newroot; then
+        printf '%b Failed to mount "%s" on root filesystem\n' "$SYSTEMD_FAIL" "$rootfs"
+        umount -Rl /mnt/newroot >/dev/null 2>&1
         return 1
     fi
-    printf '%b Mounted CD-ROM\n' "$SYSTEMD_OK"
-
-    printf '         Mounting squashfs filesystem...\n'
-    if ! mount -t squashfs /mnt/cdrom/boot/rootfs.sfs /mnt/squashfs; then
-        printf '%b Unable to mount filesystem\n' "$SYSTEMD_FAIL"
-        umount -l /mnt/squashfs >/dev/null 2>&1
-        return 1
-    fi
-    printf '%b Mounted squashfs filesystem\n' "$SYSTEMD_OK"
-
-    printf '         Setting up tmpfs overlay...\n'
-    if ! mount -t tmpfs -o size=50% tmpfs /mnt/overlay; then
-        printf '%b Unable to set up overlay\n' "$SYSTEMD_FAIL"
-        umount -l /mnt/overlay >/dev/null 2>&1
-        return 1
-    fi
-    printf '%b Set up tmpfs overlay\n' "$SYSTEMD_OK"
-
-    printf '         Mounting overlay filesystem...\n'
-    if ! mount -t overlay overlay -o lowerdir=/mnt/squashfs,upperdir=/mnt/upper,workdir=/mnt/work /mnt/newroot; then
-        printf '%b Unable to mount overlay\n' "$SYSTEMD_FAIL"
-        umount -l /mnt/overlay /mnt/squashfs >/dev/null 2>&1
-        return 1
-    fi
-    printf '%b Mounted overlay filesystem\n' "$SYSTEMD_OK"
+    printf '%b Mounted root filesystem\n' "$SYSTEMD_OK"
     
     return 0
 }
@@ -105,7 +74,7 @@ sysinit() {
     
     while true; do
         if mount_filesystems; then        
-            umount -l /proc /sys /dev >/dev/null 2>&1
+            umount -Rl /proc /sys /dev >/dev/null 2>&1
             if [ -f /mnt/newroot/sbin/init ]; then
                 exec switch_root /mnt/newroot /sbin/init
             else

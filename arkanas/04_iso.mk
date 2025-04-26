@@ -40,8 +40,8 @@ BUSYBOX_VER = 1.37.0
 BUSYBOX_PATH = $(SRC_PATH)/busybox-$(BUSYBOX_VER)
 
 # Linux kernel
-LINUX_URL = https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.14.tar.gz
-LINUX_VER = 6.14
+LINUX_URL = https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.14.2.tar.gz
+LINUX_VER = 6.14.2
 LINUX_PATH = $(SRC_PATH)/linux-$(LINUX_VER)
 
 # GRUB (bootloader)
@@ -123,7 +123,7 @@ SQUASHFS_TOOLS_VER = 4.6.1
 SQUASHFS_TOOLS_PATH = $(SRC_PATH)/squashfs-tools-$(SQUASHFS_TOOLS_VER)
 
 # Targets
-all: build initramfs iso
+all: build initramfs boot-initramfs iso
 
 build: cpio busybox linux grub freetype harfbuzz glib libffi elfutils brotli pcre2 cairo fontconfig expat graphite2 pixman libpng libisoburn libburn libisofs mtools squashfs-tools
 
@@ -250,7 +250,10 @@ grub: download-grub .grub-done
 .grub-done:
 	cd $(GRUB_PATH) && echo depends bli part_gpt > grub-core/extra_deps.lst && \
 	./configure --prefix=/usr --sysconfdir=/etc --disable-efiemu --with-platform=efi \
-	--target=x86_64 --disable-werror && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
+	--target=x86_64 --disable-werror && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+
+	cd $(GRUB_PATH) && make clean && ./configure --prefix=/usr --sysconfdir=/etc --disable-efiemu --with-platform=pc \
+	--target=i386 --disable-werror && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
 	mv $(STAGING_PATH)/etc/bash_completion.d/grub $(STAGING_PATH)/usr/share/bash-completion/completions
 
 	# Font data here
@@ -474,9 +477,14 @@ squashfs-tools: download-squashfs-tools .squashfs-tools-done
 .PHONY: initramfs
 initramfs:
 	mkdir -p $(ISO_STAGING_PATH)/boot/grub
-	cp init $(CPIO_STAGING_PATH)
+	cp liveinit $(CPIO_STAGING_PATH)/init
 	$(MAKE) -C $(LINUX_PATH) INSTALL_MOD_PATH=$(CPIO_STAGING_PATH) modules_install
 	cd $(CPIO_STAGING_PATH) && find . | cpio -oH newc | gzip > $(ISO_STAGING_PATH)/boot/initramfs.img
+
+.PHONY: boot-initramfs
+boot-initramfs:
+	cp bootinit $(CPIO_STAGING_PATH)/init
+	cd $(CPIO_STAGING_PATH) && find . | cpio -oH newc | gzip > $(STAGING_PATH)/boot/initramfs.img
 
 # Create ISO file for booting
 .PHONY: iso
