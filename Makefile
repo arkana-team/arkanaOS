@@ -39,8 +39,6 @@ arkanas:
 	done
 	$(MAKE) check-libs
 
-	# ark -c $(STAGING_PATH) -o $(OUTPUT_PATH)/base.ark || echo "warning: arkana packager not found, not making an arkana package."
-
 # Check dependencies
 .PHONY: check-deps
 .SILENT: check-deps
