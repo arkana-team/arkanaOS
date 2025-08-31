@@ -8,8 +8,15 @@ ifneq ($(shell which ccache 2>/dev/null),)
 	CXX := ccache g++
 	CC.cc := ccache cc
 else
-	_ := $(info warning: ccache is unavailable; build may be slower)
+	_ := $(warning ccache is unavailable; build may be slower)
 endif
+
+GCC_VER := $(shell gcc -dumpversion | cut -d'.' -f1)
+ifeq ($(shell test $(GCC_VER) -ge 15; echo $$?), 0)
+	CFLAGS := -std=gnu17  # Must set or the C compiler will hate you. C++ compilers will discard it.
+	_ := $(info note: GCC 15 compatibility mode set)
+endif
+export CFLAGS
 
 # Paths used in the build
 SRC_PATH = $(shell realpath ./src)
@@ -24,8 +31,7 @@ EXECUTABLES = ./exes.found
 MISSING_LIBS = ./libs.missing
 
 # Every required binary
-# arkana's packager is optional, compile the ark.c file to get it
-DEPENDENCIES = cmake meson ninja make gcc g++ ld as cc autoconf autoreconf automake sed awk tar wget grep gzip bzip2 xz mksquashfs makeinfo expect glib-mkenums rst2man pod2man curl xorriso mformat install xsltproc help2man python3 pip lzip
+DEPENDENCIES = cargo rustc cmake meson ninja make gcc g++ ld as cc autoconf autoreconf automake sed awk tar wget grep gzip bzip2 xz mksquashfs makeinfo expect glib-mkenums rst2man pod2man curl xorriso mformat install xsltproc help2man python3 pip lzip
 
 # Targets
 .PHONY: all
@@ -50,6 +56,7 @@ check-deps:
 
 	printf "docbook-xml... "; find /usr/share -name "docbookx.dtd" | head -n1 | grep . || { echo "error: docbook-xml is required to compile this arkana."; exit 1; }
 	printf "docbook-xsl... "; find /usr/share -name "xsl-stylesheets" | head -n1 | grep . || { echo "error: docbook-xsl is required to compile this arkana."; exit 1; }
+	printf "libnvme.so... "; find /usr/lib -name "libnvme.so" | head -n1 | grep . || { echo "error: libnvme.so is required to compile this arkana."; exit 1; }
 	$(MAKE) arkanas
 
 # Check for missing libraries in current packaging
@@ -87,5 +94,6 @@ clean:
 
 # There are no test suites in arkanaOS
 .PHONY: test
+.IGNORE: test check-libs
 test: check-libs
 	qemu-system-x86_64 -cdrom $(OUTPUT_PATH)/arkana.iso -m 1G -vnc :0

@@ -75,6 +75,16 @@ BLKDEV_MOUNTEDAS=$(awk '$2 == "/" { print $3 }' /proc/mounts)
 
 if [ "$BLKDEV_MOUNTEDAS" != "overlay" ]; then
   echo "Incorrect environment! / is mounted as $BLKDEV_MOUNTEDAS, cannot install $PRETTY_NAME here."
+  DISPLAYNAME_FIRSTLETTER_RAW="${PRETTY_NAME:0:1}"
+  DISPLAYNAME_FIRSTLETTER="${DISPLAYNAME_FIRSTLETTER_RAW,,}"
+
+  if [[ "$DISPLAYNAME_FIRSTLETTER" =~ [aeiou] ]]; then
+    A_OR_AN="an"
+  else
+    A_OR_AN="a"
+  fi
+
+  echo "Try running this script from $A_OR_AN $PRETTY_NAME Live CD."
   false
 fi
 
@@ -140,12 +150,13 @@ mount --bind /proc /mnt/proc
 mount --bind /run /mnt/run
 mount --bind /tmp /mnt/tmp
 
-GRUB_MODULES="part_msdos part_gpt ext2 normal linux biosdisk reboot fat chain"
+GRUB_MODULES_COMMON="part_msdos part_gpt ext2 normal linux reboot fat chain font"
 
 if [ -e /sys/firmware/efi/efivars ]; then
-  chroot /mnt grub-install --modules="$GRUB_MODULES" --target=x86_64-efi --force "$SELDEV"
+  mount --bind /sys/firmware/efi/efivars /mnt/sys/firmware/efi/efivars
+  chroot /mnt grub-install --modules="$GRUB_MODULES_COMMON" --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=arkanaOS --force "$SELDEV"
 else
-  chroot /mnt grub-install --modules="$GRUB_MODULES" --target=i386-pc --force "$SELDEV"
+  chroot /mnt grub-install --modules="$GRUB_MODULES_COMMON biosdisk" --target=i386-pc --force "$SELDEV"
 fi
 chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
 
@@ -179,7 +190,7 @@ while :; do
 done
 
 echo "Setting up sudouser permissions..."
-chroot /mnt visudo
+chroot /mnt bash -c "EDITOR=nano visudo"
 
 echo "Removing live environment files..."
 rm -rf /mnt/etc/systemd/system/getty@tty1.service.d

@@ -9,231 +9,280 @@ OUTPUT_PATH = $(shell realpath ./output)
 
 # Package variables
 # Glibc
-GLIBC_URL = https://ftp.gnu.org/gnu/glibc/glibc-2.41.tar.gz
-GLIBC_VER = 2.41
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter05/glibc.html
+GLIBC_URL = https://ftp.gnu.org/gnu/glibc/glibc-2.42.tar.gz
+GLIBC_VER = 2.42
 GLIBC_PATH = $(SRC_PATH)/glibc-$(GLIBC_VER)
 
 # Systemd
-SYSTEMD_URL = https://github.com/systemd/systemd/archive/v257.3/systemd-257.3.tar.gz
-SYSTEMD_VER = 257.3
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/systemd.html
+SYSTEMD_URL = https://github.com/systemd/systemd/archive/v257.8/systemd-257.8.tar.gz
+SYSTEMD_VER = 257.8
 SYSTEMD_PATH = $(SRC_PATH)/systemd-$(SYSTEMD_VER)
 
 # Coreutils
-COREUTILS_URL = https://ftp.gnu.org/gnu/coreutils/coreutils-9.6.tar.gz
-COREUTILS_VER = 9.6
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter06/coreutils.html
+COREUTILS_URL = https://ftp.gnu.org/gnu/coreutils/coreutils-9.7.tar.gz
+COREUTILS_VER = 9.7
 COREUTILS_PATH = $(SRC_PATH)/coreutils-$(COREUTILS_VER)
 
 # Util-linux
-UTIL_LINUX_URL = https://www.kernel.org/pub/linux/utils/util-linux/v2.40/util-linux-2.40.4.tar.gz
-UTIL_LINUX_VER = 2.40.4
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/util-linux.html
+UTIL_LINUX_URL = https://www.kernel.org/pub/linux/utils/util-linux/v2.41/util-linux-2.41.1.tar.gz
+UTIL_LINUX_VER = 2.41.1
 UTIL_LINUX_PATH = $(SRC_PATH)/util-linux-$(UTIL_LINUX_VER)
 
 # Bash
-BASH_URL = https://ftp.gnu.org/gnu/bash/bash-5.2.37.tar.gz
-BASH_VER = 5.2.37
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter06/bash.html
+BASH_URL = https://ftp.gnu.org/gnu/bash/bash-5.3.tar.gz
+BASH_VER = 5.3
 BASH_PATH = $(SRC_PATH)/bash-$(BASH_VER)
 
 # File (also provides libmagic, however it's a userland utility too)
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/file.html
 FILE_URL = https://astron.com/pub/file/file-5.46.tar.gz
 FILE_VER = 5.46
 FILE_PATH = $(SRC_PATH)/file-$(FILE_VER)
 
 # LVM2 (provides libdevmapper, but we don't need the LVM2 utilities)
-LVM2_URL = https://sourceware.org/ftp/lvm2/LVM2.2.03.30.tgz
-LVM2_VER = 2.03.30
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/lvm2.html
+LVM2_URL = https://sourceware.org/ftp/lvm2/LVM2.2.03.34.tgz
+LVM2_VER = 2.03.34
 LVM2_PATH = $(SRC_PATH)/LVM2.$(LVM2_VER)
 
-# e2fsrogs (provides libcom_err)
-E2FSPROGS_URL = https://sourceforge.net/projects/e2fsprogs/files/e2fsprogs/v1.47.2/e2fsprogs-1.47.2.tar.gz/download
-E2FSPROGS_VER = 1.47.2
+# e2fsprogs (provides libcom_err)
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/e2fsprogs.html
+E2FSPROGS_URL = https://sourceforge.net/projects/e2fsprogs/files/e2fsprogs/v1.47.3/e2fsprogs-1.47.3.tar.gz/download
+E2FSPROGS_VER = 1.47.3
 E2FSPROGS_PATH = $(SRC_PATH)/e2fsprogs-$(E2FSPROGS_VER)
 
 # Library variables
 # GCC (libstdc++ and libgcc_s)
-GCC_URL = https://ftp.gnu.org/gnu/gcc/gcc-14.2.0/gcc-14.2.0.tar.gz
-GCC_VER = 14.2.0
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/gcc.html
+GCC_URL = https://ftp.gnu.org/gnu/gcc/gcc-15.2.0/gcc-15.2.0.tar.gz
+GCC_VER = 15.2.0
 GCC_PATH = $(SRC_PATH)/gcc-$(GCC_VER)
 
 # Ncurses
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter06/ncurses.html
 NCURSES_URL = https://ftp.gnu.org/gnu/ncurses/ncurses-6.5.tar.gz
 NCURSES_VER = 6.5
 NCURSES_PATH = $(SRC_PATH)/ncurses-$(NCURSES_VER)
 
 # Acl
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/acl.html
 ACL_URL = https://download-mirror.savannah.gnu.org/releases/acl/acl-2.3.2.tar.gz
 ACL_VER = 2.3.2
 ACL_PATH = $(SRC_PATH)/acl-$(ACL_VER)
 
 # Libcap
-LIBCAP_URL = https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.73.tar.gz
-LIBCAP_VER = 2.73
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/libcap.html
+LIBCAP_URL = https://www.kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-2.76.tar.gz
+LIBCAP_VER = 2.76
 LIBCAP_PATH = $(SRC_PATH)/libcap-$(LIBCAP_VER)
 
 # Libseccomp
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/libseccomp.html
 LIBSECCOMP_URL = https://github.com/seccomp/libseccomp/releases/download/v2.6.0/libseccomp-2.6.0.tar.gz
 LIBSECCOMP_VER = 2.6.0
 LIBSECCOMP_PATH = $(SRC_PATH)/libseccomp-$(LIBSECCOMP_VER)
 
 # GMP
+# URL: https://www.linuxfromscratch.org/~thomas/multilib-systemd/chapter08/gmp.html (ignore multilib instructions)
 GMP_URL = https://ftp.gnu.org/gnu/gmp/gmp-6.3.0.tar.gz
 GMP_VER = 6.3.0
 GMP_PATH = $(SRC_PATH)/gmp-$(GMP_VER)
 
 # Libxcrypt
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/libxcrypt.html
 LIBXCRYPT_URL = https://github.com/besser82/libxcrypt/releases/download/v4.4.38/libxcrypt-4.4.38.tar.xz
 LIBXCRYPT_VER = 4.4.38
 LIBXCRYPT_PATH = $(SRC_PATH)/libxcrypt-$(LIBXCRYPT_VER)
 
 # OpenSSL
-OPENSSL_URL = https://github.com/openssl/openssl/releases/download/openssl-3.4.1/openssl-3.4.1.tar.gz
-OPENSSL_VER = 3.4.1
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/openssl.html
+OPENSSL_URL = https://github.com/openssl/openssl/releases/download/openssl-3.5.2/openssl-3.5.2.tar.gz
+OPENSSL_VER = 3.5.2
 OPENSSL_PATH = $(SRC_PATH)/openssl-$(OPENSSL_VER)
 
 # Linux-PAM
-LINUX_PAM_URL = https://github.com/linux-pam/linux-pam/releases/download/v1.6.1/Linux-PAM-1.6.1.tar.xz
-LINUX_PAM_DOC_URL = https://github.com/linux-pam/linux-pam/releases/download/v1.6.1/Linux-PAM-1.6.1-docs.tar.xz
-LINUX_PAM_VER = 1.6.1
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/linux-pam.html (meson build system may break)
+LINUX_PAM_URL = https://github.com/linux-pam/linux-pam/releases/download/v1.7.1/Linux-PAM-1.7.1.tar.xz
+LINUX_PAM_DOC_URL = https://github.com/linux-pam/linux-pam/releases/download/v1.6.1/Linux-PAM-1.6.1-docs.tar.xz # do you need it?
+LINUX_PAM_VER = 1.7.1
 LINUX_PAM_PATH = $(SRC_PATH)/Linux-PAM-$(LINUX_PAM_VER)
 
 # Shadow (REQUIRED for user management and logins)
-SHADOW_URL = https://github.com/shadow-maint/shadow/releases/download/4.17.3/shadow-4.17.3.tar.xz
-SHADOW_VER = 4.17.3
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/shadow.html
+SHADOW_URL = https://github.com/shadow-maint/shadow/releases/download/4.18.0/shadow-4.18.0.tar.xz
+SHADOW_VER = 4.18.0
 SHADOW_PATH = $(SRC_PATH)/shadow-$(SHADOW_VER)
 
 # Attr
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/attr.html
 ATTR_URL = https://download-mirror.savannah.gnu.org/releases/attr/attr-2.5.2.tar.gz
 ATTR_VER = 2.5.2
 ATTR_PATH = $(SRC_PATH)/attr-$(ATTR_VER)
 
 # Audit-userspace (Linux-audit)
-LINUX_AUDIT_URL = https://github.com/linux-audit/audit-userspace/archive/refs/tags/v4.0.3.tar.gz
-LINUX_AUDIT_VER = 4.0.3
+# URL: https://github.com/linux-audit/audit-userspace (w/o instructions)
+# Referred to by https://www.linuxfromscratch.org/lfs/view/systemd/appendices/dependencies.html
+LINUX_AUDIT_URL = https://github.com/linux-audit/audit-userspace/archive/refs/tags/v4.1.1.tar.gz
+LINUX_AUDIT_VER = 4.1.1
 LINUX_AUDIT_PATH = $(SRC_PATH)/audit-userspace-$(LINUX_AUDIT_VER)
 
 # Libcap-NG
+# URL: https://github.com/stevegrubb/libcap-ng (w/o instructions)
+# Referred to by https://www.linuxfromscratch.org/lfs/view/systemd/appendices/dependencies.html
 LIBCAP_NG_URL = https://github.com/stevegrubb/libcap-ng/archive/refs/tags/v0.8.5.tar.gz
 LIBCAP_NG_VER = 0.8.5
 LIBCAP_NG_PATH = $(SRC_PATH)/libcap-ng-$(LIBCAP_NG_VER)
 
 # Zlib
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/zlib.html
 ZLIB_URL = https://www.zlib.net/fossils/zlib-1.3.1.tar.gz
 ZLIB_VER = 1.3.1
 ZLIB_PATH = $(SRC_PATH)/zlib-$(ZLIB_VER)
 ZLIB_PATH = $(SRC_PATH)/zlib-$(ZLIB_VER)
 
 # OpenLDAP (also provides liblber)
-OPENLDAP_URL = https://www.openldap.org/software/download/OpenLDAP/openldap-release/openldap-2.6.9.tgz
-OPENLDAP_VER = 2.6.9
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/server/openldap.html
+OPENLDAP_URL = https://www.openldap.org/software/download/OpenLDAP/openldap-release/openldap-2.6.10.tgz
+OPENLDAP_VER = 2.6.10
 OPENLDAP_PATH = $(SRC_PATH)/openldap-$(OPENLDAP_VER)
 
 # Libgcrypt
-LIBGCRYPT_URL = https://www.gnupg.org/ftp/gcrypt/libgcrypt/libgcrypt-1.11.0.tar.bz2
-LIBGCRYPT_VER = 1.11.0
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/libgcrypt.html
+LIBGCRYPT_URL = https://www.gnupg.org/ftp/gcrypt/libgcrypt/libgcrypt-1.11.2.tar.bz2
+LIBGCRYPT_VER = 1.11.2
 LIBGCRYPT_PATH = $(SRC_PATH)/libgcrypt-$(LIBGCRYPT_VER)
 
 # Libgpg-error
-LIBGPG_ERROR_URL = https://www.gnupg.org/ftp/gcrypt/libgpg-error/libgpg-error-1.51.tar.gz
-LIBGPG_ERROR_VER = 1.51
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/libgpg-error.html
+LIBGPG_ERROR_URL = https://www.gnupg.org/ftp/gcrypt/libgpg-error/libgpg-error-1.55.tar.gz
+LIBGPG_ERROR_VER = 1.55
 LIBGPG_ERROR_PATH = $(SRC_PATH)/libgpg-error-$(LIBGPG_ERROR_VER)
 
 # Readline
-READLINE_URL = https://ftp.gnu.org/gnu/readline/readline-8.2.13.tar.gz
-READLINE_VER = 8.2.13
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/readline.html
+READLINE_URL = https://ftp.gnu.org/gnu/readline/readline-8.3.tar.gz
+READLINE_VER = 8.3
 READLINE_PATH = $(SRC_PATH)/readline-$(READLINE_VER)
 
 # Cryptsetup
-CRYPTSETUP_URL = https://www.kernel.org/pub/linux/utils/cryptsetup/v2.7/cryptsetup-2.7.5.tar.gz
-CRYPTSETUP_VER = 2.7.5
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/cryptsetup.html
+CRYPTSETUP_URL = https://www.kernel.org/pub/linux/utils/cryptsetup/v2.8/cryptsetup-2.8.1.tar.gz
+CRYPTSETUP_VER = 2.8.1
 CRYPTSETUP_PATH = $(SRC_PATH)/cryptsetup-$(CRYPTSETUP_VER)
 
 # Cyrus-SASL
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/cyrus-sasl.html
 CYRUS_SASL_URL = https://github.com/cyrusimap/cyrus-sasl/releases/download/cyrus-sasl-2.1.28/cyrus-sasl-2.1.28.tar.gz
 CYRUS_SASL_VER = 2.1.28
 CYRUS_SASL_PATH = $(SRC_PATH)/cyrus-sasl-$(CYRUS_SASL_VER)
 
 # Popt
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/popt.html
 POPT_URL = https://ftp.osuosl.org/pub/rpm/popt/releases/popt-1.x/popt-1.19.tar.gz
 POPT_VER = 1.19
 POPT_PATH = $(SRC_PATH)/popt-$(POPT_VER)
 
 # JSON-C
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/json-c.html
 JSON_C_URL = https://s3.amazonaws.com/json-c_releases/releases/json-c-0.18.tar.gz
 JSON_C_VER = 0.18
 JSON_C_PATH = $(SRC_PATH)/json-c-$(JSON_C_VER)
 
 # Zstd
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/zstd.html
 ZSTD_URL = https://github.com/facebook/zstd/releases/download/v1.5.7/zstd-1.5.7.tar.gz
 ZSTD_VER = 1.5.7
 ZSTD_PATH = $(SRC_PATH)/zstd-$(ZSTD_VER)
 
 # Bzip2
+# URL: https://sourceware.org/pub/bzip2/ (w/o instructions)
 BZIP2_URL = https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz
 BZIP2_VER = 1.0.8
 BZIP2_PATH = $(SRC_PATH)/bzip2-$(BZIP2_VER)
 
 # XZ Utils
-XZ_UTILS_URL = https://github.com/tukaani-project/xz/releases/download/v5.6.4/xz-5.6.4.tar.gz
-XZ_UTILS_VER = 5.6.4
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/xz.html
+XZ_UTILS_URL = https://github.com/tukaani-project/xz/releases/download/v5.8.1/xz-5.8.1.tar.gz
+XZ_UTILS_VER = 5.8.1
 XZ_UTILS_PATH = $(SRC_PATH)/xz-$(XZ_UTILS_VER)
 
 # Lz4
+# URL: http://www.linuxfromscratch.org/lfs/view/systemd/chapter08/lz4.html
 LZ4_URL = https://github.com/lz4/lz4/releases/download/v1.10.0/lz4-1.10.0.tar.gz
 LZ4_VER = 1.10.0
 LZ4_PATH = $(SRC_PATH)/lz4-$(LZ4_VER)
 
 # Gzip
-GZIP_URL = https://ftp.gnu.org/gnu/gzip/gzip-1.13.tar.gz
-GZIP_VER = 1.13
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter06/gzip.html
+GZIP_URL = https://ftp.gnu.org/gnu/gzip/gzip-1.14.tar.gz
+GZIP_VER = 1.14
 GZIP_PATH = $(SRC_PATH)/gzip-$(GZIP_VER)
 
 # Libaio
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/libaio.html
 LIBAIO_URL = https://pagure.io/libaio/archive/libaio-0.3.113/libaio-0.3.113.tar.gz
 LIBAIO_VER = 0.3.113
 LIBAIO_PATH = $(SRC_PATH)/libaio-$(LIBAIO_VER)
 
 # Krb5 (MIT Kerberos V5)
-KRB5_URL = https://kerberos.org/dist/krb5/1.21/krb5-1.21.3.tar.gz
-KRB5_VER = 1.21.3
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/mitkrb.html
+KRB5_URL = https://kerberos.org/dist/krb5/1.22/krb5-1.22.tar.gz
+KRB5_VER = 1.22
 KRB5_PATH = $(SRC_PATH)/krb5-$(KRB5_VER)
 
 # Lmdb
-LMDB_URL = https://github.com/lmdb/lmdb/archive/LMDB_0.9.31.tar.gz
-LMDB_VER = 0.9.31
-LMDB_PATH = $(SRC_PATH)/lmdb-LMDB_$(LMDB_VER)
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/server/lmdb.html
+LMDB_URL = https://git.openldap.org/openldap/openldap/-/archive/LMDB_0.9.33.tar.bz2
+LMDB_VER = 0.9.33
+LMDB_PATH = $(SRC_PATH)/openldap-LMDB_$(LMDB_VER)
 
 # Libnsl
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/basicnet/libnsl.html
 LIBNSL_URL = https://github.com/thkukuk/libnsl/releases/download/v2.0.1/libnsl-2.0.1.tar.xz
 LIBNSL_VER = 2.0.1
 LIBNSL_PATH = $(SRC_PATH)/libnsl-$(LIBNSL_VER)
 
 # Libtirpc
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/basicnet/libtirpc.html
 LIBTIRPC_URL = https://downloads.sourceforge.net/libtirpc/libtirpc-1.3.6.tar.bz2
+LIBTIRPC_PATCH_URL = https://www.linuxfromscratch.org/patches/blfs/svn/libtirpc-1.3.6-gcc15_fixes-1.patch
 LIBTIRPC_VER = 1.3.6
 LIBTIRPC_PATH = $(SRC_PATH)/libtirpc-$(LIBTIRPC_VER)
 
 # Keyutils
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/keyutils.html
 KEYUTILS_URL = https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/keyutils.git/snapshot/keyutils-1.6.3.tar.gz
 KEYUTILS_VER = 1.6.3
 KEYUTILS_PATH = $(SRC_PATH)/keyutils-$(KEYUTILS_VER)
 
 # Libfuse (Fuse)
-LIBFUSE_URL = https://github.com/libfuse/libfuse/releases/download/fuse-3.16.2/fuse-3.16.2.tar.gz
-LIBFUSE_VER = 3.16.2
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/fuse.html
+LIBFUSE_URL = https://github.com/libfuse/libfuse/releases/download/fuse-3.17.4/fuse-3.17.4.tar.gz
+LIBFUSE_VER = 3.17.4
 LIBFUSE_PATH = $(SRC_PATH)/fuse-$(LIBFUSE_VER)
 
 # D-Bus (for certain systemd units)
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/dbus.html
 DBUS_URL = https://dbus.freedesktop.org/releases/dbus/dbus-1.16.2.tar.xz
 DBUS_VER = 1.16.2
 DBUS_PATH = $(SRC_PATH)/dbus-$(DBUS_VER)
 
 # D-Bus Broker (systemd integration)
-DBUS_BROKER_URL = https://github.com/bus1/dbus-broker/releases/download/v36/dbus-broker-36.tar.xz
-DBUS_BROKER_VER = 36
+# Why do we need both D-Bus implementations?
+# URL: https://github.com/bus1/dbus-broker (w/o instructions)
+DBUS_BROKER_URL = https://github.com/bus1/dbus-broker/releases/download/v37/dbus-broker-37.tar.xz
+DBUS_BROKER_VER = 37
 DBUS_BROKER_PATH = $(SRC_PATH)/dbus-broker-$(DBUS_BROKER_VER)
 
 # Kbd (for systemd-vconsole-setup)
-KBD_URL = https://www.kernel.org/pub/linux/utils/kbd/kbd-2.7.1.tar.gz
-KBD_VER = 2.7.1
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/kbd.html
+KBD_URL = https://www.kernel.org/pub/linux/utils/kbd/kbd-2.8.0.tar.gz
+KBD_VER = 2.8.0
 KBD_PATH = $(SRC_PATH)/kbd-$(KBD_VER)
 
 # Targets
@@ -274,7 +323,7 @@ glibc: download-glibc .glibc-done
 .glibc-done:
 	mkdir -p $(GLIBC_PATH)/build
 	cd $(GLIBC_PATH)/build && ../configure --prefix=/usr --disable-werror --enable-kernel=5.4 \
-	--enable-stack-protector=strong --disable-nscd --enable-shared libc_cv_slibdir=/usr/lib && $(MAKE) -j$(THREADS) && \
+	--enable-stack-protector=strong --disable-nscd --enable-shared libc_cv_slibdir=/usr/lib && $(MAKE) CFLAGS="-O2" -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .glibc-done
 
@@ -288,7 +337,7 @@ download-systemd: .systemd-obtained
 
 # Compile systemd
 .PHONY: systemd
-systemd: download-systemd .systemd-done
+systemd: timestamp download-systemd .systemd-done
 
 .systemd-done:
 	mkdir -p $(SYSTEMD_PATH)/build
@@ -300,8 +349,6 @@ systemd: download-systemd .systemd-done
 	-D docdir=/usr/share/doc/systemd-$(SYSTEMD_VER) && ninja && DESTDIR=$(STAGING_PATH) ninja install
 
 	echo "arkana" > $(STAGING_PATH)/etc/hostname
-	
-	echo "arkanaOS Dev ($$(date +%Y%m%d))" > $(STAGING_PATH)/etc/issue
 	
 	echo "NAME=arkanaOS" > $(STAGING_PATH)/etc/os-release
 	echo "VERSION=dev" >> $(STAGING_PATH)/etc/os-release
@@ -317,6 +364,9 @@ systemd: download-systemd .systemd-done
 	echo "ExecStart=-/sbin/agetty --autologin root --noclear %I $$TERM" >> $(STAGING_PATH)/etc/systemd/system/getty@tty1.service.d/override.conf
 	
 	touch .systemd-done
+
+timestamp:
+	echo "arkanaOS Dev ($$(date +%Y%m%d))" > $(STAGING_PATH)/etc/issue
 
 # Download coreutils
 .PHONY: download-coreutils
@@ -576,10 +626,9 @@ linux-pam: download-linux-pam .linux-pam-done
 .linux-pam-done:
 	rm $(STAGING_PATH)/etc/security || true
 	mkdir -p $(STAGING_PATH)/etc/pam.d
-	cd $(LINUX_PAM_PATH) && autoreconf -fi && ./configure --prefix=/usr --sbindir=/usr/sbin --sysconfdir=/etc \
-	--libdir=/usr/lib --enable-securedir=/usr/lib/security --docdir=/usr/share/doc/Linux-PAM-$(LINUX_PAM_VER) && $(MAKE) -j$(THREADS) && \
-	$(MAKE) DESTDIR=$(STAGING_PATH) install && chmod 4755 $(STAGING_PATH)/usr/sbin/unix_chkpwd && cp -a /etc/pam.d/* $(STAGING_PATH)/etc/pam.d/ && \
-	cp ../../passwd $(STAGING_PATH)/etc/passwd && cp ../../shadow $(STAGING_PATH)/etc/shadow && cp ../../group $(STAGING_PATH)/etc/group
+	mkdir -p $(LINUX_PAM_PATH)/build && cd $(LINUX_PAM_PATH)/build && meson setup .. --prefix=/usr && ninja && DESTDIR=$(STAGING_PATH) ninja install && \
+	chmod 4755 $(STAGING_PATH)/usr/sbin/unix_chkpwd && cp -a /etc/pam.d/* $(STAGING_PATH)/etc/pam.d/ && cp ../../../passwd $(STAGING_PATH)/etc/passwd && \
+	cp ../../../shadow $(STAGING_PATH)/etc/shadow && cp ../../../group $(STAGING_PATH)/etc/group
 
 	touch .linux-pam-done
 
@@ -705,7 +754,7 @@ libgcrypt: download-libgcrypt .libgcrypt-done
 	install -m644 README doc/{README.apichanges,fips*,libgcrypt*} $(STAGING_PATH)/usr/share/doc/libgcrypt-$(LIBGCRYPT_VER) && \
 	install -dm755 $(STAGING_PATH)/usr/share/doc/libgcrypt-$(LIBGCRYPT_VER)/html && install -m644 doc/gcrypt.html/* \
 	$(STAGING_PATH)/usr/share/doc/libgcrypt-$(LIBGCRYPT_VER)/html && install -m644 doc/gcrypt_nochunks.html $(STAGING_PATH)/usr/share/doc/libgcrypt-$(LIBGCRYPT_VER) && \
-	install -m644 doc/gcrypt.{txt,texi} $(STAGING_PATH)/usr/share/doc/libgcrypt-1.11.0
+	install -m644 doc/gcrypt.{txt,texi} $(STAGING_PATH)/usr/share/doc/libgcrypt-$(LIBGCRYPT_VER)
 	touch .libgcrypt-done
 
 # Download libgpg-error
@@ -808,7 +857,8 @@ json-c: download-json-c .json-c-done
 
 .json-c-done:
 	mkdir -p $(JSON_C_PATH)/build
-	cd $(JSON_C_PATH)/build && cmake -D CMAKE_INSTALL_PREFIX=/usr -D CMAKE_BUILD_TYPE=Release .. && $(MAKE) -j$(THREADS) && \
+	# Outdated build system may cause problems on Arch Linux
+	cd $(JSON_C_PATH)/build && cmake -D CMAKE_POLICY_VERSION_MINIMUM=3.5 -D CMAKE_INSTALL_PREFIX=/usr -D CMAKE_BUILD_TYPE=Release .. && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .json-c-done
 
@@ -841,7 +891,7 @@ download-bzip2: .bzip2-obtained
 bzip2: download-bzip2 .bzip2-done
 
 .bzip2-done:
-	cd $(BZIP2_PATH) && sed -i 's@\(ln -s -f \)$(PREFIX)/bin/@\1@' Makefile && \
+	cd $(BZIP2_PATH) && sed -i 's@\(ln -s -f \)$(PREFIX)/bin/@\1@' Makefile && $(MAKE) clean && \
 	$(MAKE) -f Makefile-libbz2_so && $(MAKE) clean && $(MAKE) -j$(THREADS) && \
 	$(MAKE) PREFIX=$(STAGING_PATH)/usr install && cp -a libbz2.so.* $(STAGING_PATH)/usr/lib && \
 	ln -sf libbz2.so.1.0.8 /usr/lib/libbz2.so && cp bzip2-shared $(STAGING_PATH)/usr/bin/bzip2
@@ -954,7 +1004,8 @@ libnsl: download-libnsl .libnsl-done
 download-libtirpc: .libtirpc-obtained
 
 .libtirpc-obtained:
-	cd $(SRC_PATH) && wget -O libtirpc-$(LIBTIRPC_VER).tar.bz2 $(LIBTIRPC_URL) && tar xf libtirpc-$(LIBTIRPC_VER).tar.bz2
+	cd $(SRC_PATH) && wget -O libtirpc-$(LIBTIRPC_VER).tar.bz2 $(LIBTIRPC_URL) && tar xf libtirpc-$(LIBTIRPC_VER).tar.bz2 && \
+	cd $(LIBTIRPC_PATH) && curl -s -L $(LIBTIRPC_PATCH_URL) | patch -p1
 	touch .libtirpc-obtained
 
 # Compile libtirpc
@@ -995,7 +1046,7 @@ download-lmdb: .lmdb-obtained
 lmdb: download-lmdb .lmdb-done
 
 .lmdb-done:
-	cd $(LMDB_PATH)/libraries/liblmdb && $(MAKE) -j$(THREADS) && $(MAKE) prefix=$(STAGING_PATH)/usr install
+	cd $(LMDB_PATH)*/libraries/liblmdb && $(MAKE) -j$(THREADS) && $(MAKE) prefix=$(STAGING_PATH)/usr install
 	touch .lmdb-done
 
 # Download libfuse

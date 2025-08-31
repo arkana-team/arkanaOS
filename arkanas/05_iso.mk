@@ -9,123 +9,162 @@ CPIO_STAGING_PATH = $(shell realpath ./cpio-staging)
 ISO_STAGING_PATH = $(shell realpath ./iso-staging)
 OUTPUT_PATH = $(shell realpath ./output)
 
-# cpio
+# Cpio
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/cpio.html
 CPIO_URL = https://ftp.gnu.org/gnu/cpio/cpio-2.15.tar.gz
 CPIO_VER = 2.15
 CPIO_PATH = $(SRC_PATH)/cpio-$(CPIO_VER)
 
 # libisoburn (provides xorriso required by grub-mkrescue)
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/multimedia/libisoburn.html
 LIBISOBURN_URL = http://files.libburnia-project.org/releases/libisoburn-1.5.6.tar.gz
 LIBISOBURN_VER = 1.5.6
 LIBISOBURN_PATH = $(SRC_PATH)/libisoburn-$(LIBISOBURN_VER)
 
-# libburn
+# Libburn
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/multimedia/libburn.html
 LIBBURN_URL = http://files.libburnia-project.org/releases/libburn-1.5.6.tar.gz
 LIBBURN_VER = 1.5.6
 LIBBURN_PATH = $(SRC_PATH)/libburn-$(LIBBURN_VER)
 
-# libisofs
+# Libisofs
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/multimedia/libisofs.html
 LIBISOFS_URL = http://files.libburnia-project.org/releases/libisofs-1.5.6.tar.gz
 LIBISOFS_VER = 1.5.6
 LIBISOFS_PATH = $(SRC_PATH)/libisofs-$(LIBISOFS_VER)
 
 # mtools (provides mformat required by libisoburn)
-MTOOLS_URL = https://ftp.gnu.org/gnu/mtools/mtools-4.0.48.tar.gz
-MTOOLS_VER = 4.0.48
+# URL: https://ftp.gnu.org/gnu/mtools/ (w/o instructions)
+MTOOLS_URL = https://ftp.gnu.org/gnu/mtools/mtools-4.0.49.tar.gz
+MTOOLS_VER = 4.0.49
 MTOOLS_PATH = $(SRC_PATH)/mtools-$(MTOOLS_VER)
 
 # BusyBox 
-BUSYBOX_URL = https://www.busybox.net/downloads/busybox-1.37.0.tar.bz2
+# URL: https://www.busybox.net/downloads/ (down)
+BUSYBOX_URL = https://cdimage.debian.org/mirror/slackware.com/slackware-current/source/installer/sources/busybox/busybox-1.37.0.tar.bz2
 BUSYBOX_VER = 1.37.0
 BUSYBOX_PATH = $(SRC_PATH)/busybox-$(BUSYBOX_VER)
 
 # Linux kernel
-LINUX_URL = https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.14.2.tar.gz
-LINUX_VER = 6.14.2
+# URL: https://kernel.org/ (w/o instructions as LFS builds a rootfs)
+LINUX_URL = https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.16.3.tar.gz
+LINUX_VER = 6.16.3
 LINUX_PATH = $(SRC_PATH)/linux-$(LINUX_VER)
 
 # GRUB (bootloader)
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/grub-efi.html
 GRUB_URL = https://ftp.gnu.org/gnu/grub/grub-2.12.tar.gz
 GRUB_FONT_URL = https://unifoundry.com/pub/unifont/unifont-16.0.01/font-builds/unifont-16.0.01.pcf.gz
 GRUB_VER = 2.12
 GRUB_PATH = $(SRC_PATH)/grub-$(GRUB_VER)
 
 # Freetype
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/freetype2.html
 FREETYPE_URL = https://downloads.sourceforge.net/freetype/freetype-2.13.3.tar.xz
 FREETYPE_VER = 2.13.3
 FREETYPE_PATH = $(SRC_PATH)/freetype-$(FREETYPE_VER)
 
 # Harfbuzz
-HARFBUZZ_URL = https://github.com/harfbuzz/harfbuzz/releases/download/10.4.0/harfbuzz-10.4.0.tar.xz
-HARFBUZZ_VER = 10.4.0
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/harfbuzz.html
+HARFBUZZ_URL = https://github.com/harfbuzz/harfbuzz/releases/download/11.4.1/harfbuzz-11.4.1.tar.xz
+HARFBUZZ_VER = 11.4.1
 HARFBUZZ_PATH = $(SRC_PATH)/harfbuzz-$(HARFBUZZ_VER)
 
 # Glib
-GLIB_URL = https://download.gnome.org/sources/glib/2.84/glib-2.84.0.tar.xz
-GLIB_VER = 2.84.0
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/glib2.html
+GLIB_URL = https://download.gnome.org/sources/glib/2.84/glib-2.84.4.tar.xz
+GLIB_VER = 2.84.4
 GLIB_PATH = $(SRC_PATH)/glib-$(GLIB_VER)
 
 # Libffi
-LIBFFI_URL = https://github.com/libffi/libffi/releases/download/v3.4.7/libffi-3.4.7.tar.gz
-LIBFFI_VER = 3.4.7
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/libffi.html
+LIBFFI_URL = https://github.com/libffi/libffi/releases/download/v3.5.2/libffi-3.5.2.tar.gz
+LIBFFI_VER = 3.5.2
 LIBFFI_PATH = $(SRC_PATH)/libffi-$(LIBFFI_VER)
 
 # Elfutils (only needed to provide libelf)
-ELFUTILS_URL = https://gcc.gnu.org/pub/elfutils/0.192/elfutils-0.192.tar.bz2
-ELFUTILS_VER = 0.192
+# URL: https://gcc.gnu.org/pub/elfutils/ (w/o instructions)
+ELFUTILS_URL = https://gcc.gnu.org/pub/elfutils/0.193/elfutils-0.193.tar.bz2
+ELFUTILS_VER = 0.193
 ELFUTILS_PATH = $(SRC_PATH)/elfutils-$(ELFUTILS_VER)
 
 # Brotli
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/brotli.html
 BROTLI_URL = https://github.com/google/brotli/archive/v1.1.0/brotli-1.1.0.tar.gz
 BROTLI_VER = 1.1.0
 BROTLI_PATH = $(SRC_PATH)/brotli-$(BROTLI_VER)
 
 # PCRE2
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/pcre2.html
 PCRE2_URL = https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.45/pcre2-10.45.tar.bz2
 PCRE2_VER = 10.45
 PCRE2_PATH = $(SRC_PATH)/pcre2-$(PCRE2_VER)
 
 # Cairo
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/x/cairo.html
 CAIRO_URL = https://www.cairographics.org/releases/cairo-1.18.4.tar.xz
 CAIRO_VER = 1.18.4
 CAIRO_PATH = $(SRC_PATH)/cairo-$(CAIRO_VER)
 
 # Fontconfig
-FONTCONFIG_URL = https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.16.0.tar.xz
-FONTCONFIG_VER = 2.16.0
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/fontconfig.html
+FONTCONFIG_URL = https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/2.17.1/fontconfig-2.17.1.tar.xz
+FONTCONFIG_VER = 2.17.1
 FONTCONFIG_PATH = $(SRC_PATH)/fontconfig-$(FONTCONFIG_VER)
 
 # Expat
-EXPAT_URL = https://github.com/libexpat/libexpat/releases/download/R_2_7_0/expat-2.7.0.tar.gz
-EXPAT_VER = 2.7.0
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/expat.html
+EXPAT_URL = https://github.com/libexpat/libexpat/releases/download/R_2_7_1/expat-2.7.1.tar.gz
+EXPAT_VER = 2.7.1
 EXPAT_PATH = $(SRC_PATH)/expat-$(EXPAT_VER)
 
 # Graphite2
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/graphite2.html
 GRAPHITE2_URL = https://github.com/silnrsi/graphite/releases/download/1.3.14/graphite2-1.3.14.tgz
 GRAPHITE2_VER = 1.3.14
 GRAPHITE2_PATH = $(SRC_PATH)/graphite2-$(GRAPHITE2_VER)
 
 # Pixman
-PIXMAN_URL = https://www.cairographics.org/releases/pixman-0.44.2.tar.gz
-PIXMAN_VER = 0.44.2
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/pixman.html
+PIXMAN_URL = https://www.cairographics.org/releases/pixman-0.46.4.tar.gz
+PIXMAN_VER = 0.46.4
 PIXMAN_PATH = $(SRC_PATH)/pixman-$(PIXMAN_VER)
 
 # Libpng
-LIBPNG_URL = https://downloads.sourceforge.net/libpng/libpng-1.6.47.tar.xz
-# This patch enables APNG support in libpng
-LIBPNG_PATCH_URL = https://downloads.sourceforge.net/sourceforge/libpng-apng/libpng-1.6.47-apng.patch.gz
-LIBPNG_VER = 1.6.47
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/libpng.html
+LIBPNG_URL = https://downloads.sourceforge.net/libpng/libpng-1.6.50.tar.xz
+LIBPNG_PATCH_URL = https://downloads.sourceforge.net/sourceforge/libpng-apng/libpng-1.6.47-apng.patch.gz # use APNG
+LIBPNG_VER = 1.6.50
 LIBPNG_PATH = $(SRC_PATH)/libpng-$(LIBPNG_VER)
 
+# LZO
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/lzo.html
+LZO_URL = https://www.oberhumer.com/opensource/lzo/download/lzo-2.10.tar.gz
+LZO_VER = 2.10
+LZO_PATH = $(SRC_PATH)/lzo-$(LZO_VER)
+
 # squashfs-tools
-SQUASHFS_TOOLS_URL = http://ftp.debian.org/debian/pool/main/s/squashfs-tools/squashfs-tools_4.6.1.orig.tar.gz
-SQUASHFS_TOOLS_VER = 4.6.1
+# URL: https://ftp.debian.org/debian/pool/main/s/squashfs-tools/ (has source code)
+SQUASHFS_TOOLS_URL = http://ftp.debian.org/debian/pool/main/s/squashfs-tools/squashfs-tools_4.7.2.orig.tar.gz
+SQUASHFS_TOOLS_VER = 4.7.2
 SQUASHFS_TOOLS_PATH = $(SRC_PATH)/squashfs-tools-$(SQUASHFS_TOOLS_VER)
+
+# Efibootmgr (GRUB for EFI needs it)
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/efibootmgr.html
+EFIBOOTMGR_URL = https://github.com/rhboot/efibootmgr/archive/18/efibootmgr-18.tar.gz
+EFIBOOTMGR_VER = 18
+EFIBOOTMGR_PATH = $(SRC_PATH)/efibootmgr-$(EFIBOOTMGR_VER)
+
+# Efivar
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/efivar.html
+EFIVAR_URL = https://github.com/rhboot/efivar/archive/39/efivar-39.tar.gz
+EFIVAR_VER = 39
+EFIVAR_PATH = $(SRC_PATH)/efivar-$(EFIVAR_VER)
 
 # Targets
 all: build initramfs boot-initramfs iso
 
-build: cpio busybox linux grub freetype harfbuzz glib libffi elfutils brotli pcre2 cairo fontconfig expat graphite2 pixman libpng libisoburn libburn libisofs mtools squashfs-tools
+build: cpio busybox linux grub freetype harfbuzz glib libffi elfutils brotli pcre2 cairo fontconfig expat graphite2 pixman libpng libisoburn libburn libisofs mtools squashfs-tools lzo efibootmgr efivar
 
 # Download cpio
 download-cpio: .cpio-obtained
@@ -173,7 +212,7 @@ download-libburn: .libburn-obtained
 libburn: download-libburn .libburn-done
 
 .libburn-done:
-	cd $(LIBBURN_PATH) && ./configure --prefix=/usr --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBBURN_PATH) && sed -i 's/catch_int ()/catch_int (int signum)/' test/poll.c && ./configure --prefix=/usr --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libburn-done
 
 # Download libisofs
@@ -201,8 +240,7 @@ download-mtools: .mtools-obtained
 mtools: download-mtools .mtools-done
 
 .mtools-done:
-    # floppyd excluded from this build, Arkana does not package X11
-	cd $(MTOOLS_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && rm -f $(STAGING_PATH)/usr/bin/floppyd
+	cd $(MTOOLS_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .mtools-done
 
 # Download Busybox
@@ -289,9 +327,8 @@ download-harfbuzz: .harfbuzz-obtained
 harfbuzz: download-harfbuzz .harfbuzz-done
 
 .harfbuzz-done:
-    # hb-view excluded from this build, Arkana does not package X11
 	mkdir -p $(HARFBUZZ_PATH)/build	&& cd $(HARFBUZZ_PATH)/build && meson setup .. --prefix=/usr --buildtype=release \
-	-D graphite2=enabled && ninja && DESTDIR=$(STAGING_PATH) ninja install && rm -f $(STAGING_PATH)/usr/bin/hb-view
+	-D graphite2=enabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .harfbuzz-done
 
 # Download glib
@@ -427,7 +464,9 @@ download-graphite2: .graphite2-obtained
 graphite2: download-graphite2 .graphite2-done
 
 .graphite2-done:
-	mkdir -p $(GRAPHITE2_PATH)/build && cd $(GRAPHITE2_PATH)/build && cmake -D CMAKE_INSTALL_PREFIX=/usr .. && $(MAKE) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+    # Outdated build system, cool.
+	mkdir -p $(GRAPHITE2_PATH)/build && cd $(GRAPHITE2_PATH)/build && sed -i '/Font.h/i #include <cstdint>' ../tests/featuremap/featuremaptest.cpp && \
+	cmake -D CMAKE_POLICY_VERSION_MINIMUM=3.5 -D CMAKE_INSTALL_PREFIX=/usr .. && $(MAKE) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .graphite2-done
 
 # Download pixman
@@ -473,6 +512,41 @@ squashfs-tools: download-squashfs-tools .squashfs-tools-done
 	cd $(SQUASHFS_TOOLS_PATH)/squashfs-tools && $(MAKE) -j$(THREADS) && $(MAKE) INSTALL_PREFIX=$(STAGING_PATH)/usr install
 	touch .squashfs-tools-done
 
+# Download LZO
+download-lzo: .lzo-obtained
+.lzo-obtained:
+	cd $(SRC_PATH) && wget -O lzo-$(LZO_VER).tar.gz $(LZO_URL) && tar xf lzo-$(LZO_VER).tar.gz
+	touch .lzo-obtained
+
+# Compile LZO
+lzo: download-lzo .lzo-done
+.lzo-done:
+	cd $(LZO_PATH) && ./configure --prefix=/usr --enable-shared --disable-static --docdir=/usr/share/doc/lzo-$(LZO_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .lzo-done
+
+# Download efibootmgr
+download-efibootmgr: .efibootmgr-obtained
+.efibootmgr-obtained:
+	cd $(SRC_PATH) && wget -O efibootmgr-$(EFIBOOTMGR_VER).tar.gz $(EFIBOOTMGR_URL) && tar xf efibootmgr-$(EFIBOOTMGR_VER).tar.gz
+
+# Compile efibootmgr
+efibootmgr: download-efibootmgr .efibootmgr-done
+.efibootmgr-done:
+	cd $(EFIBOOTMGR_PATH) && $(MAKE) -j$(THREADS) EFIDIR=arkana EFI_LOADER=grubx64.efi && $(MAKE) install EFIDIR=arkana DESTDIR=$(STAGING_PATH)
+	touch .efibootmgr-done
+
+# Download efivar
+download-efivar: .efivar-obtained
+.efivar-obtained:
+	cd $(SRC_PATH) && wget -O efivar-$(EFIVAR_VER).tar.gz $(EFIVAR_URL) && tar xf efivar-$(EFIVAR_VER).tar.gz
+	touch .efivar-obtained
+
+# Compile efivar
+efivar: download-efivar .efivar-done
+.efivar-done:
+	cd $(EFIVAR_PATH) && $(MAKE) -j$(THREADS) ENABLE_DOCS=0 && $(MAKE) install ENABLE_DOCS=0 LIBDIR=/usr/lib DESTDIR=$(STAGING_PATH)
+	touch .efivar-done
+
 # Assemble initramfs
 .PHONY: initramfs
 initramfs:
@@ -498,7 +572,9 @@ iso:
 	ln -sf /usr/bin/bzmore $(STAGING_PATH)/usr/bin/bzless
 	ln -sf /usr/lib/p11-kit/trust-extract-compat $(STAGING_PATH)/usr/bin/update-ca-certificates
 
-	find $(STAGING_PATH) -name "*.a" -name "*.la" -delete
+	chroot $(STAGING_PATH) fc-cache -fv || true
+
+	find $(STAGING_PATH) \( -name "*.a" -o -name "*.la" \) -delete
 	mksquashfs $(STAGING_PATH) $(ISO_STAGING_PATH)/boot/rootfs.sfs -noappend || true
 	cp $(LINUX_PATH)/arch/x86/boot/bzImage $(ISO_STAGING_PATH)/boot/vmlinuz
 

@@ -8,202 +8,243 @@ STAGING_PATH = $(shell realpath ./staging)
 OUTPUT_PATH = $(shell realpath ./output)
 
 # Less
-LESS_URL = https://ftp.gnu.org/gnu/less/less-668.tar.gz
-LESS_VER = 668
+# URL: https://ftp.gnu.org/gnu/less/ (w/o instructions)
+LESS_URL = https://ftp.gnu.org/gnu/less/less-679.tar.gz
+LESS_VER = 679
 LESS_PATH = $(SRC_PATH)/less-$(LESS_VER)
 
 # Procps-NG (free, ps, etc.)
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/procps-ng.html
 PROCPS_NG_URL = https://gitlab.com/procps-ng/procps/-/archive/v4.0.5/procps-v4.0.5.tar.gz
 PROCPS_NG_VER = 4.0.5
 PROCPS_NG_PATH = $(SRC_PATH)/procps-v$(PROCPS_NG_VER)
 
 # Iproute2
-IPROUTE2_URL = https://www.kernel.org/pub/linux/utils/net/iproute2/iproute2-6.13.0.tar.gz
-IPROUTE2_VER = 6.13.0
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/iproute2.html
+IPROUTE2_URL = https://www.kernel.org/pub/linux/utils/net/iproute2/iproute2-6.16.0.tar.gz
+IPROUTE2_VER = 6.16.0
 IPROUTE2_PATH = $(SRC_PATH)/iproute2-$(IPROUTE2_VER)
 
 # Iputils (to contact the internet, technically Curl exists at this point too, but this is simpler)
-IPUTILS_URL = https://github.com/iputils/iputils/releases/download/20240905/iputils-20240905.tar.gz
-IPUTILS_VER = 20240905
+# URL: https://github.com/iputils/iputils (w/o instructions)
+IPUTILS_URL = https://github.com/iputils/iputils/releases/download/20250605/iputils-20250605.tar.gz
+IPUTILS_VER = 20250605
 IPUTILS_PATH = $(SRC_PATH)/iputils-$(IPUTILS_VER)
 
 # Iptables (libxtables only, not using the firewall part yet.)
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/iptables.html
 IPTABLES_URL = https://www.netfilter.org/projects/iptables/files/iptables-1.8.11.tar.xz
 IPTABLES_VER = 1.8.11
 IPTABLES_PATH = $(SRC_PATH)/iptables-$(IPTABLES_VER)
 
 # NetworkManager (you have to connect to the internet somehow, do you?)
-NETWORKMANAGER_URL = https://gitlab.freedesktop.org/NetworkManager/NetworkManager/-/releases/1.52.0/downloads/NetworkManager-1.52.0.tar.xz
-NETWORKMANAGER_VER = 1.52.0
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/basicnet/networkmanager.html
+NETWORKMANAGER_URL = https://gitlab.freedesktop.org/NetworkManager/NetworkManager/-/releases/1.54.0/downloads/NetworkManager-1.54.0.tar.xz
+NETWORKMANAGER_VER = 1.54.0
 NETWORKMANAGER_PATH = $(SRC_PATH)/NetworkManager-$(NETWORKMANAGER_VER)
 
 # Libbpf
-LIBBPF_URL = https://github.com/libbpf/libbpf/archive/refs/tags/v1.5.0.tar.gz
-LIBBPF_VER = 1.5.0
+# URL: https://github.com/libbpf/libbpf (w/o instructions)
+# Referred to by https://www.linuxfromscratch.org/lfs/view/systemd/appendices/dependencies.html
+LIBBPF_URL = https://github.com/libbpf/libbpf/archive/refs/tags/v1.6.2.tar.gz
+LIBBPF_VER = 1.6.2
 LIBBPF_PATH = $(SRC_PATH)/libbpf-$(LIBBPF_VER)
 
 # Libmnl
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/basicnet/libmnl.html
 LIBMNL_URL = https://netfilter.org/projects/libmnl/files/libmnl-1.0.5.tar.bz2
 LIBMNL_VER = 1.0.5
 LIBMNL_PATH = $(SRC_PATH)/libmnl-$(LIBMNL_VER)
 
 # Libidn2
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/libidn2.html
 LIBIDN2_URL = https://ftp.gnu.org/gnu/libidn/libidn2-2.3.8.tar.gz
 LIBIDN2_VER = 2.3.8
 LIBIDN2_PATH = $(SRC_PATH)/libidn2-$(LIBIDN2_VER)
 
 # Libunistring
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/libunistring.html
 LIBUNISTRING_URL = https://ftp.gnu.org/gnu/libunistring/libunistring-1.3.tar.gz
 LIBUNISTRING_VER = 1.3
 LIBUNISTRING_PATH = $(SRC_PATH)/libunistring-$(LIBUNISTRING_VER)
 
 # Libnfnetlink
+# URL: https://www.netfilter.org/pub/libnfnetlink/ (w/o instructions)
 LIBNFNETLINK_URL = https://www.netfilter.org/pub/libnfnetlink/libnfnetlink-1.0.2.tar.bz2
 LIBNFNETLINK_VER = 1.0.2
 LIBNFNETLINK_PATH = $(SRC_PATH)/libnfnetlink-$(LIBNFNETLINK_VER)
 
-# Libpsl
+# Libpsl5.0.
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/basicnet/libpsl.html
 LIBPSL_URL = https://github.com/rockdaboot/libpsl/releases/download/0.21.5/libpsl-0.21.5.tar.gz
 LIBPSL_VER = 0.21.5
 LIBPSL_PATH = $(SRC_PATH)/libpsl-$(LIBPSL_VER)
 
 # Newt
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/newt.html
 NEWT_URL = https://releases.pagure.org/newt/newt-0.52.25.tar.gz
 NEWT_VER = 0.52.25
 NEWT_PATH = $(SRC_PATH)/newt-$(NEWT_VER)
 
 # Libndp
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/basicnet/libndp.html
 LIBNDP_URL = http://libndp.org/files/libndp-1.9.tar.gz
 LIBNDP_VER = 1.9
 LIBNDP_PATH = $(SRC_PATH)/libndp-$(LIBNDP_VER)
 
 # Gnutls
-GNUTLS_URL = https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.9.tar.xz
-GNUTLS_VER = 3.8.9
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/gnutls.html
+GNUTLS_URL = https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.10.tar.xz
+GNUTLS_VER = 3.8.10
 GNUTLS_PATH = $(SRC_PATH)/gnutls-$(GNUTLS_VER)
 
 # Nettle
-NETTLE_URL = https://ftp.gnu.org/gnu/nettle/nettle-3.10.1.tar.gz
-NETTLE_VER = 3.10.1
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/nettle.html
+NETTLE_URL = https://ftp.gnu.org/gnu/nettle/nettle-3.10.2.tar.gz
+NETTLE_VER = 3.10.2
 NETTLE_PATH = $(SRC_PATH)/nettle-$(NETTLE_VER)
 
 # Libtasn1
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/libtasn1.html
 LIBTASN1_URL = https://ftp.gnu.org/gnu/libtasn1/libtasn1-4.20.0.tar.gz
 LIBTASN1_VER = 4.20.0
 LIBTASN1_PATH = $(SRC_PATH)/libtasn1-$(LIBTASN1_VER)
 
 # Libslang
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/slang.html
 SLANG_URL = https://www.jedsoft.org/releases/slang/slang-2.3.3.tar.bz2
 SLANG_VER = 2.3.3
 SLANG_PATH = $(SRC_PATH)/slang-$(SLANG_VER)
 
 # P11-kit
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/p11-kit.html
 P11_KIT_URL = https://github.com/p11-glue/p11-kit/releases/download/0.25.5/p11-kit-0.25.5.tar.xz
 P11_KIT_VER = 0.25.5
 P11_KIT_PATH = $(SRC_PATH)/p11-kit-$(P11_KIT_VER)
 
 # Curl (because we needed libcurl but it also extends Arkana)
-CURL_URL = https://curl.se/download/curl-8.12.1.tar.xz
-CURL_VER = 8.12.1
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/basicnet/curl.html
+CURL_URL = https://curl.se/download/curl-8.15.0.tar.xz
+CURL_VER = 8.15.0
 CURL_PATH = $(SRC_PATH)/curl-$(CURL_VER)
 
-# Ngttp2
-NGHTTP2_URL = https://github.com/nghttp2/nghttp2/releases/download/v1.65.0/nghttp2-1.65.0.tar.xz
-NGHTTP2_VER = 1.65.0
+# Nghttp2
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/basicnet/nghttp2.html
+NGHTTP2_URL = https://github.com/nghttp2/nghttp2/releases/download/v1.66.0/nghttp2-1.66.0.tar.xz
+NGHTTP2_VER = 1.66.0
 NGHTTP2_PATH = $(SRC_PATH)/nghttp2-$(NGHTTP2_VER)
 
 # Jansson
-JANSSON_URL = https://github.com/akheron/jansson/releases/download/v2.14/jansson-2.14.tar.bz2
-JANSSON_VER = 2.14
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/jansson.html
+JANSSON_URL = https://github.com/akheron/jansson/releases/download/v2.14.1/jansson-2.14.1.tar.bz2
+JANSSON_VER = 2.14.1
 JANSSON_PATH = $(SRC_PATH)/jansson-$(JANSSON_VER)
 
 # Flex
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/flex.html
 FLEX_URL = https://github.com/westes/flex/releases/download/v2.6.4/flex-2.6.4.tar.gz
 FLEX_VER = 2.6.4
 FLEX_PATH = $(SRC_PATH)/flex-$(FLEX_VER)
 
 # Libnvme (this may not be needed on all machines)
-LIBNVME_URL = https://github.com/linux-nvme/libnvme/archive/v1.12/libnvme-1.12.tar.gz
-LIBNVME_VER = 1.12
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/libnvme.html
+LIBNVME_URL = https://github.com/linux-nvme/libnvme/archive/v1.15/libnvme-1.15.tar.gz
+LIBNVME_VER = 1.15
 LIBNVME_PATH = $(SRC_PATH)/libnvme-$(LIBNVME_VER)
 
 # Findutils
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter06/findutils.html
 FINDUTILS_URL = https://ftp.gnu.org/gnu/findutils/findutils-4.10.0.tar.xz
 FINDUTILS_VER = 4.10.0
 FINDUTILS_PATH = $(SRC_PATH)/findutils-$(FINDUTILS_VER)
 
 # Diffutils
-DIFFUTILS_URL = https://ftp.gnu.org/gnu/diffutils/diffutils-3.11.tar.gz
-DIFFUTILS_VER = 3.11
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/diffutils.html
+DIFFUTILS_URL = https://ftp.gnu.org/gnu/diffutils/diffutils-3.12.tar.gz
+DIFFUTILS_VER = 3.12
 DIFFUTILS_PATH = $(SRC_PATH)/diffutils-$(DIFFUTILS_VER)
 
 # Sed
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter06/sed.html
 SED_URL = https://ftp.gnu.org/gnu/sed/sed-4.9.tar.gz
 SED_VER = 4.9
 SED_PATH = $(SRC_PATH)/sed-$(SED_VER)
 
 # Grep
-GREP_URL = https://ftp.gnu.org/gnu/grep/grep-3.11.tar.gz
-GREP_VER = 3.11
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter06/grep.html
+GREP_URL = https://ftp.gnu.org/gnu/grep/grep-3.12.tar.gz
+GREP_VER = 3.12
 GREP_PATH = $(SRC_PATH)/grep-$(GREP_VER)
 
 # Gawk
-GAWK_URL = https://ftp.gnu.org/gnu/gawk/gawk-5.3.1.tar.gz
-GAWK_VER = 5.3.1
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter06/gawk.html
+GAWK_URL = https://ftp.gnu.org/gnu/gawk/gawk-5.3.2.tar.gz
+GAWK_VER = 5.3.2
 GAWK_PATH = $(SRC_PATH)/gawk-$(GAWK_VER)
 
 # MPFR
+# URL: https://www.linuxfromscratch.org/~thomas/multilib/chapter08/mpfr.html (ignore multilib instructions)
 MPFR_URL = https://ftp.gnu.org/gnu/mpfr/mpfr-4.2.2.tar.gz
 MPFR_VER = 4.2.2
 MPFR_PATH = $(SRC_PATH)/mpfr-$(MPFR_VER)
 
 # Nano
-NANO_URL = https://www.nano-editor.org/dist/v8/nano-8.3.tar.xz
-NANO_VER = 8.3
+# Why is this in BLFS?
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/nano.html
+NANO_URL = https://www.nano-editor.org/dist/v8/nano-8.6.tar.xz
+NANO_VER = 8.6
 NANO_PATH = $(SRC_PATH)/nano-$(NANO_VER)
 
 # The ironic tool
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter06/tar.html
 TAR_URL = https://ftp.gnu.org/gnu/tar/tar-1.35.tar.gz
 TAR_VER = 1.35
 TAR_PATH = $(SRC_PATH)/tar-$(TAR_VER)
 
 # The Arch user tool
-FASTFETCH_URL = https://github.com/fastfetch-cli/fastfetch/archive/refs/tags/2.39.1.tar.gz
-FASTFETCH_VER = 2.39.1
+# URL: https://github.com/fastfetch-cli/fastfetch (w/o instructions)
+FASTFETCH_URL = https://github.com/fastfetch-cli/fastfetch/archive/refs/tags/2.50.2.tar.gz
+FASTFETCH_VER = 2.50.2
 FASTFETCH_PATH = $(SRC_PATH)/fastfetch-$(FASTFETCH_VER)
 
 # Sudo
-SUDO_URL = https://www.sudo.ws/dist/sudo-1.9.16p2.tar.gz
-SUDO_VER = 1.9.16p2
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/sudo.html
+SUDO_URL = https://www.sudo.ws/dist/sudo-1.9.17p2.tar.gz
+SUDO_VER = 1.9.17p2
 SUDO_PATH = $(SRC_PATH)/sudo-$(SUDO_VER)
 
-# Vim (this changes often!)
-VIM_URL = https://github.com/vim/vim/archive/v9.1.1166/vim-9.1.1166.tar.gz
-VIM_VER = 9.1.1166
+# Vim (rolling release)
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/vim.html
+VIM_URL = https://github.com/vim/vim/archive/v9.1.1629/vim-9.1.1629.tar.gz
+VIM_VER = 9.1.1629
 VIM_PATH = $(SRC_PATH)/vim-$(VIM_VER)
 
 # Rsync
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/basicnet/rsync.html
 RSYNC_URL = https://www.samba.org/ftp/rsync/src/rsync-3.4.1.tar.gz
 RSYNC_VER = 3.4.1
 RSYNC_PATH = $(SRC_PATH)/rsync-$(RSYNC_VER)
 
 # Dosfstools
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/dosfstools.html
 DOSFSTOOLS_URL = https://github.com/dosfstools/dosfstools/releases/download/v4.2/dosfstools-4.2.tar.gz
 DOSFSTOOLS_VER = 4.2
 DOSFSTOOLS_PATH = $(SRC_PATH)/dosfstools-$(DOSFSTOOLS_VER)
 
 # TZDB
+# URL: https://data.iana.org/time-zones/ (w/o instructions)
 TZDB_URL = https://data.iana.org/time-zones/tzdb-latest.tar.lz
 TZDB_VER = 2025b
 TZDB_PATH = $(SRC_PATH)/tzdb-$(TZDB_VER)
 
 # Parted
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/parted.html
 PARTED_URL = https://ftp.gnu.org/gnu/parted/parted-3.6.tar.xz
 PARTED_VER = 3.6
 PARTED_PATH = $(SRC_PATH)/parted-$(PARTED_VER)
 
+# Targets
 all: less procps-ng iproute2 iputils iptables networkmanager libbpf libmnl libidn2 libunistring libnfnetlink libpsl newt libndp gnutls nettle libtasn1 p11-kit slang curl nghttp2 jansson flex libnvme fastfetch findutils sed grep diffutils gawk mpfr nano tar sudo vim rsync dosfstools tzdb parted
-
 
 # Download less
 download-less: .less-obtained
@@ -268,7 +309,7 @@ networkmanager: download-networkmanager .networkmanager-done
 	mkdir -p $(NETWORKMANAGER_PATH)/build && cd $(NETWORKMANAGER_PATH)/build && meson setup .. --prefix=/usr --buildtype=release -D nmtui=true -D ovs=false -D ppp=false -D selinux=false \
 	-D qt=false -D session_tracking=systemd -D modem_manager=false -D introspection=false -D crypto=gnutls && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	echo "[main]" > $(STAGING_PATH)/etc/NetworkManager/NetworkManager.conf
-	echo "plugins=keyfile" >> $(STAGING_PATH)/etc/NetworkManager/NetworkManager.conf
+	echo "plugins=keyfile" >> $(STAGING_PATH)/etc/NetworkManager/NetworkManager.conf && mkdir -p $(STAGING_PATH)/etc/systemd/system/multi-user.target.wants
 	ln -sf /usr/lib/systemd/system/NetworkManager.service $(STAGING_PATH)/etc/systemd/system/multi-user.target.wants/NetworkManager.service
 	touch .networkmanager-done
 
@@ -324,7 +365,7 @@ libunistring: download-libunistring .libunistring-done
 # Download libnfnetlink
 download-libnfnetlink: .libnfnetlink-obtained
 .libnfnetlink-obtained:
-	cd $(SRC_PATH) && wget -O libnfnetlink-$(LIBNFNETLINK_VER).tar.bz2 $(LIBNFNETLINK_URL) && tar xf libnfnetlink-$(LIBNFNETLINK).tar.bz2
+	cd $(SRC_PATH) && wget -O libnfnetlink-$(LIBNFNETLINK_VER).tar.bz2 $(LIBNFNETLINK_URL) && tar xf libnfnetlink-$(LIBNFNETLINK_VER).tar.bz2
 	touch .libnfnetlink-obtained
 
 # Compile libnfnetlink
@@ -641,7 +682,7 @@ download-vim: .vim-obtained
 # Compile vim
 vim: download-vim .vim-done
 .vim-done:
-	cd $(VIM_PATH) && echo '#define SYS_VIMRC_FILE  "/etc/vimrc"' >> src/feature.h && ./configure --prefix=/usr --with-features=huge --enable-gui=no --without-x --disable-libsodium --disable-gpm --with-tlib=ncursesw && \
+	cd $(VIM_PATH) && echo '#define SYS_VIMRC_FILE  "/etc/vimrc"' >> src/feature.h && ./configure --prefix=/usr --with-features=huge --enable-gui=no --without-x --without-wayland --disable-libsodium --disable-gpm --with-tlib=ncursesw && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && ln -snf ../vim/vim91/doc $(STAGING_PATH)/usr/share/doc/vim-$(VIM_VER)
 	touch .vim-done
 
@@ -678,7 +719,7 @@ download-tzdb: .tzdb-obtained
 # Compile tzdb
 tzdb: download-tzdb .tzdb-done
 .tzdb-done:
-	cd $(TZDB_PATH) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(TZDB_PATH) && $(MAKE) CFLAGS="-std=c99" -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .tzdb-done
 
 # Download parted

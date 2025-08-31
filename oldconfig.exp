@@ -2,10 +2,8 @@
 spawn make oldconfig
 set timeout -1
 expect {
-    -re {.*\[Y/n\].*} { send "n\r"; exp_continue }
-    -re {.*\[M/n\].*} { send "n\r"; exp_continue }
-    -re {.*\[Y/M/N\].*} { send "n\r"; exp_continue }
-    -re {.*[0-9]+.*} { send "\r"; exp_continue }
-    -re {.*: $} { send "\r"; exp_continue }
+    -re {.*\[.*[yYnNmM].*\].*} { send "n\r"; exp_continue }
+    -re {.*\[.*[0-9]+.*\].*}   { send "\r"; exp_continue }
+    -re {.*: $}                { send "\r"; exp_continue }
     eof
 }

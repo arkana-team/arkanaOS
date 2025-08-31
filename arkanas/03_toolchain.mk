@@ -4,7 +4,7 @@ THREADS = $(shell nproc)
 
 # Build the Arkana toolchain?
 BUILD_TOOLCHAIN = true
-TOOLCHAIN_TARGETS = gcc-compilers binutils meson ninja make autoconf cmake gc libarchive guile libuv libxml2 libtool python3 perl automake
+TOOLCHAIN_TARGETS = gcc-compilers binutils meson ninja make autoconf cmake gc libarchive guile libuv libxml2 libtool expat python3 perl automake
 
 # Paths used in the build
 SRC_PATH = $(shell realpath ./src)
@@ -12,85 +12,108 @@ STAGING_PATH = $(shell realpath ./staging)
 OUTPUT_PATH = $(shell realpath ./output)
 
 # Binutils
-BINUTILS_URL = https://ftp.gnu.org/gnu/binutils/binutils-2.44.tar.gz
-BINUTILS_VER = 2.44
+# It downloads slowly. Thanks, GNU.
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/binutils.html
+BINUTILS_URL = https://ftp.gnu.org/gnu/binutils/binutils-2.45.tar.gz
+BINUTILS_VER = 2.45
 BINUTILS_PATH = $(SRC_PATH)/binutils-$(BINUTILS_VER)
 
 # GCC (pre-compiled beforehands, install only)
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/gcc.html
 GCC_URL = None 
-GCC_VER = 14.2.0
+GCC_VER = 15.2.0
 GCC_PATH = $(SRC_PATH)/gcc-$(GCC_VER)
 
 # Meson (alternative to GNU Make)
-MESON_URL = https://github.com/mesonbuild/meson/releases/download/1.7.0/meson-1.7.0.tar.gz
-MESON_VER = 1.7.0
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/meson.html
+MESON_URL = https://github.com/mesonbuild/meson/releases/download/1.8.3/meson-1.8.3.tar.gz
+MESON_VER = 1.8.3
 MESON_PATH = $(SRC_PATH)/meson-$(MESON_VER)
 
 # Ninja (used in Meson builds)
-NINJA_URL = https://github.com/ninja-build/ninja/archive/refs/tags/v1.12.1.tar.gz
-NINJA_VER = 1.12.1
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/ninja.html
+NINJA_URL = https://github.com/ninja-build/ninja/archive/refs/tags/v1.13.1.tar.gz
+NINJA_VER = 1.13.1
 NINJA_PATH = $(SRC_PATH)/ninja-$(NINJA_VER)
 
 # Make (the usual)
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter06/make.html
 MAKE_URL = https://ftp.gnu.org/gnu/make/make-4.4.1.tar.gz
 MAKE_VER = 4.4.1
 MAKE_PATH = $(SRC_PATH)/make-$(MAKE_VER)
 
 # Autoconf (extensions for GNU Make)
+# URL: https://ftp.gnu.org/gnu/autoconf/ (w/o instructions)
 AUTOCONF_URL = https://ftp.gnu.org/gnu/autoconf/autoconf-2.72.tar.gz
 AUTOCONF_VER = 2.72
 AUTOCONF_PATH = $(SRC_PATH)/autoconf-$(AUTOCONF_VER)
 
 # CMake (build system generator for Make/Meson)
-CMAKE_URL = https://github.com/Kitware/CMake/releases/download/v3.31.6/cmake-3.31.6.tar.gz
-CMAKE_VER = 3.31.6
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/cmake.html
+CMAKE_URL = https://github.com/Kitware/CMake/releases/download/v4.1.0/cmake-4.1.0.tar.gz
+CMAKE_VER = 4.1.0
 CMAKE_PATH = $(SRC_PATH)/cmake-$(CMAKE_VER)
 
 # GC
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/gc.html
 GC_URL = https://github.com/ivmai/bdwgc/releases/download/v8.2.8/gc-8.2.8.tar.gz
 GC_VER = 8.2.8
 GC_PATH = $(SRC_PATH)/gc-$(GC_VER)
 
 # Libarchive
-LIBARCHIVE_URL = https://github.com/libarchive/libarchive/releases/download/v3.7.8/libarchive-3.7.8.tar.gz
-LIBARCHIVE_VER = 3.7.8
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/libarchive.html
+LIBARCHIVE_URL = https://github.com/libarchive/libarchive/releases/download/v3.8.1/libarchive-3.8.1.tar.gz
+LIBARCHIVE_VER = 3.8.1
 LIBARCHIVE_PATH = $(SRC_PATH)/libarchive-$(LIBARCHIVE_VER)
 
 # Guile
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/guile.html
 GUILE_URL = https://ftp.gnu.org/gnu/guile/guile-3.0.10.tar.gz
 GUILE_VER = 3.0.10
 GUILE_PATH = $(SRC_PATH)/guile-$(GUILE_VER)
 
 # Libuv
-LIBUV_URL = https://dist.libuv.org/dist/v1.50.0/libuv-v1.50.0.tar.gz
-LIBUV_VER = 1.50.0
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/libuv.html
+LIBUV_URL = https://dist.libuv.org/dist/v1.51.0/libuv-v1.51.0.tar.gz
+LIBUV_VER = 1.51.0
 LIBUV_PATH = $(SRC_PATH)/libuv-v$(LIBUV_VER)
 
 # Libxml2
-LIBXML2_URL = https://download.gnome.org/sources/libxml2/2.13/libxml2-2.13.6.tar.xz
-LIBXML2_VER = 2.13.6
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/libxml2.html
+LIBXML2_URL = https://download.gnome.org/sources/libxml2/2.14/libxml2-2.14.5.tar.xz
+LIBXML2_VER = 2.14.5
 LIBXML2_PATH = $(SRC_PATH)/libxml2-$(LIBXML2_VER)
 
 # Libtool
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/libtool.html
 LIBTOOL_URL = https://ftp.gnu.org/gnu/libtool/libtool-2.5.4.tar.gz
 LIBTOOL_VER = 2.5.4
 LIBTOOL_PATH = $(SRC_PATH)/libtool-$(LIBTOOL_VER)
 
+# Expat
+EXPAT_URL = https://github.com/libexpat/libexpat/releases/download/R_2_7_1/expat-2.7.1.tar.gz
+EXPAT_VER = 2.7.1
+EXPAT_PATH = $(SRC_PATH)/expat-$(EXPAT_VER)
+
 # Python3 (dependency of meson)
-PYTHON3_URL = https://www.python.org/ftp/python/3.13.2/Python-3.13.2.tar.xz
-PYTHON3_VER = 3.13.2
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/python3.html
+PYTHON3_URL = https://www.python.org/ftp/python/3.13.7/Python-3.13.7.tar.xz
+PYTHON3_VER = 3.13.7
 PYTHON3_PATH = $(SRC_PATH)/Python-$(PYTHON3_VER)
 
 # Perl (dependency of autoconf)
-PERL_URL = https://www.cpan.org/src/5.0/perl-5.40.1.tar.gz
-PERL_VER = 5.40.1
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/perl.html
+PERL_URL = https://www.cpan.org/src/5.0/perl-5.42.0.tar.gz
+PERL_VER = 5.42.0
 PERL_PATH = $(SRC_PATH)/perl-$(PERL_VER)
 
 # Automake
-AUTOMAKE_URL = https://ftp.gnu.org/gnu/automake/automake-1.17.tar.gz
-AUTOMAKE_VER = 1.17
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/automake.html
+AUTOMAKE_URL = https://ftp.gnu.org/gnu/automake/automake-1.18.1.tar.gz
+AUTOMAKE_VER = 1.18.1
 AUTOMAKE_PATH = $(SRC_PATH)/automake-$(AUTOMAKE_VER)
 
+# Targets
 all:
 	@if [ "$(BUILD_TOOLCHAIN)" = "true" ]; then \
 		make -f arkanas/03_toolchain.mk $(TOOLCHAIN_TARGETS) || exit $$?; \
@@ -260,6 +283,21 @@ libtool: download-libtool .libtool-done
 	cd $(LIBTOOL_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libtool-done
 
+# Download expat
+download-expat: .expat-obtained
+
+.expat-obtained:
+	cd $(SRC_PATH) && wget -O expat-$(EXPAT_VER).tar.gz $(EXPAT_URL) && tar xf expat-$(EXPAT_VER).tar.gz
+	touch .expat-obtained
+
+# Compile expat
+expat: download-expat .expat-done
+
+.expat-done:
+	cd $(EXPAT_PATH) && ./configure --prefix=/usr --disable-static --docdir=/usr/share/doc/expat-$(EXPAT_VER) && $(MAKE) && \
+	$(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .expat-done
+
 # Download python3
 download-python3: .python3-obtained
 .python3-obtained:
@@ -270,7 +308,7 @@ download-python3: .python3-obtained
 python3: download-python3 .python3-done
 .python3-done:
 	cd $(PYTHON3_PATH) && CXX="/usr/bin/g++" ./configure --prefix=/usr --enable-shared --with-system-expat --enable-optimizations && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
-	ln -sf /usr/bin/python3 $(STAGING_PATH)/usr/bin/python && chroot staging python3 -m ensurepip && \
+	ln -sf /usr/bin/python3 $(STAGING_PATH)/usr/bin/python && chroot $(STAGING_PATH) python3 -m ensurepip && \
 	ln -sf /usr/bin/pip $(STAGING_PATH)/usr/bin/pip3
 	touch .python3-done
 
