@@ -172,6 +172,9 @@ read -rs ROOTPASS
 echo "root:$ROOTPASS" | chroot /mnt chpasswd
 
 read -rp "Enter the username of your user: " USERNAME
+mkdir -p "/mnt/home/$USERNAME"
+chown 1000:1000 "/mnt/home/$USERNAME"
+chmod 751 "/mnt/home/$USERNAME"
 chroot /mnt useradd -m "$USERNAME"
 chroot /mnt usermod -aG wheel "$USERNAME"
 echo "Please enter your user password: "

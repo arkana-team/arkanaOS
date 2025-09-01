@@ -11,7 +11,7 @@ OUTPUT_PATH = $(shell realpath ./output)
 
 # Cpio
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/cpio.html
-CPIO_URL = https://ftp.gnu.org/gnu/cpio/cpio-2.15.tar.gz
+CPIO_URL = https://ftpmirror.gnu.org/gnu/cpio/cpio-2.15.tar.gz
 CPIO_VER = 2.15
 CPIO_PATH = $(SRC_PATH)/cpio-$(CPIO_VER)
 
@@ -34,8 +34,8 @@ LIBISOFS_VER = 1.5.6
 LIBISOFS_PATH = $(SRC_PATH)/libisofs-$(LIBISOFS_VER)
 
 # mtools (provides mformat required by libisoburn)
-# URL: https://ftp.gnu.org/gnu/mtools/ (w/o instructions)
-MTOOLS_URL = https://ftp.gnu.org/gnu/mtools/mtools-4.0.49.tar.gz
+# URL: https://ftpmirror.gnu.org/gnu/mtools/ (w/o instructions)
+MTOOLS_URL = https://ftpmirror.gnu.org/gnu/mtools/mtools-4.0.49.tar.gz
 MTOOLS_VER = 4.0.49
 MTOOLS_PATH = $(SRC_PATH)/mtools-$(MTOOLS_VER)
 
@@ -53,7 +53,7 @@ LINUX_PATH = $(SRC_PATH)/linux-$(LINUX_VER)
 
 # GRUB (bootloader)
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/grub-efi.html
-GRUB_URL = https://ftp.gnu.org/gnu/grub/grub-2.12.tar.gz
+GRUB_URL = https://ftpmirror.gnu.org/gnu/grub/grub-2.12.tar.gz
 GRUB_FONT_URL = https://unifoundry.com/pub/unifont/unifont-16.0.01/font-builds/unifont-16.0.01.pcf.gz
 GRUB_VER = 2.12
 GRUB_PATH = $(SRC_PATH)/grub-$(GRUB_VER)
@@ -177,7 +177,9 @@ download-cpio: .cpio-obtained
 cpio: download-cpio .cpio-done
 
 .cpio-done:
-	cd $(CPIO_PATH) && ./configure --prefix=/usr --enable-mt --with-rmt=/usr/lib/rmt && $(MAKE) -j$(THREADS) && \
+	cd $(CPIO_PATH) && sed -e "/^extern int (\*xstat)/s/()/(const char * restrict,  struct stat * restrict)/" -i src/extern.h && \
+	sed -e "/^int (\*xstat)/s/()/(const char * restrict,  struct stat * restrict)/" -i src/global.c && \
+	./configure --prefix=/usr --enable-mt --with-rmt=/usr/lib/rmt && $(MAKE) -j$(THREADS) && \
 	makeinfo --html -o doc/html doc/cpio.texi && \
 	makeinfo --html --no-split -o doc/cpio.html doc/cpio.texi && \
 	makeinfo --plaintext -o doc/cpio.txt doc/cpio.texi && \
@@ -528,6 +530,7 @@ lzo: download-lzo .lzo-done
 download-efibootmgr: .efibootmgr-obtained
 .efibootmgr-obtained:
 	cd $(SRC_PATH) && wget -O efibootmgr-$(EFIBOOTMGR_VER).tar.gz $(EFIBOOTMGR_URL) && tar xf efibootmgr-$(EFIBOOTMGR_VER).tar.gz
+	touch .efibootmgr-obtained
 
 # Compile efibootmgr
 efibootmgr: download-efibootmgr .efibootmgr-done

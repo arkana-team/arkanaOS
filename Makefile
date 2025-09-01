@@ -7,6 +7,9 @@ ifneq ($(shell which ccache 2>/dev/null),)
 	CC := ccache gcc
 	CXX := ccache g++
 	CC.cc := ccache cc
+	CXX.cc := ccache c++
+	CLANG := ccache clang
+	CLANGXX := ccache clang++
 else
 	_ := $(warning ccache is unavailable; build may be slower)
 endif
@@ -16,7 +19,7 @@ ifeq ($(shell test $(GCC_VER) -ge 15; echo $$?), 0)
 	CFLAGS := -std=gnu17  # Must set or the C compiler will hate you. C++ compilers will discard it.
 	_ := $(info note: GCC 15 compatibility mode set)
 endif
-export CFLAGS
+export CFLAGS CC CXX CLANG CLANGXX
 
 # Paths used in the build
 SRC_PATH = $(shell realpath ./src)
@@ -35,7 +38,7 @@ DEPENDENCIES = cargo rustc cmake meson ninja make gcc g++ ld as cc autoconf auto
 
 # Targets
 .PHONY: all
-all: check-deps
+all: arkanas
 
 # Make all arkanas
 .PHONY: arkanas
@@ -44,20 +47,6 @@ arkanas:
 		$(MAKE) -f $$arkana || { echo "fatal: failed to make the $$arkana arkana"; exit 1; } \
 	done
 	$(MAKE) check-libs
-
-# Check dependencies
-.PHONY: check-deps
-.SILENT: check-deps
-check-deps:
-	echo "checking dependencies..."
-	for dep in $(DEPENDENCIES); do \
-		printf "$$dep... "; command -v "$$dep" || { echo "not found"; echo "error: $$dep is required to compile this arkana."; exit 1; } \
-	done
-
-	printf "docbook-xml... "; find /usr/share -name "docbookx.dtd" | head -n1 | grep . || { echo "error: docbook-xml is required to compile this arkana."; exit 1; }
-	printf "docbook-xsl... "; find /usr/share -name "xsl-stylesheets" | head -n1 | grep . || { echo "error: docbook-xsl is required to compile this arkana."; exit 1; }
-	printf "libnvme.so... "; find /usr/lib -name "libnvme.so" | head -n1 | grep . || { echo "error: libnvme.so is required to compile this arkana."; exit 1; }
-	$(MAKE) arkanas
 
 # Check for missing libraries in current packaging
 .PHONY: check-libs
