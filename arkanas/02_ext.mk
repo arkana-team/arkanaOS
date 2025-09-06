@@ -243,8 +243,14 @@ PARTED_URL = https://ftpmirror.gnu.org/gnu/parted/parted-3.6.tar.xz
 PARTED_VER = 3.6
 PARTED_PATH = $(SRC_PATH)/parted-$(PARTED_VER)
 
+# Make-CA (SSL support)
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/make-ca.html
+MAKE_CA_URL = https://github.com/lfs-book/make-ca/archive/v1.16.1/make-ca-1.16.1.tar.gz
+MAKE_CA_VER = 1.16.1
+MAKE_CA_PATH = $(SRC_PATH)/make-ca-$(MAKE_CA_VER)
+
 # Targets
-all: less procps-ng iproute2 iputils iptables networkmanager libbpf libmnl libidn2 libunistring libnfnetlink libpsl newt libndp gnutls nettle libtasn1 p11-kit slang curl nghttp2 jansson flex libnvme fastfetch findutils sed grep diffutils gawk mpfr nano tar sudo vim rsync dosfstools tzdb parted
+all: less procps-ng iproute2 iputils iptables networkmanager libbpf libmnl libidn2 libunistring libnfnetlink libpsl newt libndp gnutls nettle libtasn1 p11-kit slang curl nghttp2 jansson flex libnvme fastfetch findutils sed grep diffutils gawk mpfr nano tar sudo vim rsync dosfstools tzdb parted make-ca
 
 # Download less
 download-less: .less-obtained
@@ -733,3 +739,17 @@ parted: download-parted .parted-done
 .parted-done:
 	cd $(PARTED_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .parted-done
+
+# Download make-ca
+download-make-ca: .make-ca-obtained
+.make-ca-obtained:
+	cd $(SRC_PATH) && wget -O make-ca-$(MAKE_CA_VER).tar.gz $(MAKE_CA_URL) && tar xf make-ca-$(MAKE_CA_VER).tar.gz
+	touch .make-ca-obtained
+
+make-ca: download-make-ca .make-ca-done
+.make-ca-done:
+	cd $(MAKE_CA_PATH) && $(MAKE) DESTDIR=$(STAGING_PATH) install && install -dm755 /etc/ssl/local && \
+	mkdir -p $(STAGING_PATH)/etc/systemd/system/timers.target.wants && ln -sf $(STAGING_PATH)/etc/systemd/system/timers.target.wants/update-pki.timer $(STAGING_PATH)/etc/systemd/system/update-pki.timer && \
+	curl -k -o $(STAGING_PATH)/etc/ssl/ca-bundle.crt https://curl.se/ca/cacert.pem && chmod 644 $(STAGING_PATH)/etc/ssl/ca-bundle.crt && \
+	echo 'export CURL_CA_BUNDLE=/etc/ssl/ca-bundle.crt' >> $(STAGING_PATH)/etc/profile
+	touch .make-ca-done
