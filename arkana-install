@@ -182,9 +182,8 @@ fi
 
 cat >> /mnt/etc/grub.d/40_custom << EOF
 menuentry "$PRETTY_NAME" {
-  linux $KERNEL_PATH root="$BOOTDEV" rw
-  # Insert the correct initramfs here.
-  # initrd /boot/initramfs.img
+  linux $KERNEL_PATH root=$BOOTDEV
+  initrd /boot/initramfs.img
 }
 EOF
 chmod +x /mnt/etc/grub.d/40_custom
@@ -203,7 +202,8 @@ read -rs ROOTPASS
 echo "root:$ROOTPASS" | chroot /mnt chpasswd
 
 read -rp "Enter the username of your user: " USERNAME
-chroot /mnt useradd -m "$USERNAME" -K MAIL_DIR=/dev/null
+echo 'CREATE_MAIL_SPOOL=no' >> /mnt/etc/default/useradd
+chroot /mnt useradd -m "$USERNAME"
 chroot /mnt usermod -aG wheel "$USERNAME"
 echo "Please enter your user password: "
 read -rs USERPASS
