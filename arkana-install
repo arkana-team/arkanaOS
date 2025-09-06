@@ -150,14 +150,45 @@ mount --bind /proc /mnt/proc
 mount --bind /run /mnt/run
 mount --bind /tmp /mnt/tmp
 
-GRUB_MODULES_COMMON="part_msdos part_gpt ext2 normal linux reboot fat chain font"
-
 if [ -e /sys/firmware/efi/efivars ]; then
+  USES_EFI=1
   mount --bind /sys/firmware/efi/efivars /mnt/sys/firmware/efi/efivars
-  chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=arkanaOS --force "$SELDEV"
+  if [ "$BLKDEV_ISPART" == 0 ]; then
+    chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=arkanaOS --force "${SELDEV}1"
+  else
+    chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=arkanaOS --force "${SELDEV}p1"
+  fi
 else
+  USES_EFI=0
   chroot /mnt grub-install --target=i386-pc --force "$SELDEV"
 fi
+
+mkdir -p /mnt/etc/default
+echo 'GRUB_DISABLE_OS_PROBER=false' >> /mnt/etc/default/grub
+
+if [ "$BLKDEV_ISPART" == 0 ]; then
+  BOOTDEV="${SELDEV}2"
+else
+  BOOTDEV="${SELDEV}p2"
+fi
+
+if [ "$USES_EFI" == 0 ]; then
+  GRUBROOT="hd0,msdos1"
+  KERNEL_PATH=/vmlinuz
+else
+  GRUBROOT="hd0,gpt2"
+  KERNEL_PATH=/boot/vmlinuz
+fi
+
+cat >> /mnt/etc/grub.d/40_custom << EOF
+menuentry "$PRETTY_NAME" {
+  linux $KERNEL_PATH root="$BOOTDEV" rw
+  # Insert the correct initramfs here.
+  # initrd /boot/initramfs.img
+}
+EOF
+chmod +x /mnt/etc/grub.d/40_custom
+
 chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
 
 echo "Generating /etc/fstab..."
