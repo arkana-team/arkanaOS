@@ -154,9 +154,9 @@ GRUB_MODULES_COMMON="part_msdos part_gpt ext2 normal linux reboot fat chain font
 
 if [ -e /sys/firmware/efi/efivars ]; then
   mount --bind /sys/firmware/efi/efivars /mnt/sys/firmware/efi/efivars
-  chroot /mnt grub-install --modules="$GRUB_MODULES_COMMON" --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=arkanaOS --force "$SELDEV"
+  chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=arkanaOS --force "$SELDEV"
 else
-  chroot /mnt grub-install --modules="$GRUB_MODULES_COMMON biosdisk" --target=i386-pc --force "$SELDEV"
+  chroot /mnt grub-install --target=i386-pc --force "$SELDEV"
 fi
 chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
 
@@ -172,10 +172,7 @@ read -rs ROOTPASS
 echo "root:$ROOTPASS" | chroot /mnt chpasswd
 
 read -rp "Enter the username of your user: " USERNAME
-mkdir -p "/mnt/home/$USERNAME"
-chown 1000:1000 "/mnt/home/$USERNAME"
-chmod 751 "/mnt/home/$USERNAME"
-chroot /mnt useradd -m "$USERNAME"
+chroot /mnt useradd -m "$USERNAME" -K MAIL_DIR=/dev/null
 chroot /mnt usermod -aG wheel "$USERNAME"
 echo "Please enter your user password: "
 read -rs USERPASS

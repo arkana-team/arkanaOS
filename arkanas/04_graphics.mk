@@ -565,6 +565,7 @@ download-imlib2: .imlib2-obtained
 # Compile imlib2
 imlib2: download-imlib2 .imlib2-done
 .imlib2-done:
+	rm -f $(STAGING_PATH)/usr/lib/libbz2.a
 	cd $(IMLIB2_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .imlib2-done
 
