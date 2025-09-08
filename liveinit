@@ -21,7 +21,7 @@ printf '         Populating devices...\n'
 if mdev -s; then
     printf '\r%b Populated devices\n' "$SYSTEMD_OK"
 else
-    printf '\r%b Failed to populate devices\n' "$SYSTEMD_FAIL"
+    printf '\r%b Unable to populate devices\n' "$SYSTEMD_FAIL"
 fi
 
 # Stop pollution of printk output
@@ -29,7 +29,7 @@ printf '         Configuring kernel printk...\n'
 if echo "1 1 1 1" > /proc/sys/kernel/printk; then
     printf '%b Configured kernel printk\n' "$SYSTEMD_OK"
 else
-    printf '%b Failed to configure kernel printk\n' "$SYSTEMD_FAIL"
+    printf '%b Unable to configure kernel printk\n' "$SYSTEMD_FAIL"
 fi
 
 # Enable kernel modules needed for system startup
@@ -38,30 +38,46 @@ for module in squashfs overlay; do
     if modprobe squashfs; then
         printf '%b Loaded %s module\n' "$SYSTEMD_OK" "$module"
     else
-        printf '%b Failed to load %s module\n' "$SYSTEMD_FAIL" "$module"
+        printf '%b Unable to load %s module or not found\n' "$SYSTEMD_FAIL" "$module"
     fi
 done
 
 # Create working paths for system startup
 printf '         Creating working directories...\n'
-if mkdir -p /mnt/overlay /mnt/squashfs /mnt/newroot /mnt/upper /mnt/work /mnt/cdrom; then
+if mkdir -p /mnt/overlay /mnt/squashfs /mnt/newroot /mnt/upper /mnt/work /mnt/bootdev; then
     printf '%b Created working directories\n' "$SYSTEMD_OK"
 else
-    printf '%b Failed to create working directories\n' "$SYSTEMD_FAIL"
+    printf '%b Unable to create working directories\n' "$SYSTEMD_FAIL"
 fi
 
 # Set up the writable environment
 mount_filesystems() {
-    printf '         Mounting CD-ROM...\n'
-    if ! mount /dev/sr0 /mnt/cdrom; then
-        printf '%b Unable to mount CD-ROM\n' "$SYSTEMD_FAIL"
-        umount -Rl /mnt/cdrom >/dev/null 2>&1
+    printf '         Searching for boot devices...\n'
+    BOOTDEV=""
+    for dev in /sys/class/block/*; do
+        device="/dev/$(basename "$dev")"
+
+        case "$device" in
+            /dev/loop*|/dev/ram*) continue ;;
+        esac
+
+        if mount -o ro -t auto "$device" /mnt/bootdev 2>/dev/null; then
+            if [ -f /mnt/bootdev/boot/rootfs.sfs ]; then
+                printf '%b Found boot device %s\n' "$SYSTEMD_OK" "$device"
+                BOOTDEV="$device"
+                break
+            fi
+            umount /mnt/bootdev >/dev/null 2>&1
+       fi
+    done
+
+    if [ -z "$BOOTDEV" ]; then
+        printf '%b No boot devices found\n' "$SYSTEMD_FAIL"
         return 1
     fi
-    printf '%b Mounted CD-ROM\n' "$SYSTEMD_OK"
 
     printf '         Mounting squashfs filesystem...\n'
-    if ! mount -t squashfs /mnt/cdrom/boot/rootfs.sfs /mnt/squashfs; then
+    if ! mount -t squashfs /mnt/bootdev/boot/rootfs.sfs /mnt/squashfs; then
         printf '%b Unable to mount filesystem\n' "$SYSTEMD_FAIL"
         umount -Rl /mnt/squashfs >/dev/null 2>&1
         return 1
