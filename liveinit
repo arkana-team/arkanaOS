@@ -57,10 +57,8 @@ mount_filesystems() {
     for dev in /sys/class/block/*; do
         device="/dev/$(basename "$dev")"
 
-        case "$device" in
-            /dev/loop*|/dev/ram*) continue ;;
-        esac
-
+        # Ventoy is not compatible. LFS does not know how to use Ventoy, and so does Arkana
+        # We tried. There are no special device nodes or kernel parameters to point us to how to start it up past initramfs.
         if mount -o ro -t auto "$device" /mnt/bootdev 2>/dev/null; then
             if [ -f /mnt/bootdev/boot/rootfs.sfs ]; then
                 printf '%b Found boot device %s\n' "$SYSTEMD_OK" "$device"

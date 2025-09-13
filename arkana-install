@@ -154,9 +154,9 @@ if [ -e /sys/firmware/efi/efivars ]; then
   USES_EFI=1
   mount --bind /sys/firmware/efi/efivars /mnt/sys/firmware/efi/efivars
   if [ "$BLKDEV_ISPART" == 0 ]; then
-    chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=arkanaOS --force "${SELDEV}1"
+    chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$PRETTY_NAME" --force "${SELDEV}1"
   else
-    chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=arkanaOS --force "${SELDEV}p1"
+    chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$PRETTY_NAME" --force "${SELDEV}p1"
   fi
 else
   USES_EFI=0
@@ -173,10 +173,8 @@ else
 fi
 
 if [ "$USES_EFI" == 0 ]; then
-  GRUBROOT="hd0,msdos1"
   KERNEL_PATH=/vmlinuz
 else
-  GRUBROOT="hd0,gpt2"
   KERNEL_PATH=/boot/vmlinuz
 fi
 
