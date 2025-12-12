@@ -3,8 +3,8 @@
 <h1 align="center">arkanaOS Source Files</h1>
 <p>This repository contains everything you'll need to compile our project.</p>
 
-## Note
-The distro is technically in an operational state, but it's not currently possible to confirm without burning arkanaOS to a DVD.
+> [!NOTE]
+> The distro is technically in an operational state, but it's not currently possible to confirm without burning arkanaOS to a DVD.
 
 ## Cloning and Building
 To build the project, run the following commands:
