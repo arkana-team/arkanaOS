@@ -2,6 +2,9 @@ FROM archlinux:latest
 
 ENV PACMAN_NOCONFIRM=1
 
+# If set to 1, the builder won't exit on success, and you'll be able to make further changes.
+ENV ARKANA_NO_SUCCESSFUL_EXIT=1
+
 RUN pacman -Syu --noconfirm && \
     pacman -S --noconfirm \
         base-devel \
@@ -103,5 +106,7 @@ if [ $ret -eq 130 ]; then \
     exec bash; \
 elif [ $ret -ne 0 ]; then \
     echo -ne '\n*** BUILD FAILED — ENTERING DEBUGGING SHELL ***\nThe build process encountered an error and cannot continue.\nFix any errors and run `sudo make` again\nCAUTION: Exiting this shell will cause the build progress to be lost!\n\n'; \
+    exec bash; \
+elif [ ${ARKANA_NO_SUCCESSFUL_EXIT:-0} -eq 1 ]; then \
     exec bash; \
 fi"]
