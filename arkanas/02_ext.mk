@@ -8,8 +8,8 @@ STAGING_PATH = $(shell realpath ./staging)
 OUTPUT_PATH = $(shell realpath ./output)
 
 # Less
-# URL: https://ftpmirror.gnu.org/gnu/less/ (w/o instructions)
-LESS_URL = https://ftpmirror.gnu.org/gnu/less/less-679.tar.gz
+# URL: https://mirrors.ocf.berkeley.edu/gnu/less/ (w/o instructions)
+LESS_URL = https://mirrors.ocf.berkeley.edu/gnu/less/less-679.tar.gz
 LESS_VER = 679
 LESS_PATH = $(SRC_PATH)/less-$(LESS_VER)
 
@@ -58,13 +58,13 @@ LIBMNL_PATH = $(SRC_PATH)/libmnl-$(LIBMNL_VER)
 
 # Libidn2
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/libidn2.html
-LIBIDN2_URL = https://ftpmirror.gnu.org/gnu/libidn/libidn2-2.3.8.tar.gz
+LIBIDN2_URL = https://mirrors.ocf.berkeley.edu/gnu/libidn/libidn2-2.3.8.tar.gz
 LIBIDN2_VER = 2.3.8
 LIBIDN2_PATH = $(SRC_PATH)/libidn2-$(LIBIDN2_VER)
 
 # Libunistring
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/libunistring.html
-LIBUNISTRING_URL = https://ftpmirror.gnu.org/gnu/libunistring/libunistring-1.3.tar.gz
+LIBUNISTRING_URL = https://mirrors.ocf.berkeley.edu/gnu/libunistring/libunistring-1.3.tar.gz
 LIBUNISTRING_VER = 1.3
 LIBUNISTRING_PATH = $(SRC_PATH)/libunistring-$(LIBUNISTRING_VER)
 
@@ -100,13 +100,13 @@ GNUTLS_PATH = $(SRC_PATH)/gnutls-$(GNUTLS_VER)
 
 # Nettle
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/nettle.html
-NETTLE_URL = https://ftpmirror.gnu.org/gnu/nettle/nettle-3.10.2.tar.gz
+NETTLE_URL = https://mirrors.ocf.berkeley.edu/gnu/nettle/nettle-3.10.2.tar.gz
 NETTLE_VER = 3.10.2
 NETTLE_PATH = $(SRC_PATH)/nettle-$(NETTLE_VER)
 
 # Libtasn1
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/libtasn1.html
-LIBTASN1_URL = https://ftpmirror.gnu.org/gnu/libtasn1/libtasn1-4.20.0.tar.gz
+LIBTASN1_URL = https://mirrors.ocf.berkeley.edu/gnu/libtasn1/libtasn1-4.20.0.tar.gz
 LIBTASN1_VER = 4.20.0
 LIBTASN1_PATH = $(SRC_PATH)/libtasn1-$(LIBTASN1_VER)
 
@@ -154,37 +154,37 @@ LIBNVME_PATH = $(SRC_PATH)/libnvme-$(LIBNVME_VER)
 
 # Findutils
 # URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter06/findutils.html
-FINDUTILS_URL = https://ftpmirror.gnu.org/gnu/findutils/findutils-4.10.0.tar.xz
+FINDUTILS_URL = https://mirrors.ocf.berkeley.edu/gnu/findutils/findutils-4.10.0.tar.xz
 FINDUTILS_VER = 4.10.0
 FINDUTILS_PATH = $(SRC_PATH)/findutils-$(FINDUTILS_VER)
 
 # Diffutils
 # URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/diffutils.html
-DIFFUTILS_URL = https://ftpmirror.gnu.org/gnu/diffutils/diffutils-3.12.tar.gz
+DIFFUTILS_URL = https://mirrors.ocf.berkeley.edu/gnu/diffutils/diffutils-3.12.tar.gz
 DIFFUTILS_VER = 3.12
 DIFFUTILS_PATH = $(SRC_PATH)/diffutils-$(DIFFUTILS_VER)
 
 # Sed
 # URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter06/sed.html
-SED_URL = https://ftpmirror.gnu.org/gnu/sed/sed-4.9.tar.gz
+SED_URL = https://mirrors.ocf.berkeley.edu/gnu/sed/sed-4.9.tar.gz
 SED_VER = 4.9
 SED_PATH = $(SRC_PATH)/sed-$(SED_VER)
 
 # Grep
 # URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter06/grep.html
-GREP_URL = https://ftpmirror.gnu.org/gnu/grep/grep-3.12.tar.gz
+GREP_URL = https://mirrors.ocf.berkeley.edu/gnu/grep/grep-3.12.tar.gz
 GREP_VER = 3.12
 GREP_PATH = $(SRC_PATH)/grep-$(GREP_VER)
 
 # Gawk
 # URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter06/gawk.html
-GAWK_URL = https://ftpmirror.gnu.org/gnu/gawk/gawk-5.3.2.tar.gz
+GAWK_URL = https://mirrors.ocf.berkeley.edu/gnu/gawk/gawk-5.3.2.tar.gz
 GAWK_VER = 5.3.2
 GAWK_PATH = $(SRC_PATH)/gawk-$(GAWK_VER)
 
 # MPFR
 # URL: https://www.linuxfromscratch.org/~thomas/multilib/chapter08/mpfr.html (ignore multilib instructions)
-MPFR_URL = https://ftpmirror.gnu.org/gnu/mpfr/mpfr-4.2.2.tar.gz
+MPFR_URL = https://mirrors.ocf.berkeley.edu/gnu/mpfr/mpfr-4.2.2.tar.gz
 MPFR_VER = 4.2.2
 MPFR_PATH = $(SRC_PATH)/mpfr-$(MPFR_VER)
 
@@ -197,7 +197,7 @@ NANO_PATH = $(SRC_PATH)/nano-$(NANO_VER)
 
 # The ironic tool
 # URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter06/tar.html
-TAR_URL = https://ftpmirror.gnu.org/gnu/tar/tar-1.35.tar.gz
+TAR_URL = https://mirrors.ocf.berkeley.edu/gnu/tar/tar-1.35.tar.gz
 TAR_VER = 1.35
 TAR_PATH = $(SRC_PATH)/tar-$(TAR_VER)
 
@@ -234,12 +234,12 @@ DOSFSTOOLS_PATH = $(SRC_PATH)/dosfstools-$(DOSFSTOOLS_VER)
 # TZDB
 # URL: https://data.iana.org/time-zones/ (w/o instructions)
 TZDB_URL = https://data.iana.org/time-zones/tzdb-latest.tar.lz
-TZDB_VER = 2025b
+TZDB_VER = 2025c
 TZDB_PATH = $(SRC_PATH)/tzdb-$(TZDB_VER)
 
 # Parted
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/parted.html
-PARTED_URL = https://ftpmirror.gnu.org/gnu/parted/parted-3.6.tar.xz
+PARTED_URL = https://mirrors.ocf.berkeley.edu/gnu/parted/parted-3.6.tar.xz
 PARTED_VER = 3.6
 PARTED_PATH = $(SRC_PATH)/parted-$(PARTED_VER)
 

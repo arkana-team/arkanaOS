@@ -11,7 +11,8 @@ OUTPUT_PATH = $(shell realpath ./output)
 
 # Cpio
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/cpio.html
-CPIO_URL = https://ftpmirror.gnu.org/gnu/cpio/cpio-2.15.tar.gz
+CPIO_URL = https://mirrors.ocf.berkeley.edu/gnu/cpio/cpio-2.15.tar.gz
+CPIO_FALLBACK_URL = https://ftp.gnu.org/gnu/cpio/cpio-2.15.tar.gz
 CPIO_VER = 2.15
 CPIO_PATH = $(SRC_PATH)/cpio-$(CPIO_VER)
 
@@ -34,8 +35,9 @@ LIBISOFS_VER = 1.5.6
 LIBISOFS_PATH = $(SRC_PATH)/libisofs-$(LIBISOFS_VER)
 
 # mtools (provides mformat required by libisoburn)
-# URL: https://ftpmirror.gnu.org/gnu/mtools/ (w/o instructions)
-MTOOLS_URL = https://ftpmirror.gnu.org/gnu/mtools/mtools-4.0.49.tar.gz
+# URL: https://mirrors.ocf.berkeley.edu/gnu/mtools/ (w/o instructions)
+MTOOLS_URL = https://mirrors.ocf.berkeley.edu/gnu/mtools/mtools-4.0.49.tar.gz
+MTOOLS_FALLBACK_URL = https://ftp.gnu.org/gnu/mtools/mtools-4.0.49.tar.gz
 MTOOLS_VER = 4.0.49
 MTOOLS_PATH = $(SRC_PATH)/mtools-$(MTOOLS_VER)
 
@@ -47,13 +49,14 @@ BUSYBOX_PATH = $(SRC_PATH)/busybox-$(BUSYBOX_VER)
 
 # Linux kernel
 # URL: https://kernel.org/ (w/o instructions as LFS builds a rootfs)
-LINUX_URL = https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.16.3.tar.gz
-LINUX_VER = 6.16.3
+LINUX_URL = https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.17.6.tar.gz
+LINUX_VER = 6.17.6
 LINUX_PATH = $(SRC_PATH)/linux-$(LINUX_VER)
 
 # GRUB (bootloader)
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/grub-efi.html
-GRUB_URL = https://ftpmirror.gnu.org/gnu/grub/grub-2.12.tar.gz
+GRUB_URL = https://mirrors.ocf.berkeley.edu/gnu/grub/grub-2.12.tar.gz
+GRUB_FALLBACK_URL = https://ftp.gnu.org/gnu/grub/grub-2.12.tar.gz
 GRUB_FONT_URL = https://unifoundry.com/pub/unifont/unifont-16.0.01/font-builds/unifont-16.0.01.pcf.gz
 GRUB_VER = 2.12
 GRUB_PATH = $(SRC_PATH)/grub-$(GRUB_VER)
@@ -96,8 +99,8 @@ BROTLI_PATH = $(SRC_PATH)/brotli-$(BROTLI_VER)
 
 # PCRE2
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/pcre2.html
-PCRE2_URL = https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.45/pcre2-10.45.tar.bz2
-PCRE2_VER = 10.45
+PCRE2_URL = https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.47/pcre2-10.47.tar.bz2
+PCRE2_VER = 10.47
 PCRE2_PATH = $(SRC_PATH)/pcre2-$(PCRE2_VER)
 
 # Cairo
@@ -145,8 +148,8 @@ LZO_PATH = $(SRC_PATH)/lzo-$(LZO_VER)
 
 # squashfs-tools
 # URL: https://ftp.debian.org/debian/pool/main/s/squashfs-tools/ (has source code)
-SQUASHFS_TOOLS_URL = http://ftp.debian.org/debian/pool/main/s/squashfs-tools/squashfs-tools_4.7.2.orig.tar.gz
-SQUASHFS_TOOLS_VER = 4.7.2
+SQUASHFS_TOOLS_URL = http://ftp.debian.org/debian/pool/main/s/squashfs-tools/squashfs-tools_4.7.4.orig.tar.gz
+SQUASHFS_TOOLS_VER = 4.7.4
 SQUASHFS_TOOLS_PATH = $(SRC_PATH)/squashfs-tools-$(SQUASHFS_TOOLS_VER)
 
 # Efibootmgr (GRUB for EFI needs it)
@@ -170,7 +173,7 @@ build: cpio busybox linux grub freetype harfbuzz glib libffi elfutils brotli pcr
 download-cpio: .cpio-obtained
 
 .cpio-obtained:
-	cd $(SRC_PATH) && wget -O cpio-$(CPIO_VER).tar.gz $(CPIO_URL) && tar xf cpio-$(CPIO_VER).tar.gz
+	cd $(SRC_PATH) && ( wget -O cpio-$(CPIO_VER).tar.gz $(CPIO_URL) || wget -O cpio-$(CPIO_VER).tar.gz $(CPIO_FALLBACK_URL) ) && tar xf cpio-$(CPIO_VER).tar.gz
 	touch .cpio-obtained
 
 # Compile cpio
@@ -235,7 +238,7 @@ libisofs: download-libisofs .libisofs-done
 download-mtools: .mtools-obtained
 
 .mtools-obtained:
-	cd $(SRC_PATH) && wget -O mtools-$(MTOOLS_VER).tar.gz $(MTOOLS_URL) && tar xf mtools-$(MTOOLS_VER).tar.gz
+	cd $(SRC_PATH) && ( wget -O mtools-$(MTOOLS_VER).tar.gz $(MTOOLS_URL) || wget -O mtools-$(MTOOLS_VER).tar.gz $(MTOOLS_FALLBACK_URL) ) && tar xf mtools-$(MTOOLS_VER).tar.gz
 	touch .mtools-obtained
 
 # Compile mtools
@@ -272,7 +275,8 @@ download-linux: .linux-obtained
 linux: download-linux .linux-done
 
 .linux-done:
-	$(MAKE) -C $(LINUX_PATH) mrproper && cp linux.config $(LINUX_PATH)/.config && cd $(LINUX_PATH) && expect ../../oldconfig.exp && \
+	# Linus, you've fucked with the SBAT file config and my builder broke!
+	$(MAKE) -C $(LINUX_PATH) mrproper && cp linux.config $(LINUX_PATH)/.config && cd $(LINUX_PATH) && $(MAKE) olddefconfig && \
 	$(MAKE) -j$(THREADS) KBUILD_BUILD_HOST="arkana" KBUILD_BUILD_USER="arkana" all && cp arch/x86/boot/bzImage $(STAGING_PATH)/boot/vmlinuz
 	touch .linux-done
 
@@ -280,7 +284,7 @@ linux: download-linux .linux-done
 download-grub: .grub-obtained
 
 .grub-obtained:
-	cd $(SRC_PATH) && wget -O grub-$(GRUB_VER).tar.gz $(GRUB_URL) && tar xf grub-$(GRUB_VER).tar.gz && \
+	cd $(SRC_PATH) && ( wget -O grub-$(GRUB_VER).tar.gz $(GRUB_URL) || wget -O grub-$(GRUB_VER).tar.gz $(GRUB_FALLBACK_URL) ) && tar xf grub-$(GRUB_VER).tar.gz && \
 	wget -O unifont-16.0.01.pcf.gz $(GRUB_FONT_URL)
 	touch .grub-obtained
 
@@ -292,7 +296,7 @@ grub: download-grub .grub-done
 	./configure --prefix=/usr --sysconfdir=/etc --disable-efiemu --with-platform=efi \
 	--target=x86_64 --disable-werror && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 
-	cd $(GRUB_PATH) && make clean && ./configure --prefix=/usr --sysconfdir=/etc --disable-efiemu --with-platform=pc \
+	cd $(GRUB_PATH) && $(MAKE) clean && ./configure --prefix=/usr --sysconfdir=/etc --disable-efiemu --with-platform=pc \
 	--target=i386 --disable-werror && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
 	mv $(STAGING_PATH)/etc/bash_completion.d/grub $(STAGING_PATH)/usr/share/bash-completion/completions
 
@@ -576,9 +580,12 @@ iso:
 	ln -sf /usr/lib/p11-kit/trust-extract-compat $(STAGING_PATH)/usr/bin/update-ca-certificates
 
 	chroot $(STAGING_PATH) fc-cache -fv || true
+	rm -f $(STAGING_PATH)/etc/ld.so.cache || true
+	ln -sf /dev/null $(STAGING_PATH)/etc/ld.so.cache || true
+	ldconfig || true
 
 	find $(STAGING_PATH) \( -name "*.a" -o -name "*.la" \) -delete
-	mksquashfs $(STAGING_PATH) $(ISO_STAGING_PATH)/boot/rootfs.sfs -noappend || true
+	mksquashfs $(STAGING_PATH) $(ISO_STAGING_PATH)/boot/rootfs.sfs -comp zstd -Xcompression-level 15 -b 1M -noappend || true
 	cp $(LINUX_PATH)/arch/x86/boot/bzImage $(ISO_STAGING_PATH)/boot/vmlinuz
 
 	echo 'set timeout=5' > $(ISO_STAGING_PATH)/boot/grub/grub.cfg

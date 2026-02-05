@@ -10,7 +10,7 @@ OUTPUT_PATH = $(shell realpath ./output)
 # Package variables
 # Glibc
 # URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter05/glibc.html
-GLIBC_URL = https://ftpmirror.gnu.org/gnu/glibc/glibc-2.42.tar.gz
+GLIBC_URL = https://mirrors.ocf.berkeley.edu/gnu/glibc/glibc-2.42.tar.gz
 GLIBC_VER = 2.42
 GLIBC_PATH = $(SRC_PATH)/glibc-$(GLIBC_VER)
 
@@ -22,7 +22,7 @@ SYSTEMD_PATH = $(SRC_PATH)/systemd-$(SYSTEMD_VER)
 
 # Coreutils
 # URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter06/coreutils.html
-COREUTILS_URL = https://ftpmirror.gnu.org/gnu/coreutils/coreutils-9.7.tar.gz
+COREUTILS_URL = https://mirrors.ocf.berkeley.edu/gnu/coreutils/coreutils-9.7.tar.gz
 COREUTILS_VER = 9.7
 COREUTILS_PATH = $(SRC_PATH)/coreutils-$(COREUTILS_VER)
 
@@ -34,7 +34,7 @@ UTIL_LINUX_PATH = $(SRC_PATH)/util-linux-$(UTIL_LINUX_VER)
 
 # Bash
 # URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter06/bash.html
-BASH_URL = https://ftpmirror.gnu.org/gnu/bash/bash-5.3.tar.gz
+BASH_URL = https://mirrors.ocf.berkeley.edu/gnu/bash/bash-5.3.tar.gz
 BASH_VER = 5.3
 BASH_PATH = $(SRC_PATH)/bash-$(BASH_VER)
 
@@ -59,13 +59,13 @@ E2FSPROGS_PATH = $(SRC_PATH)/e2fsprogs-$(E2FSPROGS_VER)
 # Library variables
 # GCC (libstdc++ and libgcc_s)
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/gcc.html
-GCC_URL = https://ftpmirror.gnu.org/gnu/gcc/gcc-15.2.0/gcc-15.2.0.tar.gz
+GCC_URL = https://mirrors.ocf.berkeley.edu/gnu/gcc/gcc-15.2.0/gcc-15.2.0.tar.gz
 GCC_VER = 15.2.0
 GCC_PATH = $(SRC_PATH)/gcc-$(GCC_VER)
 
 # Ncurses
 # URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter06/ncurses.html
-NCURSES_URL = https://ftpmirror.gnu.org/gnu/ncurses/ncurses-6.5.tar.gz
+NCURSES_URL = https://mirrors.ocf.berkeley.edu/gnu/ncurses/ncurses-6.5.tar.gz
 NCURSES_VER = 6.5
 NCURSES_PATH = $(SRC_PATH)/ncurses-$(NCURSES_VER)
 
@@ -89,7 +89,7 @@ LIBSECCOMP_PATH = $(SRC_PATH)/libseccomp-$(LIBSECCOMP_VER)
 
 # GMP
 # URL: https://www.linuxfromscratch.org/~thomas/multilib-systemd/chapter08/gmp.html (ignore multilib instructions)
-GMP_URL = https://ftpmirror.gnu.org/gnu/gmp/gmp-6.3.0.tar.gz
+GMP_URL = https://mirrors.ocf.berkeley.edu/gnu/gmp/gmp-6.3.0.tar.gz
 GMP_VER = 6.3.0
 GMP_PATH = $(SRC_PATH)/gmp-$(GMP_VER)
 
@@ -165,7 +165,7 @@ LIBGPG_ERROR_PATH = $(SRC_PATH)/libgpg-error-$(LIBGPG_ERROR_VER)
 
 # Readline
 # URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/readline.html
-READLINE_URL = https://ftpmirror.gnu.org/gnu/readline/readline-8.3.tar.gz
+READLINE_URL = https://mirrors.ocf.berkeley.edu/gnu/readline/readline-8.3.tar.gz
 READLINE_VER = 8.3
 READLINE_PATH = $(SRC_PATH)/readline-$(READLINE_VER)
 
@@ -219,7 +219,7 @@ LZ4_PATH = $(SRC_PATH)/lz4-$(LZ4_VER)
 
 # Gzip
 # URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter06/gzip.html
-GZIP_URL = https://ftpmirror.gnu.org/gnu/gzip/gzip-1.14.tar.gz
+GZIP_URL = https://mirrors.ocf.berkeley.edu/gnu/gzip/gzip-1.14.tar.gz
 GZIP_VER = 1.14
 GZIP_PATH = $(SRC_PATH)/gzip-$(GZIP_VER)
 
@@ -249,9 +249,8 @@ LIBNSL_PATH = $(SRC_PATH)/libnsl-$(LIBNSL_VER)
 
 # Libtirpc
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/basicnet/libtirpc.html
-LIBTIRPC_URL = https://downloads.sourceforge.net/libtirpc/libtirpc-1.3.6.tar.bz2
-LIBTIRPC_PATCH_URL = https://www.linuxfromscratch.org/patches/blfs/svn/libtirpc-1.3.6-gcc15_fixes-1.patch
-LIBTIRPC_VER = 1.3.6
+LIBTIRPC_URL = https://downloads.sourceforge.net/libtirpc/libtirpc-1.3.7.tar.bz2
+LIBTIRPC_VER = 1.3.7
 LIBTIRPC_PATH = $(SRC_PATH)/libtirpc-$(LIBTIRPC_VER)
 
 # Keyutils
@@ -539,7 +538,7 @@ libcap: download-libcap .libcap-done
 
 .libcap-done:
 	cd $(LIBCAP_PATH) && $(MAKE) -j$(THREADS) prefix=/usr lib=lib && $(MAKE) prefix=$(STAGING_PATH)/usr lib=lib install
-	cd $(LIBCAP_PATH) && $(MAKE) -j$(THREADS) -C pam_cap && install -v -m755 pam_cap/pam_cap.so $(STAGING_PATH)/usr/lib/security && \
+	cd $(LIBCAP_PATH) && $(MAKE) -j$(THREADS) -C pam_cap && mkdir -p $(STAGING_PATH)/etc/security && install -v -m755 pam_cap/pam_cap.so $(STAGING_PATH)/usr/lib/security && \
 	install -v -m644 pam_cap/capability.conf $(STAGING_PATH)/etc/security
 	touch .libcap-done
 
@@ -607,7 +606,7 @@ openssl: download-openssl .openssl-done
 
 .openssl-done:
 	cd $(OPENSSL_PATH) && ./config --prefix=/usr --openssldir=/etc/ssl --libdir=lib shared zlib-dynamic && \
-	$(MAKE) -j$(THREADS) && $(MAKE) MANSUFFIX=ssl DESTDIR=$(STAGING_PATH) install
+	$(MAKE) -j$(THREADS) && $(MAKE) MANSUFFIX=ssl DESTDIR=$(STAGING_PATH) PATH=$$PATH:/usr/bin/core_perl/ install
 	touch .openssl-done
 
 # Download Linux-PAM
@@ -1079,8 +1078,8 @@ download-dbus: .dbus-obtained
 dbus: download-dbus .dbus-done
 .dbus-done:
 	mkdir -p $(DBUS_PATH)/build && cd $(DBUS_PATH)/build && meson setup --prefix=/usr --buildtype=release --wrap-mode=nofallback .. && ninja && \
-	DESTDIR=$(STAGING_PATH) ninja install && chown 0:18 $(STAGING_PATH)/usr/lib/dbus-daemon-launch-helper && \
-	chmod 4750 $(STAGING_PATH)/usr/lib/dbus-daemon-launch-helper && if [ -e $(STAGING_PATH)/usr/share/doc/dbus ]; then rm -rf $(STAGING_PATH)/usr/share/doc/dbus-$(DBUS_VER) && \
+	DESTDIR=$(STAGING_PATH) ninja install && chown 0:18 $(STAGING_PATH)/usr/lib/dbus-daemon-launch-helper || true && \
+	chmod 4750 $(STAGING_PATH)/usr/lib/dbus-daemon-launch-helper || true && if [ -e $(STAGING_PATH)/usr/share/doc/dbus ]; then rm -rf $(STAGING_PATH)/usr/share/doc/dbus-$(DBUS_VER) && \
 	mv $(STAGING_PATH)/usr/share/doc/dbus{,-$(DBUS_VER)}; fi && rm -rf $(STAGING_PATH)/usr/bin/dbus-launch
 	touch .dbus-done
 

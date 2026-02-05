@@ -14,7 +14,7 @@ OUTPUT_PATH = $(shell realpath ./output)
 # Binutils
 # It downloads slowly. Thanks, GNU.
 # URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/binutils.html
-BINUTILS_URL = https://ftpmirror.gnu.org/gnu/binutils/binutils-2.45.tar.gz
+BINUTILS_URL = https://mirrors.ocf.berkeley.edu/gnu/binutils/binutils-2.45.tar.gz
 BINUTILS_VER = 2.45
 BINUTILS_PATH = $(SRC_PATH)/binutils-$(BINUTILS_VER)
 
@@ -38,20 +38,20 @@ NINJA_PATH = $(SRC_PATH)/ninja-$(NINJA_VER)
 
 # Make (the usual)
 # URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter06/make.html
-MAKE_URL = https://ftpmirror.gnu.org/gnu/make/make-4.4.1.tar.gz
+MAKE_URL = https://mirrors.ocf.berkeley.edu/gnu/make/make-4.4.1.tar.gz
 MAKE_VER = 4.4.1
 MAKE_PATH = $(SRC_PATH)/make-$(MAKE_VER)
 
 # Autoconf (extensions for GNU Make)
-# URL: https://ftpmirror.gnu.org/gnu/autoconf/ (w/o instructions)
-AUTOCONF_URL = https://ftpmirror.gnu.org/gnu/autoconf/autoconf-2.72.tar.gz
+# URL: https://mirrors.ocf.berkeley.edu/gnu/autoconf/ (w/o instructions)
+AUTOCONF_URL = https://mirrors.ocf.berkeley.edu/gnu/autoconf/autoconf-2.72.tar.gz
 AUTOCONF_VER = 2.72
 AUTOCONF_PATH = $(SRC_PATH)/autoconf-$(AUTOCONF_VER)
 
 # CMake (build system generator for Make/Meson)
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/cmake.html
-CMAKE_URL = https://github.com/Kitware/CMake/releases/download/v4.1.0/cmake-4.1.0.tar.gz
-CMAKE_VER = 4.1.0
+CMAKE_URL = https://github.com/Kitware/CMake/releases/download/v4.2.3/cmake-4.2.3.tar.gz
+CMAKE_VER = 4.2.3
 CMAKE_PATH = $(SRC_PATH)/cmake-$(CMAKE_VER)
 
 # GC
@@ -68,7 +68,7 @@ LIBARCHIVE_PATH = $(SRC_PATH)/libarchive-$(LIBARCHIVE_VER)
 
 # Guile
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/guile.html
-GUILE_URL = https://ftpmirror.gnu.org/gnu/guile/guile-3.0.10.tar.gz
+GUILE_URL = https://mirrors.ocf.berkeley.edu/gnu/guile/guile-3.0.10.tar.gz
 GUILE_VER = 3.0.10
 GUILE_PATH = $(SRC_PATH)/guile-$(GUILE_VER)
 
@@ -86,7 +86,7 @@ LIBXML2_PATH = $(SRC_PATH)/libxml2-$(LIBXML2_VER)
 
 # Libtool
 # URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/libtool.html
-LIBTOOL_URL = https://ftpmirror.gnu.org/gnu/libtool/libtool-2.5.4.tar.gz
+LIBTOOL_URL = https://mirrors.ocf.berkeley.edu/gnu/libtool/libtool-2.5.4.tar.gz
 LIBTOOL_VER = 2.5.4
 LIBTOOL_PATH = $(SRC_PATH)/libtool-$(LIBTOOL_VER)
 
@@ -109,7 +109,7 @@ PERL_PATH = $(SRC_PATH)/perl-$(PERL_VER)
 
 # Automake
 # URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/automake.html
-AUTOMAKE_URL = https://ftpmirror.gnu.org/gnu/automake/automake-1.18.1.tar.gz
+AUTOMAKE_URL = https://mirrors.ocf.berkeley.edu/gnu/automake/automake-1.18.1.tar.gz
 AUTOMAKE_VER = 1.18.1
 AUTOMAKE_PATH = $(SRC_PATH)/automake-$(AUTOMAKE_VER)
 
@@ -308,8 +308,8 @@ download-python3: .python3-obtained
 python3: download-python3 .python3-done
 .python3-done:
 	cd $(PYTHON3_PATH) && CXX="/usr/bin/g++" ./configure --prefix=/usr --enable-shared --with-system-expat --enable-optimizations && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
-	ln -sf /usr/bin/python3 $(STAGING_PATH)/usr/bin/python && chroot $(STAGING_PATH) python3 -m ensurepip && \
-	ln -sf /usr/bin/pip $(STAGING_PATH)/usr/bin/pip3
+	ln -sf python3 $(STAGING_PATH)/usr/bin/python && chroot $(STAGING_PATH) python3 -m ensurepip && \
+	ln -sf pip $(STAGING_PATH)/usr/bin/pip3
 	touch .python3-done
 
 # Download perl

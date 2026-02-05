@@ -35,8 +35,8 @@ LIBDRM_PATH = $(SRC_PATH)/libdrm-$(LIBDRM_VER)
 
 # Mesa
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/x/mesa.html
-MESA_URL = https://mesa.freedesktop.org/archive/mesa-25.1.8.tar.xz
-MESA_VER = 25.1.8
+MESA_URL = https://mesa.freedesktop.org/archive/mesa-25.3.1.tar.xz
+MESA_VER = 25.3.1
 MESA_PATH = $(SRC_PATH)/mesa-$(MESA_VER)
 
 # Lm-sensors
@@ -47,8 +47,8 @@ LM_SENSORS_PATH = $(SRC_PATH)/lm-sensors-$(LM_SENSORS_VER)
 
 # LLVM (libraries only)
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/llvm.html
-LLVM_URL = https://github.com/llvm/llvm-project/releases/download/llvmorg-20.1.8/llvm-project-20.1.8.src.tar.xz
-LLVM_VER = 20.1.8
+LLVM_URL = https://github.com/llvm/llvm-project/releases/download/llvmorg-21.1.8/llvm-project-21.1.8.src.tar.xz
+LLVM_VER = 21.1.8
 LLVM_PATH = $(SRC_PATH)/llvm-project-$(LLVM_VER).src/llvm
 
 # Libedit
@@ -366,7 +366,7 @@ llvm: download-llvm .llvm-done
 	-D LLVM_ENABLE_FFI=ON -D CMAKE_BUILD_TYPE=Release -D LLVM_BUILD_LLVM_DYLIB=ON -D LLVM_LINK_LLVM_DYLIB=ON -D LLVM_ENABLE_RTTI=ON \
 	-D LLVM_TARGETS_TO_BUILD="host;AMDGPU" -D LLVM_BINUTILS_INCDIR=/usr/include -D LLVM_INCLUDE_BENCHMARKS=OFF -D CLANG_DEFAULT_PIE_ON_LINUX=ON \
 	-D CLANG_CONFIG_FILE_SYSTEM_DIR=/etc/clang -W no-dev -G Ninja .. && ninja LLVM && cp lib/libLLVM.so $(STAGING_PATH)/usr/lib/libLLVM.so && \
-	ln -sf libLLVM.so $(STAGING_PATH)/usr/lib/libLLVM.so.20.1
+	ln -sf libLLVM.so $(STAGING_PATH)/usr/lib/libLLVM.so.21.1
 	touch .llvm-done
 
 # Download libedit

@@ -141,7 +141,7 @@ fi
 echo "Copying system..."
 mkdir -p /mnt/{dev,proc,sys,run,mnt,tmp}
 
-rsync -av --exclude="/dev" --exclude="/sys" --exclude="/proc" --exclude="/run" --exclude="/tmp" / /mnt
+rsync -avx / /mnt
 
 echo "Setting up bootloader..."
 mount --bind /dev /mnt/dev

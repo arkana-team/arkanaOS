@@ -1,6 +1,16 @@
 # Enable multi-threaded Bash operation
 SHELL = bash
 THREADS = $(shell nproc)
+DOCKER = $(shell \
+	if [ -f /.dockerenv ]; then echo true; \
+	elif [ -n "$$container" ]; then echo true; \
+	elif grep -qaE '(docker|containerd)' /proc/1/cgroup 2>/dev/null; then echo true; \
+	elif grep -qx '0::/' /proc/1/cgroup 2>/dev/null; then echo true; \
+	else echo false; fi)
+
+ifeq ($(DOCKER),false)
+$(error must run in Docker container - use ./build.sh to start build)
+endif
 
 # Enable ccache to be used in the build
 ifneq ($(shell which ccache 2>/dev/null),)
@@ -19,7 +29,8 @@ ifeq ($(shell test $(GCC_VER) -ge 15; echo $$?), 0)
 	CFLAGS := -std=gnu17  # Must set or the C compiler will hate you. C++ compilers will discard it.
 	_ := $(info note: GCC 15 compatibility mode set)
 endif
-export CFLAGS CC CXX CLANG CLANGXX
+CFLAGS += -mtls-dialect=gnu  # If not set, libgallium will use GLIBC_ABI_GNU2_TLS, but Glibc REFUSES to acknowledge that "gnu2" is available, and we tried hard. It couldn't be done.
+export CFLAGS CC CXX CLANG CLANGXX SHELL
 
 # Paths used in the build
 SRC_PATH = $(shell realpath ./src)
@@ -33,9 +44,6 @@ LIBRARIES = ./libs.found
 EXECUTABLES = ./exes.found
 MISSING_LIBS = ./libs.missing
 
-# Every required binary
-DEPENDENCIES = cargo rustc cmake meson ninja make gcc g++ ld as cc autoconf autoreconf automake sed awk tar wget grep gzip bzip2 xz mksquashfs makeinfo expect glib-mkenums rst2man pod2man curl xorriso mformat install xsltproc help2man python3 pip lzip
-
 # Targets
 .PHONY: all
 all: arkanas
@@ -43,6 +51,7 @@ all: arkanas
 # Make all arkanas
 .PHONY: arkanas
 arkanas:
+	mkdir -p $(SRC_PATH) $(STAGING_PATH) $(ISO_STAGING_PATH) $(CPIO_STAGING_PATH) $(OUTPUT_PATH)
 	for arkana in arkanas/*.mk; do \
 		$(MAKE) -f $$arkana || { echo "fatal: failed to make the $$arkana arkana"; exit 1; } \
 	done
@@ -81,7 +90,7 @@ clean:
 	rm .*-done .*-obtained $(EXECUTABLES) $(LIBRARIES) $(MISSING_LIBS) || true
 	rm -rf $(SRC_PATH) $(STAGING_PATH) $(OUTPUT_PATH) $(ISO_STAGING_PATH) $(CPIO_STAGING_PATH)
 
-# There are no test suites in arkanaOS
+# There are no test suites in arkanaOS, but we can run QEMU to start the built system.
 .PHONY: test
 .IGNORE: test check-libs
 test: check-libs
