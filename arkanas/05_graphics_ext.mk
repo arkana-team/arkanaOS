@@ -68,7 +68,29 @@ JBIG_KIT_PATCH_URL = https://gitlab.archlinux.org/archlinux/packaging/packages/j
 JBIG_KIT_VER = 2.1
 JBIG_KIT_PATH = $(SRC_PATH)/jbigkit-$(JBIG_KIT_VER)
 
-all: wayland wayland-protocols weston libxkbcommon libunwind libwebp giflib libtiff libdeflate libjbig
+# XWayland
+XWAYLAND_URL = https://www.x.org/pub/individual/xserver/xwayland-24.1.9.tar.xz
+XWAYLAND_VER = 24.1.9
+XWAYLAND_PATH = $(SRC_PATH)/xwayland-$(XWAYLAND_VER)
+
+# Libepoxy
+# What epoxy? This is code.
+LIBEPOXY_URL = https://download.gnome.org/sources/libepoxy/1.5/libepoxy-1.5.10.tar.xz
+LIBEPOXY_VER = 1.5.10
+LIBEPOXY_PATH = $(SRC_PATH)/libepoxy-$(LIBEPOXY_VER)
+
+# Labwc
+# This is Wayland's Openbox.
+LABWC_URL = https://github.com/labwc/labwc/archive/refs/tags/0.9.3.tar.gz
+LABWC_VER = 0.9.3
+LABWC_PATH = $(SRC_PATH)/labwc-$(LABWC_VER)
+
+# Seatd
+SEATD_URL = https://git.sr.ht/~kennylevinsen/seatd/archive/0.9.2.tar.gz
+SEATD_VER = 0.9.2
+SEATD_PATH = $(SRC_PATH)/seatd-$(SEATD_VER)
+
+all: wayland wayland-protocols weston libxkbcommon libunwind libwebp giflib libtiff libdeflate libjbig xwayland libepoxy labwc seatd
 
 download-wayland: .wayland-obtained
 .wayland-obtained:
@@ -181,3 +203,68 @@ libjbig: download-libjbig .libjbig-done
 	ln -sf libjbig.so.2.1 $(STAGING_PATH)/usr/lib/libjbig.so
 	touch .libjbig-done
 
+download-xwayland: .xwayland-obtained
+.xwayland-obtained:
+	cd $(SRC_PATH) && wget -O xwayland-$(XWAYLAND_VER).tar.xz $(XWAYLAND_URL) && tar xf xwayland-$(XWAYLAND_VER).tar.xz
+	touch .xwayland-obtained
+
+xwayland: download-xwayland .xwayland-done
+.xwayland-done:
+	cd $(XWAYLAND_PATH) && sed -i '/install_man/,$$d' meson.build && mkdir -p build && cd build && meson setup --prefix=/usr --buildtype=release -Dxkb_output_dir=/var/lib/xkb .. && \
+	ninja && DESTDIR=$(STAGING_PATH) ninja install
+	touch .xwayland-done
+
+download-libepoxy: .libepoxy-obtained
+.libepoxy-obtained:
+	cd $(SRC_PATH) && wget -O libepoxy-$(LIBEPOXY_VER).tar.xz $(LIBEPOXY_URL) && tar xf libepoxy-$(LIBEPOXY_VER).tar.xz
+	touch .libepoxy-obtained
+
+libepoxy: download-libepoxy .libepoxy-done
+.libepoxy-done:
+	cd $(LIBEPOXY_PATH) && mkdir -p build && cd build && meson setup --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	touch .libepoxy-done
+
+download-labwc: .labwc-obtained
+.labwc-obtained:
+	cd $(SRC_PATH) && wget -O labwc-$(LABWC_VER).tar.gz $(LABWC_URL) && tar xf labwc-$(LABWC_VER).tar.gz
+	touch .labwc-obtained
+
+labwc: download-labwc .labwc-done
+
+.labwc-done:
+	cd $(LABWC_PATH) && mkdir -p build && cd build && meson setup --prefix=/usr -Dc_args="-Uunix" --buildtype=release --wrap-mode=nodownload .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+    # Heredocs and Herestrings don't work. Thank you Make.
+	echo >> $(STAGING_PATH)/etc/profile
+	echo '# Set XDG_RUNTIME_DIR if not already set by the system' >> $(STAGING_PATH)/etc/profile
+	echo 'if [ -z "$$XDG_RUNTIME_DIR" ]; then' >> $(STAGING_PATH)/etc/profile
+	echo '    export XDG_RUNTIME_DIR="/run/user/$$(id -u)"' >> $(STAGING_PATH)/etc/profile
+	echo 'fi' >> $(STAGING_PATH)/etc/profile
+
+	echo '# Type  Path               Mode  UID   GID   Age  Argument' > $(STAGING_PATH)/usr/lib/tmpfiles.d/user-runtime.conf
+	echo 'd       /run/user          0755  root  root  -' >> $(STAGING_PATH)/usr/lib/tmpfiles.d/user-runtime.conf
+	echo 'd       /run/user/0        0700  root  root  -' >> $(STAGING_PATH)/usr/lib/tmpfiles.d/user-runtime.conf
+	echo 'd       /run/user/1000     0700  1000  1000  -' >> $(STAGING_PATH)/usr/lib/tmpfiles.d/user-runtime.conf
+	touch .labwc-done
+
+download-seatd: .seatd-obtained
+.seatd-obtained:
+	cd $(SRC_PATH) && wget -O seatd-$(SEATD_VER).tar.gz $(SEATD_URL) && tar xf seatd-$(SEATD_VER).tar.gz
+	touch .seatd-obtained
+
+seatd: download-seatd .seatd-done
+.seatd-done:
+	cd $(SEATD_PATH) && mkdir -p build && cd build && meson setup --prefix=/usr --buildtype=release -Dc_args="-Uunix" -Dserver=enabled -Dlibseat-logind=disabled .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+
+	echo '[Unit]' > $(STAGING_PATH)/usr/lib/systemd/system/seatd.service
+	echo 'Description=Seat management daemon' >> $(STAGING_PATH)/usr/lib/systemd/system/seatd.service
+	echo >> $(STAGING_PATH)/usr/lib/systemd/system/seatd.service
+	echo '[Service]' >> $(STAGING_PATH)/usr/lib/systemd/system/seatd.service
+	echo 'Type=simple' >> $(STAGING_PATH)/usr/lib/systemd/system/seatd.service
+	echo 'ExecStart=/usr/bin/seatd -g video' >> $(STAGING_PATH)/usr/lib/systemd/system/seatd.service
+	echo 'Restart=always' >> $(STAGING_PATH)/usr/lib/systemd/system/seatd.service
+	echo >> $(STAGING_PATH)/usr/lib/systemd/system/seatd.service
+	echo '[Install]' >> $(STAGING_PATH)/usr/lib/systemd/system/seatd.service
+	echo 'WantedBy=multi-user.target' >> $(STAGING_PATH)/usr/lib/systemd/system/seatd.service
+
+	ln -sf /usr/lib/systemd/system/seatd.service $(STAGING_PATH)/etc/systemd/system/multi-user.target.wants/seatd.service
+	touch .seatd-done

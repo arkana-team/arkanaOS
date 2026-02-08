@@ -9,8 +9,13 @@ DOCKER = $(shell \
 	else echo false; fi)
 
 ifeq ($(DOCKER),false)
+ifeq ($(FORCE),1)
+$(warning forcing Makefile build outside Docker container - problems may occur)
+else
 $(error must run in Docker container - use ./build.sh to start build)
 endif
+endif
+
 
 # Enable ccache to be used in the build
 ifneq ($(shell which ccache 2>/dev/null),)
@@ -21,7 +26,7 @@ ifneq ($(shell which ccache 2>/dev/null),)
 	CLANG := ccache clang
 	CLANGXX := ccache clang++
 else
-	_ := $(warning ccache is unavailable; build may be slower)
+$(warning ccache is unavailable - build may be slower)
 endif
 
 GCC_VER := $(shell gcc -dumpversion | cut -d'.' -f1)

@@ -97,6 +97,8 @@ else
 fi
 
 trap "umount -R /mnt &>/dev/null || true" ERR
+umount -R /mnt &>/dev/null || true
+
 echo "Installing $PRETTY_NAME on $SELDEV"
 echo "Partitoning..."
 
@@ -105,14 +107,14 @@ if [ -e /sys/firmware/efi/efivars ]; then
   parted "${SELDEV}" \ mklabel gpt \ mkpart primary 1 120M \ mkpart primary 120M 100% -s
   if [ "$BLKDEV_ISPART" == 0 ]; then
     mkfs.vfat "${SELDEV}1"
-    mkfs.ext4 "${SELDEV}2"
+    mkfs.ext4 -F "${SELDEV}2"
     mount "${SELDEV}2" /mnt
     mkdir -p /mnt/boot/efi
     mkdir /mnt/etc
     mount "${SELDEV}1" /mnt/boot/efi
   else
     mkfs.vfat "${SELDEV}p1"
-    mkfs.ext4 "${SELDEV}p2"
+    mkfs.ext4 -F "${SELDEV}p2"
     mount "${SELDEV}p2" /mnt
     mkdir -p /mnt/boot/efi
     mkdir /mnt/etc
@@ -123,14 +125,14 @@ else
   parted "${SELDEV}" \ mklabel msdos \ mkpart primary 1 120M \ mkpart primary 120M 100% -s
   if [ "$BLKDEV_ISPART" == 0 ]; then
     mkfs.vfat "${SELDEV}1"
-    mkfs.ext4 "${SELDEV}2"
+    mkfs.ext4 -F "${SELDEV}2"
     mount "${SELDEV}2" /mnt
     mkdir -p /mnt/boot
     mkdir /mnt/etc
     mount "${SELDEV}1" /mnt/boot
   else
     mkfs.vfat "${SELDEV}p1"
-    mkfs.ext4 "${SELDEV}p2"
+    mkfs.ext4 -F "${SELDEV}p2"
     mount "${SELDEV}p2" /mnt
     mkdir -p /mnt/boot
     mkdir /mnt/etc
@@ -141,7 +143,7 @@ fi
 echo "Copying system..."
 mkdir -p /mnt/{dev,proc,sys,run,mnt,tmp}
 
-rsync -avx / /mnt
+rsync -ax --no-i-r --info=progress2 / /mnt
 
 echo "Setting up bootloader..."
 mount --bind /dev /mnt/dev
@@ -178,13 +180,15 @@ else
   KERNEL_PATH=/boot/vmlinuz
 fi
 
-cat >> /mnt/etc/grub.d/40_custom << EOF
+cat >> /mnt/etc/grub.d/29_main << EOF
+#!/bin/sh
+exec tail -n +3 \$0
 menuentry "$PRETTY_NAME" {
   linux $KERNEL_PATH root=$BOOTDEV
   initrd /boot/initramfs.img
 }
 EOF
-chmod +x /mnt/etc/grub.d/40_custom
+chmod +x /mnt/etc/grub.d/29_main
 
 chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
 
@@ -219,7 +223,7 @@ while :; do
 done
 
 echo "Setting up sudouser permissions..."
-chroot /mnt bash -c "EDITOR=nano visudo"
+sed -i "/# %wheel ALL=(ALL:ALL) ALL/s/^# //g" /mnt/etc/sudoers
 
 echo "Removing live environment files..."
 rm -rf /mnt/etc/systemd/system/getty@tty1.service.d

@@ -7,6 +7,9 @@ SRC_PATH = $(shell realpath ./src)
 STAGING_PATH = $(shell realpath ./staging)
 OUTPUT_PATH = $(shell realpath ./output)
 
+# Build number
+BUILDNUM_FILE := $(shell realpath .buildnum)
+
 # Package variables
 # Glibc
 # URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter05/glibc.html
@@ -286,7 +289,7 @@ KBD_PATH = $(SRC_PATH)/kbd-$(KBD_VER)
 
 # Targets
 .PHONY: all
-all: dirs gmp zlib libgpg-error libgcrypt libxcrypt libcap libcap-ng acl attr libaio libtirpc libnsl lmdb keyutils krb5 libfuse glibc ncurses readline file json-c popt linux-audit linux-pam shadow cyrus-sasl openldap bzip2 xz-utils lz4 zstd gzip openssl cryptsetup coreutils util-linux bash e2fsprogs systemd lvm2 gcc libseccomp dbus dbus-broker kbd
+all: dirs timestamp gmp zlib libgpg-error libgcrypt libxcrypt libcap libcap-ng acl attr libaio libtirpc libnsl lmdb keyutils krb5 libfuse glibc ncurses readline file json-c popt linux-audit linux-pam shadow cyrus-sasl openldap bzip2 xz-utils lz4 zstd gzip openssl cryptsetup coreutils util-linux bash e2fsprogs systemd lvm2 gcc libseccomp dbus dbus-broker kbd
 
 # Create system hierarchy
 .PHONY: dirs
@@ -336,7 +339,7 @@ download-systemd: .systemd-obtained
 
 # Compile systemd
 .PHONY: systemd
-systemd: timestamp download-systemd .systemd-done
+systemd: download-systemd .systemd-done
 
 .systemd-done:
 	mkdir -p $(SYSTEMD_PATH)/build
@@ -364,8 +367,11 @@ systemd: timestamp download-systemd .systemd-done
 	
 	touch .systemd-done
 
+.PHONY: timestamp
 timestamp:
-	echo "arkanaOS Dev ($$(date +%Y%m%d))" > $(STAGING_PATH)/etc/issue
+	BUILD=$$(($$(cat $(BUILDNUM_FILE))+1)); \
+	echo "arkanaOS Dev ($$(date +%Y%m%d)) (build $$BUILD)" > $(STAGING_PATH)/etc/issue; \
+	echo $$BUILD > $(BUILDNUM_FILE)
 
 # Download coreutils
 .PHONY: download-coreutils
