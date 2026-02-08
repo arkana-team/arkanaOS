@@ -2,7 +2,7 @@
 set -euo pipefail
 
 BLOCK_DEVICES=("sda" "sdb" "sdc" "hda" "hdb" "hdc" "vda" "vdb" "vdc" "mmcblk0" "mmcblk1" "mmcblk2" "nvme0n1" "nvme0n2" "nvme0n3")
-BINARIES=("mkfs.vfat" "mkfs.ext4" "rsync" "genfstab" "grub-install" "grub-mkconfig" "sed" "visudo" "awk" "parted")
+BINARIES=("mkfs.vfat" "mkfs.ext4" "rsync" "genfstab" "grub-install" "grub-mkconfig" "sed" "awk" "parted")
 FOUND_BLK=0
 FOUND_DEVS=()
 
@@ -213,6 +213,11 @@ echo "$USERNAME:$USERPASS" | chroot /mnt chpasswd
 
 while :; do
   read -rp "Enter your timezone here: " TIMEZONE
+  if [ -z "$TIMEZONE" ]; then
+    echo "No timezone specified. Available timezones:"
+    find /usr/share/zoneinfo -type f | sed 's|/usr/share/zoneinfo/||'
+  fi
+
   if [ -e "/usr/share/zoneinfo/$TIMEZONE" ]; then
     ln -sf "/usr/share/zoneinfo/$TIMEZONE" /mnt/etc/localtime
     break

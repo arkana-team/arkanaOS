@@ -233,13 +233,15 @@ labwc: download-labwc .labwc-done
 
 .labwc-done:
 	cd $(LABWC_PATH) && mkdir -p build && cd build && meson setup --prefix=/usr -Dc_args="-Uunix" --buildtype=release --wrap-mode=nodownload .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
-    # Heredocs and Herestrings don't work. Thank you Make.
+	# Why is pam_systemd.so not doing this for us?
 	echo >> $(STAGING_PATH)/etc/profile
 	echo '# Set XDG_RUNTIME_DIR if not already set by the system' >> $(STAGING_PATH)/etc/profile
 	echo 'if [ -z "$$XDG_RUNTIME_DIR" ]; then' >> $(STAGING_PATH)/etc/profile
 	echo '    export XDG_RUNTIME_DIR="/run/user/$$(id -u)"' >> $(STAGING_PATH)/etc/profile
+    echo '    export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$$(id -u)/bus"' >> $(STAGING_PATH)/etc/profile
 	echo 'fi' >> $(STAGING_PATH)/etc/profile
 
+	# You will have to create this for every new user.
 	echo '# Type  Path               Mode  UID   GID   Age  Argument' > $(STAGING_PATH)/usr/lib/tmpfiles.d/user-runtime.conf
 	echo 'd       /run/user          0755  root  root  -' >> $(STAGING_PATH)/usr/lib/tmpfiles.d/user-runtime.conf
 	echo 'd       /run/user/0        0700  root  root  -' >> $(STAGING_PATH)/usr/lib/tmpfiles.d/user-runtime.conf
@@ -255,6 +257,7 @@ seatd: download-seatd .seatd-done
 .seatd-done:
 	cd $(SEATD_PATH) && mkdir -p build && cd build && meson setup --prefix=/usr --buildtype=release -Dc_args="-Uunix" -Dserver=enabled -Dlibseat-logind=disabled .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
 
+	# Generate a systemd service so that apps can obtain user sessions via it
 	echo '[Unit]' > $(STAGING_PATH)/usr/lib/systemd/system/seatd.service
 	echo 'Description=Seat management daemon' >> $(STAGING_PATH)/usr/lib/systemd/system/seatd.service
 	echo >> $(STAGING_PATH)/usr/lib/systemd/system/seatd.service
