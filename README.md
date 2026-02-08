@@ -11,12 +11,9 @@ To build the project, run the following commands:
 ```bash
 git clone https://github.com/arkana-team/arkanaOS.git
 cd arkanaOS
-sudo make
+./build.sh
 ```
 
-You need to use `sudo` to build arkanaOS successfully.
-
-> [!WARNING]
-> It is recommended to use a separated environment for building arkanaOS. 
-> 
-> Building from within a partially compiled tree may cause host-side issues that may potentially crash the host.
+> [!NOTE]
+> Please use the attached `build.sh` script to build arkanaOS.<br>
+> Makefile builds are not supported, you can however override the Docker checks by running `make FORCE=1` as root.
