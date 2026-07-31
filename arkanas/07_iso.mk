@@ -147,8 +147,8 @@ LZO_VER = 2.10
 LZO_PATH = $(SRC_PATH)/lzo-$(LZO_VER)
 
 # squashfs-tools
-# URL: https://ftp.debian.org/debian/pool/main/s/squashfs-tools/ (has source code)
-SQUASHFS_TOOLS_URL = http://ftp.debian.org/debian/pool/main/s/squashfs-tools/squashfs-tools_4.7.4.orig.tar.gz
+# URL: https://github.com/plougher/squashfs-tools/releases
+SQUASHFS_TOOLS_URL = https://github.com/plougher/squashfs-tools/archive/refs/tags/4.7.4.tar.gz
 SQUASHFS_TOOLS_VER = 4.7.4
 SQUASHFS_TOOLS_PATH = $(SRC_PATH)/squashfs-tools-$(SQUASHFS_TOOLS_VER)
 
@@ -224,7 +224,7 @@ libburn: download-libburn .libburn-done
 download-libisofs: .libisofs-obtained
 
 .libisofs-obtained:
-	cd $(SRC_PATH) && wget -O libisofs-$(LIBBURN_VER).tar.gz $(LIBISOFS_URL) && tar xf libisofs-$(LIBBURN_VER).tar.gz
+	cd $(SRC_PATH) && wget -O libisofs-$(LIBISOFS_VER).tar.gz $(LIBISOFS_URL) && tar xf libisofs-$(LIBISOFS_VER).tar.gz
 	touch .libisofs-obtained
 
 # Compile libisofs
@@ -260,7 +260,7 @@ busybox: download-busybox .busybox-done
 
 .busybox-done:
 	mkdir -p $(CPIO_STAGING_PATH)/{boot,dev,etc,home,mnt,opt,proc,root,run,sys,tmp,var}
-	cp busybox.config $(BUSYBOX_PATH)/.config && cd $(BUSYBOX_PATH) && expect ../../oldconfig.exp && \
+	cp busybox.config $(BUSYBOX_PATH)/.config && cd $(BUSYBOX_PATH) && yes "" | make oldconfig && \
 	$(MAKE) -j$(THREADS) && $(MAKE) install && cp -a _install/* $(CPIO_STAGING_PATH)
 	touch .busybox-done
 
@@ -277,7 +277,8 @@ linux: download-linux .linux-done
 .linux-done:
 	# Linus, you've fucked with the SBAT file config and my builder broke!
 	$(MAKE) -C $(LINUX_PATH) mrproper && cp linux.config $(LINUX_PATH)/.config && cd $(LINUX_PATH) && $(MAKE) olddefconfig && \
-	$(MAKE) -j$(THREADS) KBUILD_BUILD_HOST="arkana" KBUILD_BUILD_USER="arkana" all && cp arch/x86/boot/bzImage $(STAGING_PATH)/boot/vmlinuz
+	$(MAKE) -j$(THREADS) KBUILD_BUILD_HOST="arkana" KBUILD_BUILD_USER="arkana" all && cp arch/x86/boot/bzImage $(STAGING_PATH)/boot/vmlinuz && \
+	$(MAKE) -C $(LINUX_PATH) headers_install INSTALL_HDR_PATH=$(STAGING_PATH)/usr
 	touch .linux-done
 
 # Download GRUB
@@ -293,10 +294,10 @@ grub: download-grub .grub-done
 
 .grub-done:
 	cd $(GRUB_PATH) && echo depends bli part_gpt > grub-core/extra_deps.lst && \
-	./configure --prefix=/usr --sysconfdir=/etc --disable-efiemu --with-platform=efi \
+	CFLAGS="" CPPFLAGS="" LDFLAGS="" ./configure --prefix=/usr --sysconfdir=/etc --disable-efiemu --with-platform=efi \
 	--target=x86_64 --disable-werror && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 
-	cd $(GRUB_PATH) && $(MAKE) clean && ./configure --prefix=/usr --sysconfdir=/etc --disable-efiemu --with-platform=pc \
+	cd $(GRUB_PATH) && $(MAKE) clean && CFLAGS="" CPPFLAGS="" LDFLAGS="" ./configure --prefix=/usr --sysconfdir=/etc --disable-efiemu --with-platform=pc \
 	--target=i386 --disable-werror && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
 	mv $(STAGING_PATH)/etc/bash_completion.d/grub $(STAGING_PATH)/usr/share/bash-completion/completions
 
@@ -333,7 +334,7 @@ download-harfbuzz: .harfbuzz-obtained
 harfbuzz: download-harfbuzz .harfbuzz-done
 
 .harfbuzz-done:
-	mkdir -p $(HARFBUZZ_PATH)/build	&& cd $(HARFBUZZ_PATH)/build && meson setup .. --prefix=/usr --buildtype=release \
+	mkdir -p $(HARFBUZZ_PATH)/build	&& cd $(HARFBUZZ_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release \
 	-D graphite2=enabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .harfbuzz-done
 
@@ -348,7 +349,7 @@ download-glib: .glib-obtained
 glib: download-glib .glib-done
 
 .glib-done:
-	mkdir -p $(GLIB_PATH)/build && cd $(GLIB_PATH)/build && meson setup .. --prefix=/usr --buildtype=release \
+	mkdir -p $(GLIB_PATH)/build && cd $(GLIB_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release \
 	-D introspection=disabled -D glib_debug=disabled -D man-pages=enabled -D sysprof=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .glib-done
 
@@ -377,7 +378,7 @@ download-elfutils: .elfutils-obtained
 elfutils: download-elfutils .elfutils-done
 
 .elfutils-done:
-	cd $(ELFUTILS_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && install -m644 config/libelf.pc $(STAGING_PATH)/usr/lib/pkgconfig
+	cd $(ELFUTILS_PATH) && ./configure --prefix=/usr --disable-werror CFLAGS="-Wno-error=discarded-qualifiers" && $(MAKE) -j$(THREADS) && install -m644 config/libelf.pc $(STAGING_PATH)/usr/lib/pkgconfig
 	for lib in libelf debuginfod libdw; do \
 		$(MAKE) -C $(SRC_PATH)/elfutils-$(ELFUTILS_VER)/$$lib DESTDIR=$(STAGING_PATH) install; \
 	done
@@ -425,7 +426,7 @@ download-cairo: .cairo-obtained
 cairo: download-cairo .cairo-done
 
 .cairo-done:
-	mkdir -p $(CAIRO_PATH)/build && cd $(CAIRO_PATH)/build && meson setup --prefix=/usr --buildtype=release .. && ninja && \
+	mkdir -p $(CAIRO_PATH)/build && cd $(CAIRO_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && \
 	DESTDIR=$(STAGING_PATH) ninja install
 	touch .cairo-done
 
@@ -486,7 +487,7 @@ download-pixman: .pixman-obtained
 pixman: download-pixman .pixman-done
 
 .pixman-done:
-	mkdir -p $(PIXMAN_PATH)/build && cd $(PIXMAN_PATH)/build && meson setup --prefix=/usr --buildtype=release .. && ninja && \
+	mkdir -p $(PIXMAN_PATH)/build && cd $(PIXMAN_PATH)/build && meson setup --prefix=/usr --native-file $(SRC_PATH)/cross_file.txt --buildtype=release .. && ninja && \
 	DESTDIR=$(STAGING_PATH) ninja install
 	touch .pixman-done
 

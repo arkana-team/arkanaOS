@@ -85,6 +85,22 @@ LABWC_URL = https://github.com/labwc/labwc/archive/refs/tags/0.9.3.tar.gz
 LABWC_VER = 0.9.3
 LABWC_PATH = $(SRC_PATH)/labwc-$(LABWC_VER)
 
+WLROOTS_URL = https://gitlab.freedesktop.org/wlroots/wlroots/-/archive/0.19.0/wlroots-0.19.0.tar.gz
+WLROOTS_VER = 0.19.0
+WLROOTS_PATH = $(SRC_PATH)/wlroots-$(WLROOTS_VER)
+
+LIBDISPLAY_INFO_URL = https://gitlab.freedesktop.org/emersion/libdisplay-info/-/archive/0.2.0/libdisplay-info-0.2.0.tar.gz
+LIBDISPLAY_INFO_VER = 0.2.0
+LIBDISPLAY_INFO_PATH = $(SRC_PATH)/libdisplay-info-$(LIBDISPLAY_INFO_VER)
+
+XCB_UTIL_WM_URL = https://xcb.freedesktop.org/dist/xcb-util-wm-0.4.2.tar.xz
+XCB_UTIL_WM_VER = 0.4.2
+XCB_UTIL_WM_PATH = $(SRC_PATH)/xcb-util-wm-$(XCB_UTIL_WM_VER)
+
+LIBSFDO_URL = https://gitlab.freedesktop.org/vyivel/libsfdo/-/archive/v0.1.3/libsfdo-v0.1.3.tar.gz
+LIBSFDO_VER = v0.1.3
+LIBSFDO_PATH = $(SRC_PATH)/libsfdo-$(LIBSFDO_VER)
+
 # Seatd
 SEATD_URL = https://git.sr.ht/~kennylevinsen/seatd/archive/0.9.2.tar.gz
 SEATD_VER = 0.9.2
@@ -99,7 +115,7 @@ download-wayland: .wayland-obtained
 
 wayland: download-wayland .wayland-done
 .wayland-done:
-	mkdir -p $(WAYLAND_PATH)/build && cd $(WAYLAND_PATH)/build && meson setup .. --prefix=/usr --buildtype=release -D documentation=false && ninja && \
+	mkdir -p $(WAYLAND_PATH)/build && cd $(WAYLAND_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D documentation=false && ninja && \
 	DESTDIR=$(STAGING_PATH) ninja install
 	touch .wayland-done
 
@@ -110,7 +126,7 @@ download-wayland-protocols: .wayland-protocols-obtained
 
 wayland-protocols: download-wayland-protocols .wayland-protocols-done
 .wayland-protocols-done:
-	mkdir -p $(WAYLAND_PROTOCOLS_PATH)/build && cd $(WAYLAND_PROTOCOLS_PATH)/build && meson setup .. --prefix=/usr --buildtype=release && ninja && \
+	mkdir -p $(WAYLAND_PROTOCOLS_PATH)/build && cd $(WAYLAND_PROTOCOLS_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release && ninja && \
 	DESTDIR=$(STAGING_PATH) ninja install
 	touch .wayland-protocols-done
 
@@ -122,7 +138,7 @@ download-weston: .weston-obtained
 weston: download-weston .weston-done
 .weston-done:
     # Why are you using outdated FFmpeg syntax?
-	mkdir -p $(WESTON_PATH)/build && cd $(WESTON_PATH)/build && meson setup .. --prefix=/usr --buildtype=release -Ddemo-clients=false -Dbackend-vnc=false && \
+	mkdir -p $(WESTON_PATH)/build && cd $(WESTON_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -Ddemo-clients=false -Dbackend-vnc=false && \
 	DESTDIR=$(STAGING_PATH) ninja install
 	touch .weston-done
 
@@ -133,7 +149,7 @@ download-libxkbcommon: .libxkbcommon-obtained
 
 libxkbcommon: download-libxkbcommon .libxkbcommon-done
 .libxkbcommon-done:
-	mkdir -p $(LIBXKBCOMMON_PATH)/build && cd $(LIBXKBCOMMON_PATH)/build && meson setup .. --prefix=/usr --buildtype=release -D enable-docs=false && ninja && \
+	mkdir -p $(LIBXKBCOMMON_PATH)/build && cd $(LIBXKBCOMMON_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D enable-docs=false && ninja && \
 	DESTDIR=$(STAGING_PATH) ninja install
 	touch .libxkbcommon-done
 
@@ -187,7 +203,10 @@ download-libdeflate: .libdeflate-obtained
 
 libdeflate: download-libdeflate .libdeflate-done
 .libdeflate-done:
-	mkdir -p $(LIBDEFLATE_PATH)/build && cd $(LIBDEFLATE_PATH)/build && cmake -D CMAKE_INSTALL_PREFIX=/usr -D CMAKE_BUILD_TYPE=Release .. && \
+	cd $(LIBDEFLATE_PATH) && \
+	sed -i 's/#  define EVEX512.*/#  define EVEX512 ""/' lib/x86/cpu_features.h && \
+	sed -i 's/#  define NO_EVEX512.*/#  define NO_EVEX512 ""/' lib/x86/cpu_features.h && \
+	mkdir -p build && cd build && cmake -D CMAKE_INSTALL_PREFIX=/usr -D CMAKE_BUILD_TYPE=Release .. && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libdeflate-done
 	
@@ -210,7 +229,7 @@ download-xwayland: .xwayland-obtained
 
 xwayland: download-xwayland .xwayland-done
 .xwayland-done:
-	cd $(XWAYLAND_PATH) && sed -i '/install_man/,$$d' meson.build && mkdir -p build && cd build && meson setup --prefix=/usr --buildtype=release -Dxkb_output_dir=/var/lib/xkb .. && \
+	cd $(XWAYLAND_PATH) && sed -i '/install_man/,$$d' meson.build && mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -Dxkb_output_dir=/var/lib/xkb .. && \
 	ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .xwayland-done
 
@@ -221,27 +240,78 @@ download-libepoxy: .libepoxy-obtained
 
 libepoxy: download-libepoxy .libepoxy-done
 .libepoxy-done:
-	cd $(LIBEPOXY_PATH) && mkdir -p build && cd build && meson setup --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	cd $(LIBEPOXY_PATH) && mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .libepoxy-done
+
+download-libdisplay-info: .libdisplay-info-obtained
+.libdisplay-info-obtained:
+	cd $(SRC_PATH) && wget -O libdisplay-info-$(LIBDISPLAY_INFO_VER).tar.gz $(LIBDISPLAY_INFO_URL) && tar xf libdisplay-info-$(LIBDISPLAY_INFO_VER).tar.gz
+	touch .libdisplay-info-obtained
+
+libdisplay-info: download-libdisplay-info .libdisplay-info-done
+.libdisplay-info-done:
+	cd $(LIBDISPLAY_INFO_PATH) && mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	touch .libdisplay-info-done
+
+download-wlroots: .wlroots-obtained
+.wlroots-obtained:
+	cd $(SRC_PATH) && wget -O wlroots-$(WLROOTS_VER).tar.gz $(WLROOTS_URL) && tar xf wlroots-$(WLROOTS_VER).tar.gz
+	touch .wlroots-obtained
+
+wlroots: download-wlroots libdisplay-info .wlroots-done
+.wlroots-done:
+	cd $(WLROOTS_PATH) && mkdir -p build && cd build && \
+	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
+	CFLAGS="-I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib" \
+	meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -D examples=false .. && ninja && DESTDIR=$(STAGING_PATH) ninja install && \
+	sed -i 's|prefix=/usr|prefix=$(STAGING_PATH)/usr|g' $(STAGING_PATH)/usr/lib/pkgconfig/wlroots*.pc
+	touch .wlroots-done
+
+download-xcb-util-wm: .xcb-util-wm-obtained
+.xcb-util-wm-obtained:
+	cd $(SRC_PATH) && wget -O xcb-util-wm-$(XCB_UTIL_WM_VER).tar.xz $(XCB_UTIL_WM_URL) && tar xf xcb-util-wm-$(XCB_UTIL_WM_VER).tar.xz
+	touch .xcb-util-wm-obtained
+
+xcb-util-wm: download-xcb-util-wm .xcb-util-wm-done
+.xcb-util-wm-done:
+	cd $(XCB_UTIL_WM_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
+	sed -i 's|prefix=/usr|prefix=$(STAGING_PATH)/usr|g' $(STAGING_PATH)/usr/lib/pkgconfig/xcb-*.pc
+	touch .xcb-util-wm-done
+
+download-libsfdo: .libsfdo-obtained
+.libsfdo-obtained:
+	cd $(SRC_PATH) && wget -O libsfdo-$(LIBSFDO_VER).tar.gz $(LIBSFDO_URL) && tar xf libsfdo-$(LIBSFDO_VER).tar.gz
+	touch .libsfdo-obtained
+
+libsfdo: download-libsfdo .libsfdo-done
+.libsfdo-done:
+	cd $(LIBSFDO_PATH) && mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install && \
+	sed -i 's|prefix=/usr|prefix=$(STAGING_PATH)/usr|g' $(STAGING_PATH)/usr/lib/pkgconfig/libsfdo*.pc
+	touch .libsfdo-done
 
 download-labwc: .labwc-obtained
 .labwc-obtained:
 	cd $(SRC_PATH) && wget -O labwc-$(LABWC_VER).tar.gz $(LABWC_URL) && tar xf labwc-$(LABWC_VER).tar.gz
 	touch .labwc-obtained
 
-labwc: download-labwc .labwc-done
+labwc: download-labwc wlroots xcb-util-wm libsfdo .labwc-done
 
 .labwc-done:
-	cd $(LABWC_PATH) && mkdir -p build && cd build && meson setup --prefix=/usr -Dc_args="-Uunix" --buildtype=release --wrap-mode=nodownload .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	cd $(LABWC_PATH) && mkdir -p build && cd build && \
+	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
+	CFLAGS="-I$(STAGING_PATH)/usr/include/wlroots-0.19 -I$(STAGING_PATH)/usr/include -I$(STAGING_PATH)/usr/include/pixman-1" \
+	LDFLAGS="-L$(STAGING_PATH)/usr/lib -lwacom" \
+	meson setup --prefix=/usr --native-file $(SRC_PATH)/cross_file.txt -Dc_args="-Uunix" --buildtype=release --wrap-mode=nodownload .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	# Why is pam_systemd.so not doing this for us?
 	echo >> $(STAGING_PATH)/etc/profile
 	echo '# Set XDG_RUNTIME_DIR if not already set by the system' >> $(STAGING_PATH)/etc/profile
 	echo 'if [ -z "$$XDG_RUNTIME_DIR" ]; then' >> $(STAGING_PATH)/etc/profile
 	echo '    export XDG_RUNTIME_DIR="/run/user/$$(id -u)"' >> $(STAGING_PATH)/etc/profile
-    echo '    export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$$(id -u)/bus"' >> $(STAGING_PATH)/etc/profile
+	echo '    export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$$(id -u)/bus"' >> $(STAGING_PATH)/etc/profile
 	echo 'fi' >> $(STAGING_PATH)/etc/profile
 
 	# You will have to create this for every new user.
+	mkdir -p $(STAGING_PATH)/usr/lib/tmpfiles.d
 	echo '# Type  Path               Mode  UID   GID   Age  Argument' > $(STAGING_PATH)/usr/lib/tmpfiles.d/user-runtime.conf
 	echo 'd       /run/user          0755  root  root  -' >> $(STAGING_PATH)/usr/lib/tmpfiles.d/user-runtime.conf
 	echo 'd       /run/user/0        0700  root  root  -' >> $(STAGING_PATH)/usr/lib/tmpfiles.d/user-runtime.conf
@@ -255,7 +325,7 @@ download-seatd: .seatd-obtained
 
 seatd: download-seatd .seatd-done
 .seatd-done:
-	cd $(SEATD_PATH) && mkdir -p build && cd build && meson setup --prefix=/usr --buildtype=release -Dc_args="-Uunix" -Dserver=enabled -Dlibseat-logind=disabled .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	cd $(SEATD_PATH) && mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -Dc_args="-Uunix" -Dserver=enabled -Dlibseat-logind=disabled .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
 
 	# Generate a systemd service so that apps can obtain user sessions via it
 	echo '[Unit]' > $(STAGING_PATH)/usr/lib/systemd/system/seatd.service

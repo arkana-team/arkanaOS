@@ -35,7 +35,7 @@ fi
 # Enable kernel modules needed for system startup
 for module in squashfs overlay; do
     printf '         Loading %s module...\n' "$module"
-    if modprobe squashfs; then
+    if modprobe "$module"; then
         printf '%b Loaded %s module\n' "$SYSTEMD_OK" "$module"
     else
         printf '%b Unable to load %s module or not found\n' "$SYSTEMD_FAIL" "$module"

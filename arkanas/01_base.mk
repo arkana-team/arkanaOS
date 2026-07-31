@@ -49,7 +49,7 @@ FILE_PATH = $(SRC_PATH)/file-$(FILE_VER)
 
 # LVM2 (provides libdevmapper, but we don't need the LVM2 utilities)
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/lvm2.html
-LVM2_URL = https://sourceware.org/ftp/lvm2/LVM2.2.03.34.tgz
+LVM2_URL = https://github.com/lvmteam/lvm2/archive/refs/tags/v2_03_34.tar.gz
 LVM2_VER = 2.03.34
 LVM2_PATH = $(SRC_PATH)/LVM2.$(LVM2_VER)
 
@@ -143,14 +143,13 @@ LIBCAP_NG_PATH = $(SRC_PATH)/libcap-ng-$(LIBCAP_NG_VER)
 
 # Zlib
 # URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/zlib.html
-ZLIB_URL = https://www.zlib.net/fossils/zlib-1.3.1.tar.gz
+ZLIB_URL = https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz
 ZLIB_VER = 1.3.1
-ZLIB_PATH = $(SRC_PATH)/zlib-$(ZLIB_VER)
 ZLIB_PATH = $(SRC_PATH)/zlib-$(ZLIB_VER)
 
 # OpenLDAP (also provides liblber)
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/server/openldap.html
-OPENLDAP_URL = https://www.openldap.org/software/download/OpenLDAP/openldap-release/openldap-2.6.10.tgz
+OPENLDAP_URL = https://github.com/openldap/openldap/archive/refs/tags/OPENLDAP_REL_ENG_2_6_10.tar.gz
 OPENLDAP_VER = 2.6.10
 OPENLDAP_PATH = $(SRC_PATH)/openldap-$(OPENLDAP_VER)
 
@@ -228,7 +227,7 @@ GZIP_PATH = $(SRC_PATH)/gzip-$(GZIP_VER)
 
 # Libaio
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/libaio.html
-LIBAIO_URL = https://pagure.io/libaio/archive/libaio-0.3.113/libaio-0.3.113.tar.gz
+LIBAIO_URL = https://sources.buildroot.net/libaio/libaio-0.3.113.tar.gz
 LIBAIO_VER = 0.3.113
 LIBAIO_PATH = $(SRC_PATH)/libaio-$(LIBAIO_VER)
 
@@ -342,8 +341,11 @@ download-systemd: .systemd-obtained
 systemd: download-systemd .systemd-done
 
 .systemd-done:
+	rm -rf $(SYSTEMD_PATH)/build
+	sed -i 's/grep -Ev '\''^#define\[\[:space:\]\]+(ECANCELLED|EREFUSED)'\''/grep -Ev '\''^#define\[\[:space:\]\]+(ECANCELLED|EREFUSED|EFSBADCRC|EFSCORRUPTED)'\''/g' $(SYSTEMD_PATH)/src/basic/generate-errno-list.sh
+	sed -i 's/-Werror=override-init/-Wno-override-init/g' $(SYSTEMD_PATH)/meson.build
 	mkdir -p $(SYSTEMD_PATH)/build
-	cd $(SYSTEMD_PATH)/build && meson setup .. --prefix=/usr --buildtype=release \
+	cd $(SYSTEMD_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -Dwerror=false -Dc_args="-Wno-override-init -Wno-error=override-init" \
 	-D default-dnssec=no -D firstboot=false -D install-tests=false -D ldconfig=false \
 	-D man=auto -D sysusers=false -D rpmmacrosdir=no -D homed=disabled \
 	-D userdb=false -D mode=release -D pam=enabled -D pamconfdir=/etc/pam.d \
@@ -403,8 +405,9 @@ download-util-linux: .util-linux-obtained
 util-linux: download-util-linux .util-linux-done
 
 .util-linux-done:
-	cd $(UTIL_LINUX_PATH) && ./configure --bindir=/usr/bin --libdir=/usr/lib --sbindir=/usr/sbin \
-	--runstatedir=/run --disable-chfn-chsh -disable-login --disable-nologin --disable-su --disable-setpriv \
+	cd $(UTIL_LINUX_PATH) && sed -i 's/&(struct pollfd){.fd = fd,}/(\&struct pollfd){.fd = fd}/g' lsfd-cmd/lsfd.c && \
+	./configure --bindir=/usr/bin --libdir=/usr/lib --sbindir=/usr/sbin \
+	--runstatedir=/run --disable-chfn-chsh --disable-login --disable-nologin --disable-su --disable-setpriv \
 	--disable-runuser --disable-pylibmount --disable-liblastlog2 --without-python \
 	ADJTIME_PATH=/var/lib/hwclock/adjtime --docdir=/usr/share/doc/util-linux-$(UTIL_LINUX_VER) && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
@@ -446,7 +449,7 @@ file: download-file .file-done
 download-lvm2: .lvm2-obtained
 
 .lvm2-obtained:
-	cd $(SRC_PATH) && wget -O lvm2-$(LVM2_VER).tgz $(LVM2_URL) && tar xf lvm2-$(LVM2_VER).tgz
+	cd $(SRC_PATH) && wget -O lvm2-$(LVM2_VER).tar.gz $(LVM2_URL) && tar xf lvm2-$(LVM2_VER).tar.gz && rm -rf LVM2.$(LVM2_VER) && mv lvm2-2_03_34 LVM2.$(LVM2_VER)
 	touch .lvm2-obtained
 
 # Compile LVM2
@@ -490,8 +493,16 @@ download-gcc: .gcc-obtained
 gcc: download-gcc .gcc-done
 
 .gcc-done:
-	mkdir -p $(GCC_PATH)/build && cd $(GCC_PATH) && ./contrib/download_prerequisites && cd build && ../configure --prefix=/usr --disable-multilib \
-	--enable-languages=c,c++ --disable-bootstrap && make -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install-target-libstdc++-v3 install-target-libgcc
+	cd $(GCC_PATH) && wget -c https://ftp.gnu.org/gnu/gettext/gettext-0.22.tar.gz && \
+	wget -c https://ftp.gnu.org/gnu/gmp/gmp-6.2.1.tar.bz2 && \
+	wget -c https://ftp.gnu.org/gnu/mpfr/mpfr-4.1.0.tar.bz2 && \
+	wget -c https://ftp.gnu.org/gnu/mpc/mpc-1.2.1.tar.gz && \
+	wget -c https://libisl.sourceforge.io/isl-0.24.tar.bz2 && \
+	./contrib/download_prerequisites --no-force && \
+	find libcody -type f \( -name "*.cc" -o -name "*.hh" \) -exec sed -i 's/u8"/\"/g' {} +
+	rm -rf $(GCC_PATH)/build
+	mkdir -p $(GCC_PATH)/build && cd $(GCC_PATH)/build && ../configure --prefix=/usr --disable-multilib \
+	--enable-languages=c,c++ --disable-bootstrap --disable-libsanitizer --disable-libvtv --disable-libitm --disable-libquadmath && $(MAKE) -j$(THREADS) all-target-libstdc++-v3 all-target-libgcc && $(MAKE) DESTDIR=$(STAGING_PATH) install-target-libstdc++-v3 install-target-libgcc
 	touch .gcc-done
 
 # Download ncurses
@@ -595,7 +606,7 @@ libxcrypt: download-libxcrypt .libxcrypt-done
 
 .libxcrypt-done:
 	cd $(LIBXCRYPT_PATH) && ./configure --prefix=/usr --enable-hashes=strong,glibc --enable-obsolete-api=no \
-	--disable-failure-tokens && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	--disable-failure-tokens --disable-werror && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libxcrypt-done
 
 # Download OpenSSL
@@ -621,7 +632,7 @@ download-linux-pam: .linux-pam-obtained
 
 .linux-pam-obtained:
 	cd $(SRC_PATH) && wget -O linux-pam-$(LINUX_PAM_VER).tar.xz $(LINUX_PAM_URL) && tar xf linux-pam-$(LINUX_PAM_VER).tar.xz
-	cd $(SRC_PATH) && wget -O linux-pam-$(LINUX_PAM_VER)-docs.tar.xz $(LINUX_PAM_DOC_URL) && tar xf linux-pam-$(LINUX_PAM_VER)-docs.tar.xz -C $(STAGING_PATH)/usr/share/doc
+	mkdir -p $(STAGING_PATH)/usr/share/doc && cd $(SRC_PATH) && wget -O linux-pam-$(LINUX_PAM_VER)-docs.tar.xz $(LINUX_PAM_DOC_URL) && tar xf linux-pam-$(LINUX_PAM_VER)-docs.tar.xz -C $(STAGING_PATH)/usr/share/doc
 	touch .linux-pam-obtained
 
 # Compile Linux-PAM
@@ -629,12 +640,15 @@ download-linux-pam: .linux-pam-obtained
 linux-pam: download-linux-pam .linux-pam-done
 
 .linux-pam-done:
-	rm $(STAGING_PATH)/etc/security || true
+	rm -rf $(STAGING_PATH)/etc/security || true
 	mkdir -p $(STAGING_PATH)/etc/pam.d
-	mkdir -p $(LINUX_PAM_PATH)/build && cd $(LINUX_PAM_PATH)/build && meson setup .. --prefix=/usr && ninja && DESTDIR=$(STAGING_PATH) ninja install && \
+	rm -rf $(LINUX_PAM_PATH)/build
+	mkdir -p $(LINUX_PAM_PATH)/build && cd $(LINUX_PAM_PATH)/build && \
+	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
+	CFLAGS="-I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib" \
+	meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -Ddocs=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install && \
 	chmod 4755 $(STAGING_PATH)/usr/sbin/unix_chkpwd && cp -a /etc/pam.d/* $(STAGING_PATH)/etc/pam.d/ && cp ../../../passwd $(STAGING_PATH)/etc/passwd && \
 	cp ../../../shadow $(STAGING_PATH)/etc/shadow && cp ../../../group $(STAGING_PATH)/etc/group
-
 	touch .linux-pam-done
 
 # Download shadow
@@ -652,7 +666,9 @@ shadow: download-shadow .shadow-done
 	find man -name Makefile.in -exec sed -i 's/getspnam\.3 / /' {} \; && \
 	find man -name Makefile.in -exec sed -i 's/passwd\.5 / /' {} \; && \
 	sed -e 's@#ENCRYPT_METHOD DES@ENCRYPT_METHOD YESCRYPT@' -e 's@/var/spool/mail@/var/mail@' -e '/PATH=/{s@/sbin:@@;s@/bin:@@}' -i etc/login.defs && \
-	./configure --sysconfdir=/etc --without-libbsd --with-{b,yes}crypt && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
+	CPPFLAGS="-I$(STAGING_PATH)/usr/include" CFLAGS="-I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib" \
+	ac_cv_func_memset_explicit=no ./configure --sysconfdir=/etc --without-libbsd --with-{b,yes}crypt && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .shadow-done
 
 # Download attr
@@ -711,7 +727,7 @@ libcap-ng: download-libcap-ng .libcap-ng-done
 download-zlib: .zlib-obtained
 
 .zlib-obtained:
-	cd $(SRC_PATH) && wget -O zlib-$(ZLIB_VER).tar.gz $(ZLIB_URL) && tar xf zlib-$(ZLIB_VER).tar.gz
+	cd $(SRC_PATH) && curl -s -L -o zlib-$(ZLIB_VER).tar.gz $(ZLIB_URL) && tar xf zlib-$(ZLIB_VER).tar.gz
 	touch .zlib-obtained
 
 # Compile zlib
@@ -727,7 +743,7 @@ zlib: download-zlib .zlib-done
 download-openldap: .openldap-obtained
 
 .openldap-obtained:
-	cd $(SRC_PATH) && wget -O openldap-$(OPENLDAP_VER).tgz $(OPENLDAP_URL) && tar xf openldap-$(OPENLDAP_VER).tgz
+	mkdir -p $(OPENLDAP_PATH) && cd $(SRC_PATH) && curl -s -L -o openldap-$(OPENLDAP_VER).tgz $(OPENLDAP_URL) && tar xf openldap-$(OPENLDAP_VER).tgz --strip-components=1 -C $(OPENLDAP_PATH)
 	touch .openldap-obtained
 
 # Compile OpenLDAP
@@ -776,7 +792,7 @@ libgpg-error: download-libgpg-error .libgpg-error-done
 
 .libgpg-error-done:
 	cd $(LIBGPG_ERROR_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
-	install -m644 -D README /usr/share/doc/libgpg-error-$(LIBGPG_ERROR_VER)/README
+	install -m644 -D README $(STAGING_PATH)/usr/share/doc/libgpg-error-$(LIBGPG_ERROR_VER)/README
 	touch .libgpg-error-done
 
 # Download readline
@@ -899,10 +915,8 @@ bzip2: download-bzip2 .bzip2-done
 	cd $(BZIP2_PATH) && sed -i 's@\(ln -s -f \)$(PREFIX)/bin/@\1@' Makefile && $(MAKE) clean && \
 	$(MAKE) -f Makefile-libbz2_so && $(MAKE) clean && $(MAKE) -j$(THREADS) && \
 	$(MAKE) PREFIX=$(STAGING_PATH)/usr install && cp -a libbz2.so.* $(STAGING_PATH)/usr/lib && \
-	ln -sf libbz2.so.1.0.8 /usr/lib/libbz2.so && cp bzip2-shared $(STAGING_PATH)/usr/bin/bzip2
-	for i in /usr/bin/{bzcat,bunzip2}; do \
-	  cd $(STAGING_PATH) && ln -sf bzip2 $$i; \
-	done
+	ln -sf libbz2.so.1.0.8 $(STAGING_PATH)/usr/lib/libbz2.so && cp bzip2-shared $(STAGING_PATH)/usr/bin/bzip2
+	cd $(STAGING_PATH)/usr/bin && ln -sf bzip2 bzcat && ln -sf bzip2 bunzip2
 	touch .bzip2-done
 
 # Download XZ Utils
@@ -918,7 +932,7 @@ download-xz-utils: .xz-utils-obtained
 xz-utils: download-xz-utils .xz-utils-done
 
 .xz-utils-done:
-	cd $(XZ_UTILS_PATH) && ./configure --prefix=/usr --docdir=/usr/share/doc/xz-$(XZ_VER) && \
+	cd $(XZ_UTILS_PATH) && ./configure --prefix=/usr --docdir=/usr/share/doc/xz-$(XZ_UTILS_VER) && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .xz-utils-done
 
@@ -984,7 +998,7 @@ krb5: download-krb5 .krb5-done
 
 .krb5-done:
 	cd $(KRB5_PATH)/src && ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var/lib --runstatedir=/run --with-system-et \
-	--with-system-ss --with-system-verto=no --enable-dns-for-realm --disable-rpath && $(MAKE) -j$(THREADS) && \
+	--with-system-ss --with-system-verto=no --enable-dns-for-realm --disable-rpath && $(MAKE) WARN_CFLAGS="" -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install && cp -fr ../doc $(STAGING_PATH)/usr/share/doc/krb5-$(KRB5_VER)
 	touch .krb5-done
 
@@ -1009,8 +1023,7 @@ libnsl: download-libnsl .libnsl-done
 download-libtirpc: .libtirpc-obtained
 
 .libtirpc-obtained:
-	cd $(SRC_PATH) && wget -O libtirpc-$(LIBTIRPC_VER).tar.bz2 $(LIBTIRPC_URL) && tar xf libtirpc-$(LIBTIRPC_VER).tar.bz2 && \
-	cd $(LIBTIRPC_PATH) && curl -s -L $(LIBTIRPC_PATCH_URL) | patch -p1
+	cd $(SRC_PATH) && wget -O libtirpc-$(LIBTIRPC_VER).tar.bz2 $(LIBTIRPC_URL) && tar xf libtirpc-$(LIBTIRPC_VER).tar.bz2
 	touch .libtirpc-obtained
 
 # Compile libtirpc
@@ -1067,7 +1080,7 @@ download-libfuse: .libfuse-obtained
 libfuse: download-libfuse .libfuse-done
 
 .libfuse-done:
-	mkdir -p $(LIBFUSE_PATH)/build && cd $(LIBFUSE_PATH)/build && meson setup --prefix=/usr --buildtype=release .. && ninja && \
+	mkdir -p $(LIBFUSE_PATH)/build && cd $(LIBFUSE_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && \
 	DESTDIR=$(STAGING_PATH) ninja install && chmod u+s $(STAGING_PATH)/usr/bin/fusermount3 && cd .. && \
 	cp -R doc/html -T $(STAGING_PATH)/usr/share/doc/fuse-$(LIBFUSE_VER) && install -v -m644 doc/{README.NFS,kernel.txt} $(STAGING_PATH)/usr/share/doc/fuse-$(LIBFUSE_VER)
 	touch .libfuse-done
@@ -1083,7 +1096,7 @@ download-dbus: .dbus-obtained
 # Compile D-Bus
 dbus: download-dbus .dbus-done
 .dbus-done:
-	mkdir -p $(DBUS_PATH)/build && cd $(DBUS_PATH)/build && meson setup --prefix=/usr --buildtype=release --wrap-mode=nofallback .. && ninja && \
+	mkdir -p $(DBUS_PATH)/build && cd $(DBUS_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release --wrap-mode=nofallback .. && ninja && \
 	DESTDIR=$(STAGING_PATH) ninja install && chown 0:18 $(STAGING_PATH)/usr/lib/dbus-daemon-launch-helper || true && \
 	chmod 4750 $(STAGING_PATH)/usr/lib/dbus-daemon-launch-helper || true && if [ -e $(STAGING_PATH)/usr/share/doc/dbus ]; then rm -rf $(STAGING_PATH)/usr/share/doc/dbus-$(DBUS_VER) && \
 	mv $(STAGING_PATH)/usr/share/doc/dbus{,-$(DBUS_VER)}; fi && rm -rf $(STAGING_PATH)/usr/bin/dbus-launch
@@ -1100,7 +1113,7 @@ download-dbus-broker: .dbus-broker-obtained
 # Compile dbus-broker
 dbus-broker: download-dbus-broker .dbus-broker-done
 .dbus-broker-done:
-	mkdir -p $(DBUS_BROKER_PATH)/build && cd $(DBUS_BROKER_PATH)/build && meson setup --prefix=/usr --buildtype=release .. && \
+	mkdir -p $(DBUS_BROKER_PATH)/build && cd $(DBUS_BROKER_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && \
 	ninja && DESTDIR=$(STAGING_PATH) ninja install && mv $(STAGING_PATH)/usr/lib/systemd/system/dbus-broker.service $(STAGING_PATH)/usr/lib/systemd/system/dbus.service 
 	touch .dbus-broker-done
 
