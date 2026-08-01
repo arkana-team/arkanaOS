@@ -218,7 +218,7 @@ download-libjbig: .libjbig-obtained
 # Hey Mr. Cambridge guy, care to update your build system? It's so UNIX.
 libjbig: download-libjbig .libjbig-done
 .libjbig-done:
-	cd $(JBIG_KIT_PATH) && curl -s -f $(JBIG_KIT_PATCH_URL) | patch -Np1 && $(MAKE) -j$(THREADS) && cp -a libjbig/libjbig.so.2.1 $(STAGING_PATH)/usr/lib && \
+	cd $(JBIG_KIT_PATH) && (curl -s -f $(JBIG_KIT_PATCH_URL) | patch -N -p1 || true) && $(MAKE) -j$(THREADS) && cp -a libjbig/libjbig.so.2.1 $(STAGING_PATH)/usr/lib && \
 	ln -sf libjbig.so.2.1 $(STAGING_PATH)/usr/lib/libjbig.so
 	touch .libjbig-done
 
@@ -253,17 +253,32 @@ libdisplay-info: download-libdisplay-info .libdisplay-info-done
 	cd $(LIBDISPLAY_INFO_PATH) && mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .libdisplay-info-done
 
+HWDATA_URL = https://github.com/vcrhonek/hwdata/archive/refs/tags/v0.392.tar.gz
+HWDATA_VER = 0.392
+HWDATA_PATH = $(SRC_PATH)/hwdata-$(HWDATA_VER)
+
+download-hwdata: .hwdata-obtained
+.hwdata-obtained:
+	cd $(SRC_PATH) && wget -O hwdata-$(HWDATA_VER).tar.gz $(HWDATA_URL) && tar xf hwdata-$(HWDATA_VER).tar.gz
+	touch .hwdata-obtained
+
+hwdata: download-hwdata .hwdata-done
+.hwdata-done:
+	cd $(HWDATA_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .hwdata-done
+
 download-wlroots: .wlroots-obtained
 .wlroots-obtained:
 	cd $(SRC_PATH) && wget -O wlroots-$(WLROOTS_VER).tar.gz $(WLROOTS_URL) && tar xf wlroots-$(WLROOTS_VER).tar.gz
 	touch .wlroots-obtained
 
-wlroots: download-wlroots libdisplay-info .wlroots-done
+wlroots: download-wlroots libdisplay-info seatd hwdata .wlroots-done
 .wlroots-done:
-	cd $(WLROOTS_PATH) && mkdir -p build && cd build && \
+	cd $(WLROOTS_PATH) && rm -rf build && mkdir -p build && cd build && \
 	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
 	CFLAGS="-I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib" \
-	meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -D examples=false .. && ninja && DESTDIR=$(STAGING_PATH) ninja install && \
+	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
+	meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -D backends=drm,libinput -D renderers=gles2 -D examples=false .. && ninja && DESTDIR=$(STAGING_PATH) ninja install && \
 	sed -i 's|prefix=/usr|prefix=$(STAGING_PATH)/usr|g' $(STAGING_PATH)/usr/lib/pkgconfig/wlroots*.pc
 	touch .wlroots-done
 
@@ -294,13 +309,29 @@ download-labwc: .labwc-obtained
 	cd $(SRC_PATH) && wget -O labwc-$(LABWC_VER).tar.gz $(LABWC_URL) && tar xf labwc-$(LABWC_VER).tar.gz
 	touch .labwc-obtained
 
-labwc: download-labwc wlroots xcb-util-wm libsfdo .labwc-done
+LIBXML2_URL = https://download.gnome.org/sources/libxml2/2.14/libxml2-2.14.5.tar.xz
+LIBXML2_VER = 2.14.5
+LIBXML2_PATH = $(SRC_PATH)/libxml2-$(LIBXML2_VER)
+
+download-libxml2: .libxml2-obtained
+.libxml2-obtained:
+	cd $(SRC_PATH) && wget -O libxml2-$(LIBXML2_VER).tar.gz $(LIBXML2_URL) && tar xf libxml2-$(LIBXML2_VER).tar.gz
+	touch .libxml2-obtained
+
+libxml2: download-libxml2 .libxml2-done
+.libxml2-done:
+	cd $(LIBXML2_PATH) && ./configure --prefix=/usr --sysconfdir=/etc --without-python && \
+	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .libxml2-done
+
+labwc: download-labwc wlroots xcb-util-wm libsfdo libxml2 .labwc-done
 
 .labwc-done:
-	cd $(LABWC_PATH) && mkdir -p build && cd build && \
+	cd $(LABWC_PATH) && rm -rf build && mkdir -p build && cd build && \
 	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
 	CFLAGS="-I$(STAGING_PATH)/usr/include/wlroots-0.19 -I$(STAGING_PATH)/usr/include -I$(STAGING_PATH)/usr/include/pixman-1" \
 	LDFLAGS="-L$(STAGING_PATH)/usr/lib -lwacom" \
+	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
 	meson setup --prefix=/usr --native-file $(SRC_PATH)/cross_file.txt -Dc_args="-Uunix" --buildtype=release --wrap-mode=nodownload .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	# Why is pam_systemd.so not doing this for us?
 	echo >> $(STAGING_PATH)/etc/profile
@@ -341,3 +372,53 @@ seatd: download-seatd .seatd-done
 
 	ln -sf /usr/lib/systemd/system/seatd.service $(STAGING_PATH)/etc/systemd/system/multi-user.target.wants/seatd.service
 	touch .seatd-done
+
+# FLTK (Toolkit for Dillo)
+FLTK_URL = https://www.fltk.org/pub/fltk/1.3.9/fltk-1.3.9-source.tar.gz
+FLTK_VER = 1.3.9
+FLTK_PATH = $(SRC_PATH)/fltk-$(FLTK_VER)
+
+download-fltk: .fltk-obtained
+.fltk-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O fltk-$(FLTK_VER)-source.tar.gz $(FLTK_URL) && tar xf fltk-$(FLTK_VER)-source.tar.gz
+	touch .fltk-obtained
+
+fltk: download-fltk .fltk-done
+.fltk-done:
+	cd $(FLTK_PATH) && rm -f config.cache && \
+	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
+	CFLAGS="--sysroot=$(STAGING_PATH) -I$(STAGING_PATH)/usr/include" \
+	CXXFLAGS="--sysroot=$(STAGING_PATH) -I$(STAGING_PATH)/usr/include" \
+	LDFLAGS="--sysroot=$(STAGING_PATH) -L$(STAGING_PATH)/usr/lib -Wl,-rpath-link,$(STAGING_PATH)/usr/lib" \
+	./configure --prefix=/usr --enable-shared --disable-gl && \
+	sed -i '/^DSOFLAGS/s|=|= --sysroot=$(STAGING_PATH) -L$(STAGING_PATH)/usr/lib -Wl,-rpath-link,$(STAGING_PATH)/usr/lib|' makeinclude && \
+	$(MAKE) -j$(THREADS) && \
+	$(MAKE) DESTDIR=$(STAGING_PATH) install && \
+	sed -i 's|-I/usr/include|-I$(STAGING_PATH)/usr/include|g' $(STAGING_PATH)/usr/bin/fltk-config && \
+	sed -i 's|-L/usr/lib|-L$(STAGING_PATH)/usr/lib|g' $(STAGING_PATH)/usr/bin/fltk-config
+	touch .fltk-done
+
+# Dillo Web Browser
+DILLO_URL = https://github.com/dillo-browser/dillo/releases/download/v3.1.1/dillo-3.1.1.tar.bz2
+DILLO_VER = 3.1.1
+DILLO_PATH = $(SRC_PATH)/dillo-$(DILLO_VER)
+
+download-dillo: .dillo-obtained
+.dillo-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O dillo-$(DILLO_VER).tar.bz2 $(DILLO_URL) && tar xf dillo-$(DILLO_VER).tar.bz2
+	touch .dillo-obtained
+
+dillo: download-dillo fltk .dillo-done
+.dillo-done:
+	cd $(DILLO_PATH) && rm -f config.cache && \
+	sed -i 's/arrayExtra,/arrayExtra1,/g' lout/misc.hh 2>/dev/null || true ; \
+	sed -i 's/this->arrayExtra =/this->arrayExtra1 =/g' lout/misc.hh 2>/dev/null || true ; \
+	PATH="$(STAGING_PATH)/usr/bin:$$PATH" \
+	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
+	CC="gcc" CXX="g++" \
+	CFLAGS="--sysroot=$(STAGING_PATH) -I$(STAGING_PATH)/usr/include -fpermissive -Wno-error=incompatible-pointer-types" \
+	CXXFLAGS="--sysroot=$(STAGING_PATH) -I$(STAGING_PATH)/usr/include -fpermissive -Wno-error=incompatible-pointer-types" \
+	LDFLAGS="--sysroot=$(STAGING_PATH) -L$(STAGING_PATH)/usr/lib -Wl,-rpath-link,$(STAGING_PATH)/usr/lib" \
+	./configure --prefix=/usr --sysconfdir=/etc --disable-tls && \
+	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .dillo-done

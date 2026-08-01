@@ -349,17 +349,17 @@ systemd: download-systemd .systemd-done
 	-D default-dnssec=no -D firstboot=false -D install-tests=false -D ldconfig=false \
 	-D man=auto -D sysusers=false -D rpmmacrosdir=no -D homed=disabled \
 	-D userdb=false -D mode=release -D pam=enabled -D pamconfdir=/etc/pam.d \
-	-D dev-kvm-mode=0660 -D nobody-group=nogroup -D sysupdate=disabled -D ukify=disabled \
+	-D dev-kvm-mode=0660 -D nobody-group=nogroup -D sysupdate=disabled -D ukify=disabled -D dbus-interfaces-dir=no \
 	-D docdir=/usr/share/doc/systemd-$(SYSTEMD_VER) && ninja && DESTDIR=$(STAGING_PATH) ninja install
 
 	echo "arkana" > $(STAGING_PATH)/etc/hostname
 	
 	echo "NAME=arkanaOS" > $(STAGING_PATH)/etc/os-release
-	echo "VERSION=dev" >> $(STAGING_PATH)/etc/os-release
+	echo "VERSION=nightly" >> $(STAGING_PATH)/etc/os-release
 	echo "ID=arkana" >> $(STAGING_PATH)/etc/os-release
 	echo "ID_LIKE=lfs" >> $(STAGING_PATH)/etc/os-release
-	echo "VERSION_ID=dev" >> $(STAGING_PATH)/etc/os-release
-	echo "PRETTY_NAME='arkanaOS Dev'" >> $(STAGING_PATH)/etc/os-release
+	echo "VERSION_ID=nightly" >> $(STAGING_PATH)/etc/os-release
+	echo "PRETTY_NAME='arkanaOS nightly'" >> $(STAGING_PATH)/etc/os-release
 	echo "ANSI_COLOR='38;5;6'" >> $(STAGING_PATH)/etc/os-release
 
 	mkdir -p $(STAGING_PATH)/etc/systemd/system/getty@tty1.service.d
@@ -372,7 +372,7 @@ systemd: download-systemd .systemd-done
 .PHONY: timestamp
 timestamp:
 	BUILD=$$(($$(cat $(BUILDNUM_FILE))+1)); \
-	echo "arkanaOS Dev ($$(date +%Y%m%d)) (build $$BUILD)" > $(STAGING_PATH)/etc/issue; \
+	echo "arkanaOS nightly ($$(date +%Y%m%d)) (build $$BUILD)" > $(STAGING_PATH)/etc/issue; \
 	echo $$BUILD > $(BUILDNUM_FILE)
 
 # Download coreutils
@@ -497,7 +497,7 @@ gcc: download-gcc .gcc-done
 	wget -c https://ftp.gnu.org/gnu/gmp/gmp-6.2.1.tar.bz2 && \
 	wget -c https://ftp.gnu.org/gnu/mpfr/mpfr-4.1.0.tar.bz2 && \
 	wget -c https://ftp.gnu.org/gnu/mpc/mpc-1.2.1.tar.gz && \
-	wget -c https://libisl.sourceforge.io/isl-0.24.tar.bz2 && \
+	wget -c https://www.mirrorservice.org/sites/sourceware.org/pub/gcc/infrastructure/isl-0.24.tar.bz2 && \
 	./contrib/download_prerequisites --no-force && \
 	find libcody -type f \( -name "*.cc" -o -name "*.hh" \) -exec sed -i 's/u8"/\"/g' {} +
 	rm -rf $(GCC_PATH)/build
@@ -519,7 +519,7 @@ ncurses: download-ncurses .ncurses-done
 
 .ncurses-done:
 	cd $(NCURSES_PATH) && ./configure --prefix=/usr --mandir=/usr/share/man --with-shared --without-debug \
-	--without-normal --with-cxx-shared --enable-pc-files --with-pkg-config-libdir=/usr/lib/pkgconfig \
+	--without-normal --without-cxx --without-cxx-binding --enable-pc-files --with-pkg-config-libdir=/usr/lib/pkgconfig \
 	--with-versioned-syms && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	ln -sf libncursesw.so $(STAGING_PATH)/usr/lib/libcurses.so
 	touch .ncurses-done
@@ -588,7 +588,7 @@ download-gmp: .gmp-obtained
 gmp: download-gmp .gmp-done
 
 .gmp-done:
-	cd $(GMP_PATH) && ./configure --prefix=/usr --enable-cxx --docdir=/usr/share/doc/gmp-$(GMP_VER) && \
+	cd $(GMP_PATH) && ./configure --prefix=/usr --enable-cxx --docdir=/usr/share/doc/gmp-$(GMP_VER) CFLAGS="-O2 -pedantic -fomit-frame-pointer -m64 -std=gnu17" && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .gmp-done
 
@@ -843,7 +843,7 @@ cyrus-sasl: download-cyrus-sasl .cyrus-sasl-done
 .cyrus-sasl-done:
 	cd $(CYRUS_SASL_PATH) && sed '/saslint/a #include <time.h>' -i lib/saslutil.c && sed '/plugin_common/a #include <time.h>' -i plugins/cram.c && \
 	./configure --prefix=/usr --sysconfdir=/etc --enable-auth-sasldb --with-dblib=lmdb --with-dbpath=/var/lib/sasl/sasldb2 --with-sphinx-build=no \
-	--with-saslauthd=/var/run/saslauthd && $(MAKE) && $(MAKE) DESTDIR=$(STAGING_PATH) install && install -dm755 $(STAGING_PATH)/usr/share/doc/cyrus-sasl-$(CYRUS_SASL_VER)/html && \
+	--with-saslauthd=/var/run/saslauthd CFLAGS="-O2 -std=gnu17" && $(MAKE) && $(MAKE) DESTDIR=$(STAGING_PATH) install && install -dm755 $(STAGING_PATH)/usr/share/doc/cyrus-sasl-$(CYRUS_SASL_VER)/html && \
 	install -m644 saslauthd/LDAP_SASLAUTHD $(STAGING_PATH)/usr/share/doc/cyrus-sasl-$(CYRUS_SASL_VER) && install -m644 doc/legacy/*.html \
 	$(STAGING_PATH)/usr/share/doc/cyrus-sasl-$(CYRUS_SASL_VER)/html && install -dm700 $(STAGING_PATH)/var/lib/sasl
 	touch .cyrus-sasl-done
@@ -915,8 +915,9 @@ bzip2: download-bzip2 .bzip2-done
 	cd $(BZIP2_PATH) && sed -i 's@\(ln -s -f \)$(PREFIX)/bin/@\1@' Makefile && $(MAKE) clean && \
 	$(MAKE) -f Makefile-libbz2_so && $(MAKE) clean && $(MAKE) -j$(THREADS) && \
 	$(MAKE) PREFIX=$(STAGING_PATH)/usr install && cp -a libbz2.so.* $(STAGING_PATH)/usr/lib && \
-	ln -sf libbz2.so.1.0.8 $(STAGING_PATH)/usr/lib/libbz2.so && cp bzip2-shared $(STAGING_PATH)/usr/bin/bzip2
 	cd $(STAGING_PATH)/usr/bin && ln -sf bzip2 bzcat && ln -sf bzip2 bunzip2
+	mkdir -p $(STAGING_PATH)/usr/lib/pkgconfig
+	printf 'prefix=/usr\nexec_prefix=$${prefix}\nlibdir=$${exec_prefix}/lib\nincludedir=$${prefix}/include\n\nName: bzip2\nDescription: bzip2 compression library\nVersion: 1.0.8\nLibs: -L$${libdir} -lbz2\nCflags: -I$${includedir}\n' > $(STAGING_PATH)/usr/lib/pkgconfig/bzip2.pc
 	touch .bzip2-done
 
 # Download XZ Utils

@@ -351,8 +351,9 @@ download-libidn2: .libidn2-obtained
 
 # Compile libidn2
 libidn2: download-libidn2 .libidn2-done
+
 .libidn2-done:
-	cd $(LIBIDN2_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBIDN2_PATH) && ./configure --prefix=/usr && mkdir -p unistring/.libs gl/.libs && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libidn2-done
 
 # Download libunistring
@@ -697,7 +698,7 @@ download-vim: .vim-obtained
 # Compile vim
 vim: download-vim .vim-done
 .vim-done:
-	cd $(VIM_PATH) && echo '#define SYS_VIMRC_FILE  "/etc/vimrc"' >> src/feature.h && ./configure --prefix=/usr --with-features=huge --enable-gui=no --without-x --without-wayland --disable-libsodium --disable-gpm --with-tlib=ncursesw && \
+	cd $(VIM_PATH) && rm -f src/auto/config.cache && echo '#define SYS_VIMRC_FILE  "/etc/vimrc"' >> src/feature.h && ./configure --prefix=/usr --with-features=huge --enable-gui=no --without-x --without-wayland --disable-libsodium --disable-gpm --with-tlib=ncursesw && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && ln -snf ../vim/vim91/doc $(STAGING_PATH)/usr/share/doc/vim-$(VIM_VER)
 	touch .vim-done
 
@@ -746,7 +747,7 @@ download-parted: .parted-obtained
 # Compile parted
 parted: download-parted .parted-done
 .parted-done:
-	cd $(PARTED_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(PARTED_PATH) && ./configure --prefix=/usr CFLAGS="-O2 -std=gnu17 -Wno-error=incompatible-pointer-types" && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .parted-done
 
 # Download make-ca

@@ -189,26 +189,40 @@ LIBJPEG_TURBO_URL = https://downloads.sourceforge.net/libjpeg-turbo/libjpeg-turb
 LIBJPEG_TURBO_VER = 3.0.1
 LIBJPEG_TURBO_PATH = $(SRC_PATH)/libjpeg-turbo-$(LIBJPEG_TURBO_VER)
 
-X11_LIBS = X11 Xau xcvt Xdmcp Xext Xfont2 xshmfence xcb fontenc Xxf86vm pciaccess Xmu xkbfile Xft Xinerama Xrandr Xrender Xaw Xpm Xt ICE SM Xcursor Xfixes
-X11_LIB_VERS = 1.8.12 1.0.12 0.1.3 1.1.5 1.3.6 2.0.7 1.3.3 1.17.0 1.1.8 1.1.6 0.18.1 1.2.1 1.1.3 2.3.9 1.1.5 1.5.4 0.9.12 1.0.16 3.5.17 1.3.1 1.1.2 1.2.6 1.2.3 6.0.1
+X11_LIBS = X11 Xau xcvt Xdmcp Xext Xfont2 xshmfence xcb fontenc Xxf86vm pciaccess Xmu xkbfile Xft Xinerama Xrandr Xrender Xaw Xpm Xt ICE SM Xcursor Xfixes Xi Xcomposite Xtst
+X11_LIB_VERS = 1.8.12 1.0.12 0.1.3 1.1.5 1.3.6 2.0.7 1.3.3 1.17.0 1.1.8 1.1.6 0.18.1 1.2.1 1.1.3 2.3.9 1.1.5 1.5.4 0.9.12 1.0.16 3.5.17 1.3.1 1.1.2 1.2.6 1.2.3 6.0.1 1.8.1 0.4.6 1.2.4
 
 X11_PARSED_LIBS := $(foreach i, $(shell seq 1 $(words $(X11_LIBS))), \
   $(word $(i), $(X11_LIBS))/$(word $(i), $(X11_LIB_VERS)))
 
-X11_APPS = xauth xkbcomp
-X11_APP_VERS = 1.1.4 1.4.7
+X11_APPS = xauth xkbcomp twm xsetroot xrandr
+X11_APP_VERS = 1.1.4 1.4.7 1.0.12 1.1.3 1.5.2
 
 X11_PARSED_APPS := $(foreach i, $(shell seq 1 $(words $(X11_APPS))), \
   $(word $(i), $(X11_APPS))/$(word $(i), $(X11_APP_VERS)))
 
-X11_FONTS = font-util encodings font-alias font-adobe-utopia-type1 font-bh-ttf font-bh-type1 font-ibm-type1 font-misc-ethiopic font-xfree86-type1
-X11_FONT_VERS = 1.4.1 1.1.0 1.0.5 1.0.5 1.0.4 1.0.4 1.0.4 1.0.5 1.0.5
+X11_FONTS = font-util encodings font-alias font-adobe-utopia-type1 font-bh-ttf font-bh-type1 font-ibm-type1 font-misc-ethiopic font-xfree86-type1 font-cursor-misc
+X11_FONT_VERS = 1.4.1 1.1.0 1.0.5 1.0.5 1.0.4 1.0.4 1.0.4 1.0.5 1.0.5 1.0.4
 
 X11_PARSED_FONTS := $(foreach i, $(shell seq 1 $(words $(X11_FONTS))), \
   $(word $(i), $(X11_FONTS))/$(word $(i), $(X11_FONT_VERS)))
 
 # Targets
-all: xorg-server xorg-libs libbsd libmd libdrm mesa lm-sensors llvm libedit spirv-tools xinit xorg-apps xorg-fonts xorg-xkeyboard-config xf86-input-evdev openbox fribidi xterm luit libinput libevdev mtdev libwacom libgudev feh imlib2 pango libthai libdatrie librsvg libdav1d gdk-pixbuf libjpeg-turbo
+all: xorgproto xorg-server xorg-libs libbsd libmd libdrm mesa lm-sensors llvm libedit spirv-tools xinit xorg-apps xorg-fonts xorg-xkeyboard-config xf86-input-evdev openbox fribidi xterm luit libinput libevdev mtdev libwacom libgudev feh imlib2 pango libthai libdatrie librsvg libdav1d gdk-pixbuf libjpeg-turbo
+
+XORGPROTO_URL = https://www.x.org/pub/individual/proto/xorgproto-2024.1.tar.xz
+XORGPROTO_VER = 2024.1
+XORGPROTO_PATH = $(SRC_PATH)/xorgproto-$(XORGPROTO_VER)
+
+download-xorgproto: .xorgproto-obtained
+.xorgproto-obtained:
+	cd $(SRC_PATH) && wget -O xorgproto-$(XORGPROTO_VER).tar.xz $(XORGPROTO_URL) && tar xf xorgproto-$(XORGPROTO_VER).tar.xz
+	touch .xorgproto-obtained
+
+xorgproto: download-xorgproto .xorgproto-done
+.xorgproto-done:
+	mkdir -p $(XORGPROTO_PATH)/build && cd $(XORGPROTO_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	touch .xorgproto-done
 
 # Download Xorg server
 download-xorg-server: .xorg-server-obtained
@@ -340,9 +354,8 @@ mesa: download-mesa .mesa-done
 	cd $(MESA_PATH) && \
 	sed -i '/#include <clang\/Config\/config.h>/i #undef UNUSED' src/compiler/clc/clc_helpers.cpp && \
 	sed -i '/#include "clc_helpers.h"/a #undef UNUSED\n#define UNUSED __attribute__((unused))' src/compiler/clc/clc_helpers.cpp && \
-	sed -i 's/Driver::GetResourcesPath.*/std::string(CLANG_RESOURCE_DIR);/' src/compiler/clc/clc_helpers.cpp && \
-	mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D platforms=x11,wayland -D gallium-drivers=auto -D vulkan-drivers=auto \
-	-D valgrind=disabled -D video-codecs=all -D libunwind=disabled -D glvnd=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D platforms=x11,wayland -D gallium-drivers=softpipe,virgl,nouveau,r300,r600,radeonsi -D vulkan-drivers=amd \
+	-D valgrind=disabled -D video-codecs=all -D libunwind=disabled -D glvnd=disabled -D llvm=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .mesa-done
 
 # Download lm-sensors

@@ -121,7 +121,48 @@ mate-menus: download-mate-menus mate-common .mate-menus-done
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .mate-menus-done
 
-# Libwnck
+SHARED_MIME_INFO_URL = https://gitlab.freedesktop.org/xdg/shared-mime-info/-/archive/2.4/shared-mime-info-2.4.tar.gz
+SHARED_MIME_INFO_VER = 2.4
+SHARED_MIME_INFO_PATH = $(SRC_PATH)/shared-mime-info-$(SHARED_MIME_INFO_VER)
+
+download-shared-mime-info: .shared-mime-info-obtained
+.shared-mime-info-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O shared-mime-info-$(SHARED_MIME_INFO_VER).tar.gz $(SHARED_MIME_INFO_URL) && tar xf shared-mime-info-$(SHARED_MIME_INFO_VER).tar.gz
+	touch .shared-mime-info-obtained
+
+shared-mime-info: download-shared-mime-info .shared-mime-info-done
+.shared-mime-info-done:
+	mkdir -p $(SHARED_MIME_INFO_PATH)/build && cd $(SHARED_MIME_INFO_PATH)/build && \
+	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
+	CFLAGS="-I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib" \
+	meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && \
+	ninja && DESTDIR=$(STAGING_PATH) ninja install && \
+	sed -i 's|prefix=/usr|prefix=$(STAGING_PATH)/usr|g' $(STAGING_PATH)/usr/share/pkgconfig/shared-mime-info.pc 2>/dev/null || true
+	touch .shared-mime-info-done
+
+GTK3_URL = https://download.gnome.org/sources/gtk+/3.24/gtk+-3.24.43.tar.xz
+GTK3_VER = 3.24.43
+GTK3_PATH = $(SRC_PATH)/gtk+-$(GTK3_VER)
+
+download-gtk3: .gtk3-obtained
+.gtk3-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O gtk+-$(GTK3_VER).tar.xz $(GTK3_URL) && tar xf gtk+-$(GTK3_VER).tar.xz
+	touch .gtk3-obtained
+
+gtk3: download-gtk3 shared-mime-info .gtk3-done
+.gtk3-done:
+	cd $(GTK3_PATH) && sed -i "s/dependency(.atk-bridge-2.0.*/dependency('atk-bridge-2.0', required: false)/g" meson.build && \
+	sed -i 's/#include <atk-bridge.h>/\/\/#include <atk-bridge.h>/g' gtk/a11y/gtkaccessibility.c && \
+	sed -i 's/atk_bridge_adaptor_init.*/\/\/*/g' gtk/a11y/gtkaccessibility.c && \
+	mkdir -p build && cd build && \
+	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
+	CFLAGS="-I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib" \
+	meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -Dintrospection=false -Datk:introspection=false -Dprint_backends=file,lpr -Ddemos=false -Dexamples=false -Dtests=false .. && \
+	ninja && DESTDIR=$(STAGING_PATH) ninja install && \
+	sed -i 's|prefix=/usr|prefix=$(STAGING_PATH)/usr|g' $(STAGING_PATH)/usr/lib/pkgconfig/gtk+-*.pc $(STAGING_PATH)/usr/lib/pkgconfig/gdk-*.pc && \
+	sed -i -E 's/dep[0-9]+/atk/g; s/atk-bridge-2.0//g' $(STAGING_PATH)/usr/lib/pkgconfig/gtk+-*.pc $(STAGING_PATH)/usr/lib/pkgconfig/gdk-*.pc
+	touch .gtk3-done
+
 LIBWNCK_URL = https://download.gnome.org/sources/libwnck/43/libwnck-43.2.tar.xz
 LIBWNCK_VER = 43.2
 LIBWNCK_PATH = $(SRC_PATH)/libwnck-$(LIBWNCK_VER)
@@ -131,7 +172,7 @@ download-libwnck: .libwnck-obtained
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libwnck-$(LIBWNCK_VER).tar.xz $(LIBWNCK_URL) && tar xf libwnck-$(LIBWNCK_VER).tar.xz
 	touch .libwnck-obtained
 
-libwnck: download-libwnck .libwnck-done
+libwnck: download-libwnck gtk3 .libwnck-done
 .libwnck-done:
 	mkdir -p $(LIBWNCK_PATH)/build && cd $(LIBWNCK_PATH)/build && \
 	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
@@ -233,8 +274,27 @@ mate-terminal: download-mate-terminal vte mate-desktop .mate-terminal-done
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .mate-terminal-done
 
+# Marco Window Manager
+MARCO_URL = https://pub.mate-desktop.org/releases/1.28/marco-1.28.0.tar.xz
+MARCO_VER = 1.28.0
+MARCO_PATH = $(SRC_PATH)/marco-$(MARCO_VER)
+
+download-marco: .marco-obtained
+.marco-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O marco-$(MARCO_VER).tar.xz $(MARCO_URL) && tar xf marco-$(MARCO_VER).tar.xz
+	touch .marco-obtained
+
+marco: download-marco libwnck .marco-done
+.marco-done:
+	cd $(MARCO_PATH) && \
+	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
+	CFLAGS="-I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib" \
+	./configure --prefix=/usr --sysconfdir=/etc --disable-dependency-tracking --disable-static --disable-zenity && \
+	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .marco-done
+
 .PHONY: mate-iso
-mate-iso: mate-common mate-desktop libmatekbd mate-menus mate-panel mate-session mate-terminal vte dbus-glib
+mate-iso: mate-common mate-desktop libmatekbd mate-menus mate-panel mate-session mate-terminal marco vte dbus-glib
 	mkdir -p $(ISO_STAGING_PATH)/boot/grub
 	mkdir -p $(STAGING_PATH)/etc/labwc
 	echo 'nm-applet &' > $(STAGING_PATH)/etc/labwc/autostart

@@ -6,15 +6,16 @@ if [ "$$" -ne 1 ]; then
     exit 1
 fi
 
-# Define status indicators without relying on echo -e
+# Define status indicators matching systemd formatting
 SYSTEMD_OK="[  \x1b[32mOK  \x1b[0m]"
 SYSTEMD_FAIL="[\x1b[31mFAILED\x1b[0m]"
 
-# Mount essential filesystems
+# Mount essential virtual filesystems
 printf '         Mounting filesystems...\n'
 mount -t proc none /proc && printf '%b Mounted proc filesystem\n' "$SYSTEMD_OK"
 mount -t sysfs none /sys && printf '%b Mounted sysfs filesystem\n' "$SYSTEMD_OK"
 mount -t devtmpfs none /dev && printf '%b Mounted devtmpfs filesystem\n' "$SYSTEMD_OK"
+mount -t tmpfs -o mode=0755 none /run && printf '%b Mounted run tmpfs\n' "$SYSTEMD_OK"
 
 # Populate devices needed for system startup
 printf '         Populating devices...\n'
@@ -32,41 +33,53 @@ else
     printf '%b Unable to configure kernel printk\n' "$SYSTEMD_FAIL"
 fi
 
-# Enable kernel modules needed for system startup
-for module in squashfs overlay; do
+# Load filesystem kernel modules
+for module in squashfs overlay isofs; do
     printf '         Loading %s module...\n' "$module"
-    if modprobe "$module"; then
+    if modprobe "$module" 2>/dev/null; then
         printf '%b Loaded %s module\n' "$SYSTEMD_OK" "$module"
     else
-        printf '%b Unable to load %s module or not found\n' "$SYSTEMD_FAIL" "$module"
+        printf '%b Module %s not found or built-in\n' "$SYSTEMD_OK" "$module"
     fi
 done
 
-# Create working paths for system startup
+# Create working directories under /run/initramfs and /mnt/newroot
 printf '         Creating working directories...\n'
-if mkdir -p /mnt/overlay /mnt/squashfs /mnt/newroot /mnt/upper /mnt/work /mnt/bootdev; then
+if mkdir -p /run/initramfs/bootdev /run/initramfs/squashfs /run/initramfs/overlay /mnt/newroot; then
     printf '%b Created working directories\n' "$SYSTEMD_OK"
 else
     printf '%b Unable to create working directories\n' "$SYSTEMD_FAIL"
 fi
 
-# Set up the writable environment
+# Search and mount live boot device & filesystems
 mount_filesystems() {
     printf '         Searching for boot devices...\n'
     BOOTDEV=""
-    for dev in /sys/class/block/*; do
-        device="/dev/$(basename "$dev")"
 
-        # Ventoy is not compatible. LFS does not know how to use Ventoy, and so does Arkana
-        # We tried. There are no special device nodes or kernel parameters to point us to how to start it up past initramfs.
-        if mount -o ro -t auto "$device" /mnt/bootdev 2>/dev/null; then
-            if [ -f /mnt/bootdev/boot/rootfs.sfs ]; then
-                printf '%b Found boot device %s\n' "$SYSTEMD_OK" "$device"
-                BOOTDEV="$device"
-                break
+    for try in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+        for dev in /sys/class/block/*; do
+            [ -e "$dev" ] || continue
+            bname=$(basename "$dev")
+
+            # Filter out virtual/pseudo block devices that cause mount to hang
+            case "$bname" in
+                ram*|loop*|zram*|fd*) continue ;;
+            esac
+
+            device="/dev/$bname"
+
+            if mount -o ro -t auto "$device" /run/initramfs/bootdev 2>/dev/null; then
+                if [ -f /run/initramfs/bootdev/boot/rootfs.sfs ]; then
+                    printf '%b Found boot device %s\n' "$SYSTEMD_OK" "$device"
+                    BOOTDEV="$device"
+                    break
+                fi
+                umount /run/initramfs/bootdev >/dev/null 2>&1
             fi
-            umount /mnt/bootdev >/dev/null 2>&1
-       fi
+        done
+
+        [ -n "$BOOTDEV" ] && break
+        sleep 1
     done
 
     if [ -z "$BOOTDEV" ]; then
@@ -75,52 +88,65 @@ mount_filesystems() {
     fi
 
     printf '         Mounting squashfs filesystem...\n'
-    if ! mount -t squashfs /mnt/bootdev/boot/rootfs.sfs /mnt/squashfs; then
-        printf '%b Unable to mount filesystem\n' "$SYSTEMD_FAIL"
-        umount -Rl /mnt/squashfs >/dev/null 2>&1
+    if ! mount -t squashfs /run/initramfs/bootdev/boot/rootfs.sfs /run/initramfs/squashfs; then
+        printf '%b Unable to mount squashfs filesystem\n' "$SYSTEMD_FAIL"
+        umount /run/initramfs/bootdev >/dev/null 2>&1
         return 1
     fi
     printf '%b Mounted squashfs filesystem\n' "$SYSTEMD_OK"
 
     printf '         Setting up tmpfs overlay...\n'
-    if ! mount -t tmpfs -o size=50% tmpfs /mnt/overlay; then
-        printf '%b Unable to set up overlay\n' "$SYSTEMD_FAIL"
-        umount -Rl /mnt/overlay >/dev/null 2>&1
+    if ! mount -t tmpfs -o size=75% tmpfs /run/initramfs/overlay; then
+        printf '%b Unable to set up tmpfs overlay\n' "$SYSTEMD_FAIL"
+        umount /run/initramfs/squashfs >/dev/null 2>&1
+        umount /run/initramfs/bootdev >/dev/null 2>&1
         return 1
     fi
+    mkdir -p /run/initramfs/overlay/upper /run/initramfs/overlay/work
     printf '%b Set up tmpfs overlay\n' "$SYSTEMD_OK"
 
     printf '         Mounting overlay filesystem...\n'
-    if ! mount -t overlay overlay -o lowerdir=/mnt/squashfs,upperdir=/mnt/upper,workdir=/mnt/work /mnt/newroot; then
-        printf '%b Unable to mount overlay\n' "$SYSTEMD_FAIL"
-        umount -Rl /mnt/overlay /mnt/squashfs >/dev/null 2>&1
+    if ! mount -t overlay overlay -o lowerdir=/run/initramfs/squashfs,upperdir=/run/initramfs/overlay/upper,workdir=/run/initramfs/overlay/work /mnt/newroot; then
+        printf '%b Unable to mount overlay filesystem\n' "$SYSTEMD_FAIL"
+        umount /run/initramfs/overlay >/dev/null 2>&1
+        umount /run/initramfs/squashfs >/dev/null 2>&1
+        umount /run/initramfs/bootdev >/dev/null 2>&1
         return 1
     fi
     printf '%b Mounted overlay filesystem\n' "$SYSTEMD_OK"
-    
+
     return 0
 }
 
-# Instead of kernel panic, go to an emergency shell
+# Emergency recovery shell
 recovery_shell() {
     printf 'Dropping to emergency shell\n'
     printf 'Fix errors and type "exit" or press <CTRL+D> to retry boot.\n'
-    
     sh
 }
 
-# Init task that repeats on failure
+# System initialization
 sysinit() {
     if grep -q "recovery=true" /proc/cmdline; then
         printf 'Requested emergency shell\n'
         printf 'Type "exit" or press <CTRL+D> to continue startup.\n'
         sh
     fi
-    
+
     while true; do
-        if mount_filesystems; then        
-            umount -Rl /proc /sys /dev >/dev/null 2>&1
-            if [ -f /mnt/newroot/sbin/init ]; then
+        if mount_filesystems; then
+            # Move /run (containing live mountpoints) into /mnt/newroot/run so switch_root preserves them
+            mkdir -p /mnt/newroot/run
+            mount --move /run /mnt/newroot/run 2>/dev/null || true
+
+            # Move virtual filesystems into newroot
+            mkdir -p /mnt/newroot/proc /mnt/newroot/sys /mnt/newroot/dev
+            mount --move /proc /mnt/newroot/proc 2>/dev/null || true
+            mount --move /sys /mnt/newroot/sys 2>/dev/null || true
+            mount --move /dev /mnt/newroot/dev 2>/dev/null || true
+
+            if [ -x /mnt/newroot/sbin/init ] || [ -f /mnt/newroot/sbin/init ]; then
+                printf '         Switching root to /sbin/init...\n'
                 exec switch_root /mnt/newroot /sbin/init
             else
                 printf '%b No init found in filesystem\n' "$SYSTEMD_FAIL"
@@ -131,5 +157,5 @@ sysinit() {
     done
 }
 
-# Initialize the system
+# Run initialization
 sysinit
