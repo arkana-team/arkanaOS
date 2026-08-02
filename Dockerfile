@@ -5,8 +5,8 @@ ENV PACMAN_NOCONFIRM=1
 # If set to 1, the builder won't exit on success, and you'll be able to make further changes.
 ENV ARKANA_NO_SUCCESSFUL_EXIT=1
 
-RUN pacman -Syu --noconfirm && \
-    pacman -S --noconfirm \
+RUN yes | pacman -Syu --noconfirm && \
+    yes | pacman -S --noconfirm --needed \
         base-devel \
         git \
         sudo \
@@ -82,6 +82,7 @@ RUN pacman -Syu --noconfirm && \
         efibootmgr \
         vulkan-headers \
         cpio \
+        dbus-glib \
         && pacman -Scc --noconfirm
 
 RUN useradd -m builder && \

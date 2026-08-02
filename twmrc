@@ -1,0 +1,125 @@
+#
+# ArkanaOS Custom TWM Configuration
+#
+NoGrabServer
+RestartPreviousState
+DecorateTransients
+
+TitleFont "fixed"
+ResizeFont "fixed"
+MenuFont "fixed"
+IconFont "fixed"
+IconManagerFont "fixed"
+
+ShowIconManager
+IconManagerGeometry "180x300-10+10" 1
+IconManagerDontShow
+{
+    "xclock"
+}
+
+# Titlebar buttons
+LeftTitleButton ":iconify" = f.iconify
+RightTitleButton ":resize" = f.resize
+RightTitleButton ":cross" = f.delete
+
+TitleButtonBorderWidth 0
+ButtonIndent 2
+FramePadding 3
+TitlePadding 3
+BorderWidth 2
+
+Color
+{
+    BorderColor "#00a8c6"
+    DefaultBackground "#1e293b"
+    DefaultForeground "#f8fafc"
+    TitleBackground "#0f766e"
+    TitleForeground "#ffffff"
+    MenuBackground "#0f172a"
+    MenuForeground "#f1f5f9"
+    MenuBorderColor "#00a8c6"
+    MenuTitleBackground "#0f766e"
+    MenuTitleForeground "#ffffff"
+    IconBackground "#1e293b"
+    IconForeground "#f8fafc"
+    IconBorderColor "#00a8c6"
+    IconManagerBackground "#0f172a"
+    IconManagerForeground "#f1f5f9"
+    IconManagerHighlight "#00a8c6"
+}
+
+MoveDelta 3
+Function "move-or-lower" { f.move f.deltastop f.lower }
+Function "move-or-raise" { f.move f.deltastop f.raise }
+Function "move-or-iconify" { f.move f.deltastop f.iconify }
+
+# Left click & Right click on desktop root window open main ArkanaOS context menu!
+Button1 = : root : f.menu "defops"
+Button2 = : root : f.menu "windowops"
+Button3 = : root : f.menu "defops"
+
+Button1 = m : window|icon : f.function "move-or-lower"
+Button2 = m : window|icon : f.iconify
+Button3 = m : window|icon : f.function "move-or-raise"
+
+Button1 = : title : f.function "move-or-raise"
+Button2 = : title : f.raiselower
+
+Button1 = : icon : f.function "move-or-iconify"
+Button2 = : icon : f.iconify
+
+Button1 = : iconmgr : f.iconify
+Button2 = : iconmgr : f.iconify
+
+menu "defops"
+{
+"  -- arkanaOS --  "	f.title
+"Terminal"		f.exec "xterm &"
+"Dillo Web Browser"	f.exec "dillo &"
+"System Info"		f.exec "xterm -e 'arkcfg sysinfo; read' &"
+""			f.nop
+"Display Settings"	f.menu "displayops"
+"Window Controls"	f.menu "windowops"
+"Power Options"		f.menu "powerops"
+""			f.nop
+"Reload Wallpaper"	f.exec "feh --bg-fill /usr/share/backgrounds/X11-bg.png"
+"Restart TWM"		f.restart
+"Exit Session"		f.quit
+}
+
+menu "displayops"
+{
+"Display Settings"	f.title
+"Set 1366x768"		f.exec "arkcfg display set 1366x768"
+"Set 1920x1080"		f.exec "arkcfg display set 1920x1080"
+"Set 1024x768"		f.exec "arkcfg display set 1024x768"
+""			f.nop
+"List Displays"		f.exec "xterm -e 'arkcfg display list; read' &"
+"Show Current"		f.exec "xterm -e 'arkcfg display current; read' &"
+}
+
+menu "windowops"
+{
+"Window Controls"	f.title
+"Iconify (Minimize)"	f.iconify
+"Resize"		f.resize
+"Move"			f.move
+"Raise to Front"	f.raise
+"Lower to Back"		f.lower
+"Focus Window"		f.focus
+"Unfocus Window"	f.unfocus
+""			f.nop
+"Show Taskbar"		f.showiconmgr
+"Hide Taskbar"		f.hideiconmgr
+""			f.nop
+"Close Window"		f.delete
+"Kill Window"		f.destroy
+}
+
+menu "powerops"
+{
+"Power Options"		f.title
+"Reboot System"		f.exec "arkcfg power restart"
+"Power Off System"	f.exec "arkcfg power poweroff"
+}

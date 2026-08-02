@@ -82,7 +82,7 @@ LIBPSL_PATH = $(SRC_PATH)/libpsl-$(LIBPSL_VER)
 
 # Newt
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/newt.html
-NEWT_URL = https://releases.pagure.org/newt/newt-0.52.25.tar.gz
+NEWT_URL = https://sources.buildroot.net/newt/newt-0.52.25.tar.gz
 NEWT_VER = 0.52.25
 NEWT_PATH = $(SRC_PATH)/newt-$(NEWT_VER)
 
@@ -190,8 +190,8 @@ MPFR_PATH = $(SRC_PATH)/mpfr-$(MPFR_VER)
 
 # Nano
 # Why is this in BLFS?
-# URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/nano.html
-NANO_URL = https://www.nano-editor.org/dist/v8/nano-8.6.tar.xz
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/nano.html
+NANO_URL = https://mirrors.ocf.berkeley.edu/gnu/nano/nano-8.6.tar.xz
 NANO_VER = 8.6
 NANO_PATH = $(SRC_PATH)/nano-$(NANO_VER)
 
@@ -233,7 +233,7 @@ DOSFSTOOLS_PATH = $(SRC_PATH)/dosfstools-$(DOSFSTOOLS_VER)
 
 # TZDB
 # URL: https://data.iana.org/time-zones/ (w/o instructions)
-TZDB_URL = https://data.iana.org/time-zones/tzdb-latest.tar.lz
+TZDB_URL = https://data.iana.org/time-zones/releases/tzdb-2025c.tar.lz
 TZDB_VER = 2025c
 TZDB_PATH = $(SRC_PATH)/tzdb-$(TZDB_VER)
 
@@ -299,7 +299,7 @@ download-iputils: .iputils-obtained
 # Compile iputils
 iputils: download-iputils .iputils-done
 .iputils-done:
-	mkdir -p $(IPUTILS_PATH)/build && cd $(IPUTILS_PATH)/build && meson setup --prefix=/usr --buildtype=release .. && ninja && \
+	mkdir -p $(IPUTILS_PATH)/build && cd $(IPUTILS_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && \
 	DESTDIR=$(STAGING_PATH) ninja install
 	touch .iputils-done
 
@@ -312,7 +312,7 @@ download-networkmanager: .networkmanager-obtained
 # Compile NetworkManager
 networkmanager: download-networkmanager .networkmanager-done
 .networkmanager-done:
-	mkdir -p $(NETWORKMANAGER_PATH)/build && cd $(NETWORKMANAGER_PATH)/build && meson setup .. --prefix=/usr --buildtype=release -D nmtui=true -D ovs=false -D ppp=false -D selinux=false \
+	mkdir -p $(NETWORKMANAGER_PATH)/build && cd $(NETWORKMANAGER_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D nmtui=true -D ovs=false -D ppp=false -D selinux=false \
 	-D qt=false -D session_tracking=systemd -D modem_manager=false -D introspection=false -D crypto=gnutls && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	echo "[main]" > $(STAGING_PATH)/etc/NetworkManager/NetworkManager.conf
 	echo "plugins=keyfile" >> $(STAGING_PATH)/etc/NetworkManager/NetworkManager.conf && mkdir -p $(STAGING_PATH)/etc/systemd/system/multi-user.target.wants
@@ -351,8 +351,9 @@ download-libidn2: .libidn2-obtained
 
 # Compile libidn2
 libidn2: download-libidn2 .libidn2-done
+
 .libidn2-done:
-	cd $(LIBIDN2_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBIDN2_PATH) && ./configure --prefix=/usr && mkdir -p unistring/.libs gl/.libs && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libidn2-done
 
 # Download libunistring
@@ -389,7 +390,7 @@ download-libpsl: .libpsl-obtained
 # Compile libpsl
 libpsl: download-libpsl .libpsl-done
 .libpsl-done:
-	mkdir -p $(LIBPSL_PATH)/build && cd $(LIBPSL_PATH)/build && meson setup --prefix=/usr --buildtype=release && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(LIBPSL_PATH)/build && cd $(LIBPSL_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .libpsl-done
 
 # Download newt
@@ -423,9 +424,11 @@ download-gnutls: .gnutls-obtained
 	touch .gnutls-obtained
 
 # Compile GnuTLS
-gnutls: download-gnutls .gnutls-done
+gnutls: download-gnutls nettle libtasn1 .gnutls-done
 .gnutls-done:
-	cd $(GNUTLS_PATH) && ./configure --prefix=/usr --docdir=/usr/share/doc/gnutls-$(GNUTLS_VER) --with-default-trust-store-pkcs11="pkcs11:" && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(GNUTLS_PATH) && PKG_CONFIG_PATH=$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig CPPFLAGS="-I$(STAGING_PATH)/usr/include -D_GNU_SOURCE" LDFLAGS="-L$(STAGING_PATH)/usr/lib" ./configure --prefix=/usr --docdir=/usr/share/doc/gnutls-$(GNUTLS_VER) --with-default-trust-store-pkcs11="pkcs11:" ac_cv_func_memset_explicit=no gl_cv_func_memset_explicit=no --disable-doc && \
+	find . -name "read-file.c" -exec sed -i 's/memset_explicit/memset/g' {} + && \
+	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .gnutls-done
 
 # Download nettle
@@ -462,7 +465,7 @@ download-p11-kit: .p11-kit-obtained
 p11-kit: download-p11-kit .p11-kit-done
 .p11-kit-done:
 	cd $(P11_KIT_PATH) && sed '20,$$ d' -i trust/trust-extract-compat && echo "/usr/lib/make-ca/copy-trust-modifications" >> trust/trust-extract-compat && \
-	echo "/usr/sbin/make-ca -r" >> trust/trust-extract-compat && mkdir -p $(P11_KIT_PATH)/build && cd $(P11_KIT_PATH)/build && meson setup .. --prefix=/usr --buildtype=release -D trust_paths=/etc/pki/anchors && \
+	echo "/usr/sbin/make-ca -r" >> trust/trust-extract-compat && mkdir -p $(P11_KIT_PATH)/build && cd $(P11_KIT_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D trust_paths=/etc/pki/anchors && \
 	ninja && DESTDIR=$(STAGING_PATH) ninja install && ln -sf /usr/lib/p11-kit/trust-extract-compat $(STAGING_PATH)/usr/bin/update-ca-certificates && ln -sf /usr/lib/pkcs11/p11-kit-trust.so \
 	$(STAGING_PATH)/usr/lib/libnssckbi.so
 	touch .p11-kit-done
@@ -500,7 +503,7 @@ download-nghttp2: .nghttp2-obtained
 # Compile nghttp2
 nghttp2: download-nghttp2 .nghttp2-done
 .nghttp2-done:
-	cd $(NGHTTP2_PATH) && ./configure --prefix=/usr --enable-lib-only --docdir=/usr/share/doc/nghttp2-$(NGHTTP_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(NGHTTP2_PATH) && ./configure --prefix=/usr --enable-lib-only --docdir=/usr/share/doc/nghttp2-$(NGHTTP2_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .nghttp2-done
 
 # Download jansson
@@ -563,7 +566,7 @@ download-libnvme: .libnvme-obtained
 # Compile libnvme
 libnvme: download-libnvme .libnvme-done
 .libnvme-done:
-	mkdir -p $(LIBNVME_PATH)/build && cd $(LIBNVME_PATH)/build && meson setup --prefix=/usr --buildtype=release -D libdbus=auto .. && ninja && \
+	mkdir -p $(LIBNVME_PATH)/build && cd $(LIBNVME_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -D libdbus=auto .. && ninja && \
 	DESTDIR=$(STAGING_PATH) ninja install
 	touch .libnvme-done
 
@@ -649,8 +652,11 @@ download-nano: .nano-obtained
 # Compile nano
 nano: download-nano .nano-done
 .nano-done:
-	cd $(NANO_PATH) && ./configure --prefix=/usr --sysconfdir=/etc --enable-utf8 --docdir=/usr/share/doc/nano-$(NANO_VER) && $(MAKE) -j$(THREADS) && \
-	$(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(NANO_PATH) && \
+	sed -i '/@NEXT_STDLIB_H@/a #undef bsearch' lib/stdlib.in.h && \
+	sed -i '/@NEXT_WCHAR_H@/a #undef wmemchr' lib/wchar.in.h && \
+	CFLAGS="-std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --enable-utf8 --docdir=/usr/share/doc/nano-$(NANO_VER) && \
+	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .nano-done
 
 # Download the ironic tool
@@ -663,7 +669,11 @@ download-tar: .tar-obtained
 # Compile the ironic tool
 tar: download-tar .tar-done
 .tar-done:
-	cd $(TAR_PATH) && FORCE_UNSAFE_CONFIGURE=1 ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(TAR_PATH) && FORCE_UNSAFE_CONFIGURE=1 ./configure --prefix=/usr && \
+	sed -i 's/acl_get_file_at/tar_acl_get_file_at/g' src/xattrs.c && \
+	sed -i 's/acl_set_file_at/tar_acl_set_file_at/g' src/xattrs.c && \
+	sed -i 's/acl_delete_def_file_at/tar_acl_delete_def_file_at/g' src/xattrs.c && \
+	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .tar-done
 
 # Download sudo
@@ -688,7 +698,7 @@ download-vim: .vim-obtained
 # Compile vim
 vim: download-vim .vim-done
 .vim-done:
-	cd $(VIM_PATH) && echo '#define SYS_VIMRC_FILE  "/etc/vimrc"' >> src/feature.h && ./configure --prefix=/usr --with-features=huge --enable-gui=no --without-x --without-wayland --disable-libsodium --disable-gpm --with-tlib=ncursesw && \
+	cd $(VIM_PATH) && rm -f src/auto/config.cache && echo '#define SYS_VIMRC_FILE  "/etc/vimrc"' >> src/feature.h && ./configure --prefix=/usr --with-features=huge --enable-gui=no --without-x --without-wayland --disable-libsodium --disable-gpm --with-tlib=ncursesw && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && ln -snf ../vim/vim91/doc $(STAGING_PATH)/usr/share/doc/vim-$(VIM_VER)
 	touch .vim-done
 
@@ -713,7 +723,7 @@ download-dosfstools: .dosfstools-obtained
 # Compile dosfstools
 dosfstools: download-dosfstools .dosfstools-done
 .dosfstools-done:
-	cd $(DOSFSTOOLS_PATH) && ./configure --prefix=/usr --enable-compat-symlinks --mandir=/usr/share/man -docdir=/usr/share/doc/dosfstools-$(DOSFSTOOLS_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(DOSFSTOOLS_PATH) && ./configure --prefix=/usr --enable-compat-symlinks --mandir=/usr/share/man --docdir=/usr/share/doc/dosfstools-$(DOSFSTOOLS_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .dosfstools-done
 
 # Download tzdb
@@ -737,7 +747,7 @@ download-parted: .parted-obtained
 # Compile parted
 parted: download-parted .parted-done
 .parted-done:
-	cd $(PARTED_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(PARTED_PATH) && ./configure --prefix=/usr CFLAGS="-O2 -std=gnu17 -Wno-error=incompatible-pointer-types" && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .parted-done
 
 # Download make-ca
@@ -748,8 +758,8 @@ download-make-ca: .make-ca-obtained
 
 make-ca: download-make-ca .make-ca-done
 .make-ca-done:
-	cd $(MAKE_CA_PATH) && $(MAKE) DESTDIR=$(STAGING_PATH) install && install -dm755 /etc/ssl/local && \
-	mkdir -p $(STAGING_PATH)/etc/systemd/system/timers.target.wants && ln -sf $(STAGING_PATH)/etc/systemd/system/timers.target.wants/update-pki.timer $(STAGING_PATH)/etc/systemd/system/update-pki.timer && \
+	cd $(MAKE_CA_PATH) && $(MAKE) DESTDIR=$(STAGING_PATH) install && install -dm755 $(STAGING_PATH)/etc/ssl/local && \
+	mkdir -p $(STAGING_PATH)/etc/systemd/system/timers.target.wants && cd $(STAGING_PATH)/etc/systemd/system && ln -sf update-pki.timer timers.target.wants/update-pki.timer && \
 	curl -k -o $(STAGING_PATH)/etc/ssl/ca-bundle.crt https://curl.se/ca/cacert.pem && chmod 644 $(STAGING_PATH)/etc/ssl/ca-bundle.crt && \
 	echo 'export CURL_CA_BUNDLE=/etc/ssl/ca-bundle.crt' >> $(STAGING_PATH)/etc/profile
 	touch .make-ca-done

@@ -147,8 +147,8 @@ LZO_VER = 2.10
 LZO_PATH = $(SRC_PATH)/lzo-$(LZO_VER)
 
 # squashfs-tools
-# URL: https://ftp.debian.org/debian/pool/main/s/squashfs-tools/ (has source code)
-SQUASHFS_TOOLS_URL = http://ftp.debian.org/debian/pool/main/s/squashfs-tools/squashfs-tools_4.7.4.orig.tar.gz
+# URL: https://github.com/plougher/squashfs-tools/releases
+SQUASHFS_TOOLS_URL = https://github.com/plougher/squashfs-tools/archive/refs/tags/4.7.4.tar.gz
 SQUASHFS_TOOLS_VER = 4.7.4
 SQUASHFS_TOOLS_PATH = $(SRC_PATH)/squashfs-tools-$(SQUASHFS_TOOLS_VER)
 
@@ -224,7 +224,7 @@ libburn: download-libburn .libburn-done
 download-libisofs: .libisofs-obtained
 
 .libisofs-obtained:
-	cd $(SRC_PATH) && wget -O libisofs-$(LIBBURN_VER).tar.gz $(LIBISOFS_URL) && tar xf libisofs-$(LIBBURN_VER).tar.gz
+	cd $(SRC_PATH) && wget -O libisofs-$(LIBISOFS_VER).tar.gz $(LIBISOFS_URL) && tar xf libisofs-$(LIBISOFS_VER).tar.gz
 	touch .libisofs-obtained
 
 # Compile libisofs
@@ -260,7 +260,7 @@ busybox: download-busybox .busybox-done
 
 .busybox-done:
 	mkdir -p $(CPIO_STAGING_PATH)/{boot,dev,etc,home,mnt,opt,proc,root,run,sys,tmp,var}
-	cp busybox.config $(BUSYBOX_PATH)/.config && cd $(BUSYBOX_PATH) && expect ../../oldconfig.exp && \
+	cp busybox.config $(BUSYBOX_PATH)/.config && cd $(BUSYBOX_PATH) && yes "" | make oldconfig && \
 	$(MAKE) -j$(THREADS) && $(MAKE) install && cp -a _install/* $(CPIO_STAGING_PATH)
 	touch .busybox-done
 
@@ -277,7 +277,8 @@ linux: download-linux .linux-done
 .linux-done:
 	# Linus, you've fucked with the SBAT file config and my builder broke!
 	$(MAKE) -C $(LINUX_PATH) mrproper && cp linux.config $(LINUX_PATH)/.config && cd $(LINUX_PATH) && $(MAKE) olddefconfig && \
-	$(MAKE) -j$(THREADS) KBUILD_BUILD_HOST="arkana" KBUILD_BUILD_USER="arkana" all && cp arch/x86/boot/bzImage $(STAGING_PATH)/boot/vmlinuz
+	$(MAKE) -j$(THREADS) KBUILD_BUILD_HOST="arkana" KBUILD_BUILD_USER="arkana" all && cp arch/x86/boot/bzImage $(STAGING_PATH)/boot/vmlinuz && \
+	$(MAKE) -C $(LINUX_PATH) headers_install INSTALL_HDR_PATH=$(STAGING_PATH)/usr
 	touch .linux-done
 
 # Download GRUB
@@ -292,12 +293,15 @@ download-grub: .grub-obtained
 grub: download-grub .grub-done
 
 .grub-done:
+	cd $(GRUB_PATH) && (make distclean || true) && rm -rf build-efi build-pc && \
 	cd $(GRUB_PATH) && echo depends bli part_gpt > grub-core/extra_deps.lst && \
-	./configure --prefix=/usr --sysconfdir=/etc --disable-efiemu --with-platform=efi \
-	--target=x86_64 --disable-werror && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
-
-	cd $(GRUB_PATH) && $(MAKE) clean && ./configure --prefix=/usr --sysconfdir=/etc --disable-efiemu --with-platform=pc \
+	mkdir -p build-efi && cd build-efi && \
+	CFLAGS="" CPPFLAGS="" LDFLAGS="" ../configure --prefix=/usr --sysconfdir=/etc --disable-efiemu --with-platform=efi \
+	--target=x86_64 --disable-werror && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
+	cd $(GRUB_PATH) && mkdir -p build-pc && cd build-pc && \
+	CFLAGS="" CPPFLAGS="" LDFLAGS="" ../configure --prefix=/usr --sysconfdir=/etc --disable-efiemu --with-platform=pc \
 	--target=i386 --disable-werror && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
+	mkdir -p $(STAGING_PATH)/usr/share/bash-completion/completions && \
 	mv $(STAGING_PATH)/etc/bash_completion.d/grub $(STAGING_PATH)/usr/share/bash-completion/completions
 
 	# Font data here
@@ -333,7 +337,7 @@ download-harfbuzz: .harfbuzz-obtained
 harfbuzz: download-harfbuzz .harfbuzz-done
 
 .harfbuzz-done:
-	mkdir -p $(HARFBUZZ_PATH)/build	&& cd $(HARFBUZZ_PATH)/build && meson setup .. --prefix=/usr --buildtype=release \
+	mkdir -p $(HARFBUZZ_PATH)/build	&& cd $(HARFBUZZ_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release \
 	-D graphite2=enabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .harfbuzz-done
 
@@ -348,7 +352,7 @@ download-glib: .glib-obtained
 glib: download-glib .glib-done
 
 .glib-done:
-	mkdir -p $(GLIB_PATH)/build && cd $(GLIB_PATH)/build && meson setup .. --prefix=/usr --buildtype=release \
+	mkdir -p $(GLIB_PATH)/build && cd $(GLIB_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release \
 	-D introspection=disabled -D glib_debug=disabled -D man-pages=enabled -D sysprof=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .glib-done
 
@@ -377,7 +381,7 @@ download-elfutils: .elfutils-obtained
 elfutils: download-elfutils .elfutils-done
 
 .elfutils-done:
-	cd $(ELFUTILS_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && install -m644 config/libelf.pc $(STAGING_PATH)/usr/lib/pkgconfig
+	cd $(ELFUTILS_PATH) && ./configure --prefix=/usr --disable-werror CFLAGS="-Wno-error=discarded-qualifiers" && $(MAKE) -j$(THREADS) && install -m644 config/libelf.pc $(STAGING_PATH)/usr/lib/pkgconfig
 	for lib in libelf debuginfod libdw; do \
 		$(MAKE) -C $(SRC_PATH)/elfutils-$(ELFUTILS_VER)/$$lib DESTDIR=$(STAGING_PATH) install; \
 	done
@@ -425,7 +429,7 @@ download-cairo: .cairo-obtained
 cairo: download-cairo .cairo-done
 
 .cairo-done:
-	mkdir -p $(CAIRO_PATH)/build && cd $(CAIRO_PATH)/build && meson setup --prefix=/usr --buildtype=release .. && ninja && \
+	mkdir -p $(CAIRO_PATH)/build && cd $(CAIRO_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && \
 	DESTDIR=$(STAGING_PATH) ninja install
 	touch .cairo-done
 
@@ -486,7 +490,7 @@ download-pixman: .pixman-obtained
 pixman: download-pixman .pixman-done
 
 .pixman-done:
-	mkdir -p $(PIXMAN_PATH)/build && cd $(PIXMAN_PATH)/build && meson setup --prefix=/usr --buildtype=release .. && ninja && \
+	mkdir -p $(PIXMAN_PATH)/build && cd $(PIXMAN_PATH)/build && meson setup --prefix=/usr --native-file $(SRC_PATH)/cross_file.txt --buildtype=release .. && ninja && \
 	DESTDIR=$(STAGING_PATH) ninja install
 	touch .pixman-done
 
@@ -503,7 +507,7 @@ libpng: download-libpng .libpng-done
 
 .libpng-done:
 	cd $(LIBPNG_PATH) && ./configure --prefix=/usr --disable-static && $(MAKE) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
-	mkdir $(STAGING_PATH)/usr/share/doc/libpng-$(LIBPNG_VER) && cp README libpng-manual.txt $(STAGING_PATH)/usr/share/doc/libpng-$(LIBPNG_VER)
+	mkdir -p $(STAGING_PATH)/usr/share/doc/libpng-$(LIBPNG_VER) && cp README libpng-manual.txt $(STAGING_PATH)/usr/share/doc/libpng-$(LIBPNG_VER)
 	touch .libpng-done
 
 # Download squashfs-tools
@@ -572,6 +576,22 @@ boot-initramfs:
 iso:
 	cp -a arkana-install $(STAGING_PATH)/usr/bin/arkana-install
 	cp -a genfstab $(STAGING_PATH)/usr/bin/genfstab
+	cp -a neofetch $(STAGING_PATH)/usr/bin/neofetch
+	chmod +x $(STAGING_PATH)/usr/bin/neofetch
+	cp -a arkcfg $(STAGING_PATH)/usr/bin/arkcfg
+	chmod +x $(STAGING_PATH)/usr/bin/arkcfg
+	cp -a xinitrc $(STAGING_PATH)/root/.xinitrc
+	mkdir -p $(STAGING_PATH)/etc/skel && cp -a xinitrc $(STAGING_PATH)/etc/skel/.xinitrc
+	cp -a twmrc $(STAGING_PATH)/root/.twmrc
+	cp -a twmrc $(STAGING_PATH)/etc/skel/.twmrc
+	mkdir -p $(STAGING_PATH)/usr/share/X11/twm && cp -a twmrc $(STAGING_PATH)/usr/share/X11/twm/system.twmrc
+	mkdir -p $(STAGING_PATH)/etc/X11/xorg.conf.d
+	printf 'Section "Device"\n    Identifier "Card0"\n    Option "SWcursor" "true"\n    Option "HWCursor" "false"\nEndSection\n' > $(STAGING_PATH)/etc/X11/xorg.conf.d/99-swcursor.conf
+	mkdir -p $(STAGING_PATH)/usr/libexec
+	printf '#!/bin/sh\nexit 0\n' > $(STAGING_PATH)/usr/libexec/mate-session-check-accelerated
+	chmod +x $(STAGING_PATH)/usr/libexec/mate-session-check-accelerated
+	sed -i 's/arkanaOS Dev/arkanaOS nightly/g' $(STAGING_PATH)/etc/os-release 2>/dev/null || true
+	sed -i 's/arkanaOS Dev/arkanaOS nightly/g' $(STAGING_PATH)/etc/issue 2>/dev/null || true
     
 	ln -sf /usr/bin/bzdiff $(STAGING_PATH)/usr/bin/bzcmp
 	ln -sf /usr/bin/bzgrep $(STAGING_PATH)/usr/bin/bzegrep
@@ -580,11 +600,11 @@ iso:
 	ln -sf /usr/lib/p11-kit/trust-extract-compat $(STAGING_PATH)/usr/bin/update-ca-certificates
 
 	chroot $(STAGING_PATH) fc-cache -fv || true
+	chroot $(STAGING_PATH) glib-compile-schemas /usr/share/glib-2.0/schemas || true
 	rm -f $(STAGING_PATH)/etc/ld.so.cache || true
 	ln -sf /dev/null $(STAGING_PATH)/etc/ld.so.cache || true
 	ldconfig || true
 
-	find $(STAGING_PATH) \( -name "*.a" -o -name "*.la" \) -delete
 	mksquashfs $(STAGING_PATH) $(ISO_STAGING_PATH)/boot/rootfs.sfs -comp zstd -Xcompression-level 15 -b 1M -noappend || true
 	cp $(LINUX_PATH)/arch/x86/boot/bzImage $(ISO_STAGING_PATH)/boot/vmlinuz
 

@@ -126,8 +126,8 @@ MTDEV_PATH = $(SRC_PATH)/mtdev-$(MTDEV_VER)
 
 # Libwacom
 # URL: https://github.com/linuxwacom/libwacom
-LIBWACOM_URL = https://github.com/linuxwacom/libwacom/releases/download/libwacom-2.16.1/libwacom-2.16.1.tar.xz
-LIBWACOM_VER = 2.16.1
+LIBWACOM_URL = https://github.com/linuxwacom/libwacom/releases/download/libwacom-2.19.0/libwacom-2.19.0.tar.xz
+LIBWACOM_VER = 2.19.0
 LIBWACOM_PATH = $(SRC_PATH)/libwacom-$(LIBWACOM_VER)
 
 # Libgudev
@@ -173,7 +173,7 @@ LIBRSVG_VER = 2.61.0
 LIBRSVG_PATH = $(SRC_PATH)/librsvg-$(LIBRSVG_VER)
 
 # Libdav1d
-LIBDAV1D_URL = http://downloads.videolan.org/videolan/dav1d/1.5.1/dav1d-1.5.1.tar.xz
+LIBDAV1D_URL = https://sources.buildroot.net/dav1d/dav1d-1.5.1.tar.xz
 LIBDAV1D_VER = 1.5.1
 LIBDAV1D_PATH = $(SRC_PATH)/dav1d-$(LIBDAV1D_VER)
 
@@ -189,26 +189,40 @@ LIBJPEG_TURBO_URL = https://downloads.sourceforge.net/libjpeg-turbo/libjpeg-turb
 LIBJPEG_TURBO_VER = 3.0.1
 LIBJPEG_TURBO_PATH = $(SRC_PATH)/libjpeg-turbo-$(LIBJPEG_TURBO_VER)
 
-X11_LIBS = X11 Xau xcvt Xdmcp Xext Xfont2 xshmfence xcb fontenc Xxf86vm pciaccess Xmu xkbfile Xft Xinerama Xrandr Xrender Xaw Xpm Xt ICE SM Xcursor Xfixes
-X11_LIB_VERS = 1.8.12 1.0.12 0.1.3 1.1.5 1.3.6 2.0.7 1.3.3 1.17.0 1.1.8 1.1.6 0.18.1 1.2.1 1.1.3 2.3.9 1.1.5 1.5.4 0.9.12 1.0.16 3.5.17 1.3.1 1.1.2 1.2.6 1.2.3 6.0.1
+X11_LIBS = X11 Xau xcvt Xdmcp Xext Xfont2 xshmfence xcb fontenc Xxf86vm pciaccess Xmu xkbfile Xft Xinerama Xrandr Xrender Xaw Xpm Xt ICE SM Xcursor Xfixes Xi Xcomposite Xtst
+X11_LIB_VERS = 1.8.12 1.0.12 0.1.3 1.1.5 1.3.6 2.0.7 1.3.3 1.17.0 1.1.8 1.1.6 0.18.1 1.2.1 1.1.3 2.3.9 1.1.5 1.5.4 0.9.12 1.0.16 3.5.17 1.3.1 1.1.2 1.2.6 1.2.3 6.0.1 1.8.1 0.4.6 1.2.4
 
 X11_PARSED_LIBS := $(foreach i, $(shell seq 1 $(words $(X11_LIBS))), \
   $(word $(i), $(X11_LIBS))/$(word $(i), $(X11_LIB_VERS)))
 
-X11_APPS = xauth xkbcomp
-X11_APP_VERS = 1.1.4 1.4.7
+X11_APPS = xauth xkbcomp twm xsetroot xrandr
+X11_APP_VERS = 1.1.4 1.4.7 1.0.12 1.1.3 1.5.2
 
 X11_PARSED_APPS := $(foreach i, $(shell seq 1 $(words $(X11_APPS))), \
   $(word $(i), $(X11_APPS))/$(word $(i), $(X11_APP_VERS)))
 
-X11_FONTS = font-util encodings font-alias font-adobe-utopia-type1 font-bh-ttf font-bh-type1 font-ibm-type1 font-misc-ethiopic font-xfree86-type1
-X11_FONT_VERS = 1.4.1 1.1.0 1.0.5 1.0.5 1.0.4 1.0.4 1.0.4 1.0.5 1.0.5
+X11_FONTS = font-util encodings font-alias font-adobe-utopia-type1 font-bh-ttf font-bh-type1 font-ibm-type1 font-misc-ethiopic font-xfree86-type1 font-cursor-misc
+X11_FONT_VERS = 1.4.1 1.1.0 1.0.5 1.0.5 1.0.4 1.0.4 1.0.4 1.0.5 1.0.5 1.0.4
 
 X11_PARSED_FONTS := $(foreach i, $(shell seq 1 $(words $(X11_FONTS))), \
   $(word $(i), $(X11_FONTS))/$(word $(i), $(X11_FONT_VERS)))
 
 # Targets
-all: xorg-server xorg-libs libbsd libmd libdrm mesa lm-sensors llvm libedit spirv-tools xinit xorg-apps xorg-fonts xorg-xkeyboard-config xf86-input-evdev openbox fribidi xterm luit libinput libevdev mtdev libwacom libgudev feh imlib2 pango libthai libdatrie librsvg libdav1d gdk-pixbuf libjpeg-turbo
+all: xorgproto xorg-server xorg-libs libbsd libmd libdrm mesa lm-sensors llvm libedit spirv-tools xinit xorg-apps xorg-fonts xorg-xkeyboard-config xf86-input-evdev openbox fribidi xterm luit libinput libevdev mtdev libwacom libgudev feh imlib2 pango libthai libdatrie librsvg libdav1d gdk-pixbuf libjpeg-turbo
+
+XORGPROTO_URL = https://www.x.org/pub/individual/proto/xorgproto-2024.1.tar.xz
+XORGPROTO_VER = 2024.1
+XORGPROTO_PATH = $(SRC_PATH)/xorgproto-$(XORGPROTO_VER)
+
+download-xorgproto: .xorgproto-obtained
+.xorgproto-obtained:
+	cd $(SRC_PATH) && wget -O xorgproto-$(XORGPROTO_VER).tar.xz $(XORGPROTO_URL) && tar xf xorgproto-$(XORGPROTO_VER).tar.xz
+	touch .xorgproto-obtained
+
+xorgproto: download-xorgproto .xorgproto-done
+.xorgproto-done:
+	mkdir -p $(XORGPROTO_PATH)/build && cd $(XORGPROTO_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	touch .xorgproto-done
 
 # Download Xorg server
 download-xorg-server: .xorg-server-obtained
@@ -219,7 +233,7 @@ download-xorg-server: .xorg-server-obtained
 # Compile Xorg server
 xorg-server: download-xorg-server .xorg-server-done
 .xorg-server-done:
-	mkdir -p $(XORG_SERVER_PATH)/build && cd $(XORG_SERVER_PATH)/build && meson setup .. --prefix=/usr --localstatedir=/var -D glamor=true -D \
+	mkdir -p $(XORG_SERVER_PATH)/build && cd $(XORG_SERVER_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --localstatedir=/var -D glamor=true -D \
 	xkb_output_dir=/var/lib/xkb && ninja && DESTDIR=$(STAGING_PATH) ninja install && mkdir -p $(STAGING_PATH)/etc/X11/xorg.conf.d
 	touch .xorg-server-done
 
@@ -241,7 +255,7 @@ xorg-libs: download-xorg-libs .xorg-libs-done
 	  lib=$${pair%%/*}; \
 	  ver=$${pair##*/}; \
 	  if [ -f $(SRC_PATH)/lib$$lib-$$ver/meson.build ]; then \
-	    mkdir -p $(SRC_PATH)/lib$$lib-$$ver/build && cd $(SRC_PATH)/lib$$lib-$$ver/build && meson setup .. --prefix=/usr --buildtype=release && \
+	    mkdir -p $(SRC_PATH)/lib$$lib-$$ver/build && cd $(SRC_PATH)/lib$$lib-$$ver/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release && \
 	    ninja && DESTDIR=$(STAGING_PATH) ninja install; \
 	  else \
 	    cd $(SRC_PATH)/lib$$lib-$$ver && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install; \
@@ -324,7 +338,7 @@ download-libdrm: .libdrm-obtained
 # Compile libdrm
 libdrm: download-libdrm .libdrm-done
 .libdrm-done:
-	mkdir -p $(LIBDRM_PATH)/build && cd $(LIBDRM_PATH)/build && meson setup --prefix=/usr --buildtype=release -D udev=true -D valgrind=disabled .. && ninja && \
+	mkdir -p $(LIBDRM_PATH)/build && cd $(LIBDRM_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -D udev=true -D valgrind=disabled .. && ninja && \
 	DESTDIR=$(STAGING_PATH) ninja install
 	touch .libdrm-done
 
@@ -337,8 +351,11 @@ download-mesa: .mesa-obtained
 # Compile Mesa
 mesa: download-mesa .mesa-done
 .mesa-done:
-	mkdir -p $(MESA_PATH)/build && cd $(MESA_PATH)/build && meson setup .. --prefix=/usr --buildtype=release -D platforms=x11,wayland -D gallium-drivers=auto -D vulkan-drivers=auto \
-	-D valgrind=disabled -D video-codecs=all -D libunwind=disabled -D glvnd=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	cd $(MESA_PATH) && \
+	sed -i '/#include <clang\/Config\/config.h>/i #undef UNUSED' src/compiler/clc/clc_helpers.cpp && \
+	sed -i '/#include "clc_helpers.h"/a #undef UNUSED\n#define UNUSED __attribute__((unused))' src/compiler/clc/clc_helpers.cpp && \
+	mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D platforms=x11,wayland -D gallium-drivers=softpipe,virgl,nouveau,r300,r600,radeonsi -D vulkan-drivers=amd \
+	-D valgrind=disabled -D video-codecs=all -D libunwind=disabled -D glvnd=disabled -D llvm=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .mesa-done
 
 # Download lm-sensors
@@ -418,7 +435,7 @@ download-xorg-xkeyboard-config: .xorg-xkeyboard-config-obtained
 # Compile xorg-xkeyboard-config
 xorg-xkeyboard-config: download-xorg-xkeyboard-config .xorg-xkeyboard-config-done
 .xorg-xkeyboard-config-done:
-	mkdir -p $(XORG_XKEYBOARD_CONFIG_PATH)/build && cd $(XORG_XKEYBOARD_CONFIG_PATH)/build && meson setup --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(XORG_XKEYBOARD_CONFIG_PATH)/build && cd $(XORG_XKEYBOARD_CONFIG_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .xorg-xkeyboard-config-done
 
 # Download xf86-input-evdev
@@ -455,7 +472,7 @@ download-fribidi: .fribidi-obtained
 # Compile fribidi
 fribidi: download-fribidi .fribidi-done
 .fribidi-done:
-	mkdir -p $(FRIBIDI_PATH)/build && cd $(FRIBIDI_PATH)/build && meson setup --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(FRIBIDI_PATH)/build && cd $(FRIBIDI_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .fribidi-done
 
 # Download xterm
@@ -474,7 +491,7 @@ xterm: download-xterm .xterm-done
 # Download luit
 download-luit: .luit-obtained
 .luit-obtained:
-	cd $(SRC_PATH) && wget -O luit-$(XTERM_VER).tar.xz $(LUIT_URL) && tar xf luit-$(XTERM_VER).tar.xz
+	cd $(SRC_PATH) && wget -O luit-$(LUIT_VER).tar.xz $(LUIT_URL) && tar xf luit-$(LUIT_VER).tar.xz
 	touch .luit-obtained
 
 # Compile luit
@@ -492,7 +509,7 @@ download-libinput: .libinput-obtained
 # Compile libinput
 libinput: download-libinput .libinput-done
 .libinput-done:
-	mkdir -p $(LIBINPUT_PATH)/build && cd $(LIBINPUT_PATH)/build && meson setup .. --prefix=/usr --buildtype=release -D documentation=false -D tests=false && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(LIBINPUT_PATH)/build && cd $(LIBINPUT_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D documentation=false -D tests=false && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .libinput-done
 
 # Download libevdev
@@ -504,7 +521,7 @@ download-libevdev: .libevdev-obtained
 # Compile libevdev
 libevdev: download-libevdev .libevdev-done
 .libevdev-done:
-	mkdir -p $(LIBEVDEV_PATH)/build && cd $(LIBEVDEV_PATH)/build && meson setup .. --prefix=/usr --buildtype=release -D documentation=disabled -D tests=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(LIBEVDEV_PATH)/build && cd $(LIBEVDEV_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D documentation=disabled -D tests=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .libevdev-done
 
 # Download mtdev
@@ -528,7 +545,8 @@ download-libwacom: .libwacom-obtained
 # Compile libwacom
 libwacom: download-libwacom .libwacom-done
 .libwacom-done:
-	mkdir -p $(LIBWACOM_PATH)/build && cd $(LIBWACOM_PATH)/build && meson setup .. --prefix=/usr --buildtype=release -D tests=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(LIBWACOM_PATH)/build && cd $(LIBWACOM_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D tests=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install && \
+	sed -i 's|prefix=/usr|prefix=$(STAGING_PATH)/usr|g' $(STAGING_PATH)/usr/lib/pkgconfig/libwacom.pc
 	touch .libwacom-done
 
 # Download libgudev
@@ -540,7 +558,7 @@ download-libgudev: .libgudev-obtained
 # Compile libgudev
 libgudev: download-libgudev .libgudev-done
 .libgudev-done:
-	mkdir -p $(LIBGUDEV_PATH)/build && cd $(LIBGUDEV_PATH)/build && meson setup --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(LIBGUDEV_PATH)/build && cd $(LIBGUDEV_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .libgudev-done
 
 # Download feh
@@ -578,7 +596,8 @@ download-pango: .pango-obtained
 # Compile pango
 pango: download-pango .pango-done
 .pango-done:
-	mkdir -p $(PANGO_PATH)/build && cd $(PANGO_PATH)/build && meson setup --prefix=/usr --buildtype=release --wrap-mode=nofallback -D introspection=enabled .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	cd $(PANGO_PATH) && sed -i '/#include <hb-ft.h>/a #include <fontconfig\/fcfreetype.h>' pango/pangofc-fontmap.c && \
+	mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release --wrap-mode=nofallback -D introspection=enabled .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .pango-done
 
 # Download libthai
@@ -615,7 +634,7 @@ download-librsvg: .librsvg-obtained
 librsvg: download-librsvg .librsvg-done
 .librsvg-done:
 	mkdir -p $(LIBRSVG_PATH)/build && cd $(LIBRSVG_PATH) && sed -e "/OUTDIR/s|,| / 'librsvg-2.60.0', '--no-namespace-dir',|" -e '/output/s|Rsvg-2.0|librsvg-2.60.0|' -i doc/meson.build && \
-	cd build && meson setup --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .librsvg-done
 
 # Download libdav1d
@@ -627,7 +646,7 @@ download-libdav1d: .libdav1d-obtained
 # Compile libdav1d
 libdav1d: download-libdav1d .libdav1d-done
 .libdav1d-done:
-	mkdir -p $(LIBDAV1D_PATH)/build && cd $(LIBDAV1D_PATH)/build && meson setup --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(LIBDAV1D_PATH)/build && cd $(LIBDAV1D_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .libdav1d-done
 
 # Download gdk-pixbuf
@@ -639,7 +658,7 @@ download-gdk-pixbuf: .gdk-pixbuf-obtained
 # Compile gdk-pixbuf
 gdk-pixbuf: download-gdk-pixbuf .gdk-pixbuf-done
 .gdk-pixbuf-done:
-	mkdir -p $(GDK_PIXBUF_PATH)/build && cd $(GDK_PIXBUF_PATH)/build && meson setup .. --prefix=/usr --buildtype=release -D others=enabled --wrap-mode=nofallback && \
+	mkdir -p $(GDK_PIXBUF_PATH)/build && cd $(GDK_PIXBUF_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D others=enabled --wrap-mode=nofallback && \
 	ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .gdk-pixbuf-done
 
@@ -656,3 +675,21 @@ libjpeg-turbo: download-libjpeg-turbo .libjpeg-turbo-done
 	-D CMAKE_INSTALL_DEFAULT_LIBDIR=lib -D CMAKE_POLICY_VERSION_MINIMUM=3.5 -D CMAKE_SKIP_INSTALL_RPATH=ON -D CMAKE_INSTALL_DOCDIR=/usr/share/doc/libjpeg-turbo-3.0.1 .. && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libjpeg-turbo-done
+
+# Vulkan Loader
+VULKAN_VER = 1.3.290
+VULKAN_HEADERS_URL = https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v$(VULKAN_VER).tar.gz
+VULKAN_LOADER_URL = https://github.com/KhronosGroup/Vulkan-Loader/archive/refs/tags/v$(VULKAN_VER).tar.gz
+
+vulkan: .vulkan-done
+.vulkan-done:
+	cd $(SRC_PATH) && wget -O vulkan-headers-$(VULKAN_VER).tar.gz $(VULKAN_HEADERS_URL) && tar xf vulkan-headers-$(VULKAN_VER).tar.gz
+	mkdir -p $(SRC_PATH)/Vulkan-Headers-$(VULKAN_VER)/build && cd $(SRC_PATH)/Vulkan-Headers-$(VULKAN_VER)/build && \
+	cmake -DCMAKE_INSTALL_PREFIX=/usr .. && make install DESTDIR=$(STAGING_PATH)
+	cd $(SRC_PATH) && wget -O vulkan-loader-$(VULKAN_VER).tar.gz $(VULKAN_LOADER_URL) && tar xf vulkan-loader-$(VULKAN_VER).tar.gz
+	mkdir -p $(SRC_PATH)/Vulkan-Loader-$(VULKAN_VER)/build && cd $(SRC_PATH)/Vulkan-Loader-$(VULKAN_VER)/build && \
+	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
+	CFLAGS="--sysroot=$(STAGING_PATH) -I$(STAGING_PATH)/usr/include" LDFLAGS="--sysroot=$(STAGING_PATH) -L$(STAGING_PATH)/usr/lib" \
+	cmake -DCMAKE_INSTALL_PREFIX=/usr -DVULKAN_HEADERS_INSTALL_DIR=$(STAGING_PATH)/usr -DBUILD_TESTS=OFF .. && \
+	$(MAKE) -j$(THREADS) && $(MAKE) install DESTDIR=$(STAGING_PATH)
+	touch .vulkan-done

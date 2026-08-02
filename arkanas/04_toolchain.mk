@@ -116,7 +116,7 @@ AUTOMAKE_PATH = $(SRC_PATH)/automake-$(AUTOMAKE_VER)
 # Targets
 all:
 	@if [ "$(BUILD_TOOLCHAIN)" = "true" ]; then \
-		make -f arkanas/03_toolchain.mk $(TOOLCHAIN_TARGETS) || exit $$?; \
+		make -f arkanas/04_toolchain.mk $(TOOLCHAIN_TARGETS) || exit $$?; \
 	else \
 		echo "note: arkana toolchain is disabled, set BUILD_TOOLCHAIN=true to enable it"; \
 		exit 0; \
@@ -126,7 +126,7 @@ all:
 gcc-compilers: .gcc-compilers-done
 .gcc-compilers-done:
 	# GCC has been pre-compiled before in 01_base.mk to obtain the libgcc_s and libstdc++, the compilers can be installed directly.
-	cd $(GCC_PATH)/build && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(GCC_PATH)/build && $(MAKE) DESTDIR=$(STAGING_PATH) install-gcc install-target-libgcc install-target-libstdc++-v3
 	touch .gcc-compilers-done
 
 # Download binutils
@@ -138,7 +138,7 @@ download-binutils: .binutils-obtained
 # Compile binutils
 binutils: download-binutils .binutils-done
 .binutils-done:
-	cd $(BINUTILS_PATH) && ./configure --prefix=/usr --enable-gold --enable-ld=default --enable-plugins --enable-shared --disable-werror --enable-64bit-bfd --with-system-zlib && $(MAKE) tooldir=/usr -j$(THREADS) && $(MAKE) tooldir=/usr DESTDIR=$(STAGING_PATH) install
+	cd $(BINUTILS_PATH) && ./configure --prefix=/usr --enable-gold --enable-ld=default --enable-plugins --enable-shared --disable-werror --enable-64bit-bfd --with-system-zlib --disable-gprofng && $(MAKE) tooldir=/usr -j$(THREADS) && $(MAKE) tooldir=/usr DESTDIR=$(STAGING_PATH) install
 	touch .binutils-done
 
 # Download meson
@@ -307,9 +307,11 @@ download-python3: .python3-obtained
 # Compile python3
 python3: download-python3 .python3-done
 .python3-done:
-	cd $(PYTHON3_PATH) && CXX="/usr/bin/g++" ./configure --prefix=/usr --enable-shared --with-system-expat --enable-optimizations && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
-	ln -sf python3 $(STAGING_PATH)/usr/bin/python && chroot $(STAGING_PATH) python3 -m ensurepip && \
-	ln -sf pip $(STAGING_PATH)/usr/bin/pip3
+	cd $(PYTHON3_PATH) && CXX="/usr/bin/g++" ./configure --prefix=/usr --enable-shared --with-system-expat --enable-optimizations --with-ensurepip=no && \
+	$(MAKE) -j$(THREADS) && \
+	$(MAKE) DESTDIR=$(STAGING_PATH) install && \
+	ln -sf python3 $(STAGING_PATH)/usr/bin/python && \
+	ln -sf python3-config $(STAGING_PATH)/usr/bin/python-config
 	touch .python3-done
 
 # Download perl
@@ -337,5 +339,5 @@ download-automake: .automake-obtained
 # Compile automake
 automake: download-automake .automake-done
 .automake-done:
-	cd $(AUTOMAKE_PATH) && ./configure --prefix=/usr --docdir=/usr/share/doc/automake-$(AUTOMAKE_PATH) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(AUTOMAKE_PATH) && ./configure --prefix=/usr --docdir=/usr/share/doc/automake-$(AUTOMAKE_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .automake-done
