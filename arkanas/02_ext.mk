@@ -249,8 +249,28 @@ MAKE_CA_URL = https://github.com/lfs-book/make-ca/archive/v1.16.1/make-ca-1.16.1
 MAKE_CA_VER = 1.16.1
 MAKE_CA_PATH = $(SRC_PATH)/make-ca-$(MAKE_CA_VER)
 
+# Gettext (provides libintl.so and internationalisation tools)
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/gettext.html
+# NOTE: gettext is also downloaded inline during the GCC build, but must be
+#       installed standalone so that libintl.so is available to third-party packages.
+GETTEXT_URL = https://mirrors.ocf.berkeley.edu/gnu/gettext/gettext-0.24.tar.xz
+GETTEXT_VER = 0.24
+GETTEXT_PATH = $(SRC_PATH)/gettext-$(GETTEXT_VER)
+
+# Which (command-location tool expected by many build systems)
+# URL: https://savannah.gnu.org/projects/which/ (w/o instructions)
+WHICH_URL = https://mirrors.ocf.berkeley.edu/gnu/which/which-2.21.tar.gz
+WHICH_VER = 2.21
+WHICH_PATH = $(SRC_PATH)/which-$(WHICH_VER)
+
+# UnZip (needed to extract .zip source archives in many build scripts)
+# URL: https://sourceforge.net/projects/infozip/files/UnZip%206.x/
+UNZIP_URL = https://downloads.sourceforge.net/infozip/unzip60.tar.gz
+UNZIP_VER = 6.0
+UNZIP_PATH = $(SRC_PATH)/unzip60
+
 # Targets
-all: less procps-ng iproute2 iputils iptables networkmanager libbpf libmnl libidn2 libunistring libnfnetlink libpsl newt libndp gnutls nettle libtasn1 p11-kit slang curl nghttp2 jansson flex libnvme fastfetch findutils sed grep diffutils gawk mpfr nano tar sudo vim rsync dosfstools tzdb parted make-ca
+all: less procps-ng iproute2 iputils iptables networkmanager libbpf libmnl libidn2 libunistring libnfnetlink libpsl newt libndp gnutls nettle libtasn1 p11-kit slang curl nghttp2 jansson flex libnvme fastfetch findutils sed grep diffutils gawk mpfr nano tar sudo vim rsync dosfstools tzdb parted make-ca gettext which unzip
 
 # Download less
 download-less: .less-obtained
@@ -763,3 +783,67 @@ make-ca: download-make-ca .make-ca-done
 	curl -k -o $(STAGING_PATH)/etc/ssl/ca-bundle.crt https://curl.se/ca/cacert.pem && chmod 644 $(STAGING_PATH)/etc/ssl/ca-bundle.crt && \
 	echo 'export CURL_CA_BUNDLE=/etc/ssl/ca-bundle.crt' >> $(STAGING_PATH)/etc/profile
 	touch .make-ca-done
+
+# ---------------------------------------------------------------------------
+# Basic dependencies: gettext, which, unzip
+# These are part of Arch Linux's base / base-devel groups and are required by
+# a large number of third-party packages either at build time or runtime.
+# ---------------------------------------------------------------------------
+
+# Download gettext
+download-gettext: .gettext-obtained
+.gettext-obtained:
+	cd $(SRC_PATH) && wget -O gettext-$(GETTEXT_VER).tar.xz $(GETTEXT_URL) && tar xf gettext-$(GETTEXT_VER).tar.xz
+	touch .gettext-obtained
+
+# Compile gettext
+# We build with --disable-java and --disable-native-java to avoid a JDK
+# dependency, and --disable-csharp because we have no Mono toolchain.
+# The important outputs are:
+#   /usr/lib/libintl.so   – linked by virtually every i18n-aware C program
+#   /usr/bin/gettext      – runtime message lookup
+#   /usr/bin/xgettext     – extract translatable strings (needed by autotools)
+gettext: download-gettext .gettext-done
+.gettext-done:
+	cd $(GETTEXT_PATH) && \
+	./configure --prefix=/usr \
+		--disable-java \
+		--disable-native-java \
+		--disable-csharp \
+		--disable-openmp \
+		--docdir=/usr/share/doc/gettext-$(GETTEXT_VER) && \
+	$(MAKE) -j$(THREADS) && \
+	$(MAKE) DESTDIR=$(STAGING_PATH) install && \
+	chmod -v 0755 $(STAGING_PATH)/usr/lib/preloadable_libintl.so || true
+	touch .gettext-done
+
+# Download which
+download-which: .which-obtained
+.which-obtained:
+	cd $(SRC_PATH) && wget -O which-$(WHICH_VER).tar.gz $(WHICH_URL) && tar xf which-$(WHICH_VER).tar.gz
+	touch .which-obtained
+
+# Compile which
+which: download-which .which-done
+.which-done:
+	cd $(WHICH_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .which-done
+
+# Download unzip
+download-unzip: .unzip-obtained
+.unzip-obtained:
+	cd $(SRC_PATH) && wget -O unzip60.tar.gz $(UNZIP_URL) && tar xf unzip60.tar.gz
+	touch .unzip-obtained
+
+# Compile unzip
+# Note: unzip uses a custom non-autoconf build system; we pass CF for CFLAGS.
+# The -DLARGE_FILE_SUPPORT enables handling of >2 GB ZIP files.
+unzip: download-unzip .unzip-done
+.unzip-done:
+	cd $(UNZIP_PATH) && \
+	$(MAKE) -f unix/Makefile generic \
+		"CF=-O2 -DLARGE_FILE_SUPPORT -DUNICODE_WCHAR -DUNICODE_SUPPORT -I." && \
+	$(MAKE) -f unix/Makefile install \
+		prefix=$(STAGING_PATH)/usr \
+		mandir=$(STAGING_PATH)/usr/share/man
+	touch .unzip-done

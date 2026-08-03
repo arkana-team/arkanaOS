@@ -238,10 +238,10 @@ KRB5_VER = 1.22
 KRB5_PATH = $(SRC_PATH)/krb5-$(KRB5_VER)
 
 # Lmdb
-# URL: https://www.linuxfromscratch.org/blfs/view/systemd/server/lmdb.html
-LMDB_URL = https://git.openldap.org/openldap/openldap/-/archive/LMDB_0.9.33.tar.bz2
+# URL: https://github.com/LMDB/lmdb (official GitHub mirror)
+LMDB_URL = https://github.com/LMDB/lmdb/archive/refs/tags/LMDB_0.9.33.tar.gz
 LMDB_VER = 0.9.33
-LMDB_PATH = $(SRC_PATH)/openldap-LMDB_$(LMDB_VER)
+LMDB_PATH = $(SRC_PATH)/lmdb-LMDB_$(LMDB_VER)
 
 # Libnsl
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/basicnet/libnsl.html
@@ -1065,7 +1065,7 @@ download-lmdb: .lmdb-obtained
 lmdb: download-lmdb .lmdb-done
 
 .lmdb-done:
-	cd $(LMDB_PATH)*/libraries/liblmdb && $(MAKE) -j$(THREADS) && $(MAKE) prefix=$(STAGING_PATH)/usr install
+	cd $(LMDB_PATH)/libraries/liblmdb && $(MAKE) -j$(THREADS) && $(MAKE) prefix=$(STAGING_PATH)/usr install
 	touch .lmdb-done
 
 # Download libfuse
