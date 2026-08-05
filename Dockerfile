@@ -99,7 +99,10 @@ COPY --chown=builder:builder . /build/arkana
 
 WORKDIR /build/arkana
 
-RUN sudo ln -sf /bin/true /sbin/ldconfig
+RUN sudo ln -sf /bin/true /sbin/ldconfig && \
+    echo 'tries = 5' | sudo tee -a /etc/wgetrc && \
+    echo 'timeout = 30' | sudo tee -a /etc/wgetrc && \
+    echo 'read_timeout = 30' | sudo tee -a /etc/wgetrc
 
 CMD ["bash", "-c", "set +e; sudo make; ret=$?; \
 if [ $ret -eq 130 ]; then \

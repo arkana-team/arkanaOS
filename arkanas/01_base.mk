@@ -286,9 +286,14 @@ KBD_URL = https://www.kernel.org/pub/linux/utils/kbd/kbd-2.8.0.tar.gz
 KBD_VER = 2.8.0
 KBD_PATH = $(SRC_PATH)/kbd-$(KBD_VER)
 
+# Kernel headers (only, no full build) - needed early for IPPROTO_AGGFRAG
+LINUX_HEADERS_URL = https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.17.6.tar.gz
+LINUX_HEADERS_VER = 6.17.6
+LINUX_HEADERS_PATH = $(SRC_PATH)/linux-$(LINUX_HEADERS_VER)
+
 # Targets
 .PHONY: all
-all: dirs timestamp gmp zlib libgpg-error libgcrypt libxcrypt libcap libcap-ng acl attr libaio libtirpc libnsl lmdb keyutils krb5 libfuse glibc ncurses readline file json-c popt linux-audit linux-pam shadow cyrus-sasl openldap bzip2 xz-utils lz4 zstd gzip openssl cryptsetup coreutils util-linux bash e2fsprogs systemd lvm2 gcc libseccomp dbus dbus-broker kbd
+all: dirs timestamp gmp zlib libgpg-error libgcrypt libxcrypt libcap libcap-ng acl attr libaio libtirpc libnsl lmdb keyutils krb5 libfuse glibc kernel-headers ncurses readline file json-c popt linux-audit linux-pam shadow cyrus-sasl openldap bzip2 xz-utils lz4 zstd gzip openssl cryptsetup coreutils util-linux bash e2fsprogs systemd lvm2 gcc libseccomp dbus dbus-broker kbd
 
 # Create system hierarchy
 .PHONY: dirs
@@ -305,6 +310,16 @@ dirs: .dirs-done
 	ln -sf usr/bin $(STAGING_PATH)/bin
 	ln -sf usr/bin $(STAGING_PATH)/sbin
 	ln -sf usr/lib $(STAGING_PATH)/lib
+
+# Kernel headers only (for IPPROTO_AGGFRAG etc.)
+.PHONY: kernel-headers
+kernel-headers: .kernel-headers-done
+
+.kernel-headers-done:
+	cd $(SRC_PATH) && wget -O linux-$(LINUX_HEADERS_VER).tar.gz $(LINUX_HEADERS_URL) && tar xf linux-$(LINUX_HEADERS_VER).tar.gz
+	$(MAKE) -C $(LINUX_HEADERS_PATH) mrproper
+	cd $(LINUX_HEADERS_PATH) && $(MAKE) headers_install INSTALL_HDR_PATH=$(STAGING_PATH)/usr
+	touch .kernel-headers-done
 	ln -sf usr/lib $(STAGING_PATH)/lib64
 	touch .dirs-done
 
@@ -338,7 +353,7 @@ download-systemd: .systemd-obtained
 
 # Compile systemd
 .PHONY: systemd
-systemd: download-systemd .systemd-done
+systemd: download-systemd kernel-headers .systemd-done
 
 .systemd-done:
 	rm -rf $(SYSTEMD_PATH)/build
