@@ -92,6 +92,18 @@ LIBNDP_URL = http://libndp.org/files/libndp-1.9.tar.gz
 LIBNDP_VER = 1.9
 LIBNDP_PATH = $(SRC_PATH)/libndp-$(LIBNDP_VER)
 
+# Libffi
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/libffi.html
+LIBFFI_URL = https://github.com/libffi/libffi/releases/download/v3.4.7/libffi-3.4.7.tar.gz
+LIBFFI_VER = 3.4.7
+LIBFFI_PATH = $(SRC_PATH)/libffi-$(LIBFFI_VER)
+
+# Glib
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/glib2.html
+GLIB_URL = https://download.gnome.org/sources/glib/2.78/glib-2.78.6.tar.xz
+GLIB_VER = 2.78.6
+GLIB_PATH = $(SRC_PATH)/glib-$(GLIB_VER)
+
 # Gnutls
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/gnutls.html
 GNUTLS_URL = https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.10.tar.xz
@@ -328,7 +340,7 @@ LICENSES_EXCEPTIONS = \
 	LLGPL Linux-syscall-note MPL-2.0-no-copyleft-exception
 
 # Targets
-all: less procps-ng iproute2 iputils iptables libbpf libmnl libidn2 libunistring libnfnetlink libpsl newt libndp networkmanager gnutls nettle libtasn1 p11-kit slang curl wget nghttp2 jansson flex libnvme fastfetch findutils sed grep diffutils gawk mpfr nano tar sudo vim rsync dosfstools tzdb parted make-ca gettext which unzip kmod pciutils psmisc licenses firefox
+all: less procps-ng iproute2 iputils iptables libbpf libmnl libidn2 libunistring libnfnetlink libpsl newt libndp libffi glib networkmanager gnutls nettle libtasn1 p11-kit slang curl wget nghttp2 jansson flex libnvme fastfetch findutils sed grep diffutils gawk mpfr nano tar sudo vim rsync dosfstools tzdb parted make-ca gettext which unzip kmod pciutils psmisc licenses firefox
 
 # Download less
 download-less: .less-obtained
@@ -494,6 +506,34 @@ libndp: download-libndp .libndp-done
 .libndp-done:
 	cd $(LIBNDP_PATH) && ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libndp-done
+
+# Download libffi
+download-libffi: .libffi-obtained
+.libffi-obtained:
+	cd $(SRC_PATH) && wget -O libffi-$(LIBFFI_VER).tar.gz $(LIBFFI_URL) && tar xf libffi-$(LIBFFI_VER).tar.gz
+	touch .libffi-obtained
+
+# Compile libffi
+libffi: download-libffi .libffi-done
+.libffi-done:
+	cd $(LIBFFI_PATH) && ./configure --prefix=/usr --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .libffi-done
+
+# Download glib
+download-glib: .glib-obtained
+.glib-obtained:
+	cd $(SRC_PATH) && wget -O glib-$(GLIB_VER).tar.xz $(GLIB_URL) && tar xf glib-$(GLIB_VER).tar.xz
+	touch .glib-obtained
+
+# Compile glib
+glib: download-glib .glib-done
+.glib-done:
+	mkdir -p $(GLIB_PATH)/build
+	sed -i 's/free_sized (mem, size)/free(mem)/' $(GLIB_PATH)/glib/gmem.c
+	sed -i 's/free_aligned_sized (mem, alignment, size)/free(mem)/' $(GLIB_PATH)/glib/gmem.c
+	cd $(GLIB_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release \
+	-D glib_debug=disabled -D sysprof=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	touch .glib-done
 
 # Download GnuTLS
 download-gnutls: .gnutls-obtained

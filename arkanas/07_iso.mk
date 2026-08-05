@@ -75,8 +75,8 @@ HARFBUZZ_PATH = $(SRC_PATH)/harfbuzz-$(HARFBUZZ_VER)
 
 # Glib
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/glib2.html
-GLIB_URL = https://download.gnome.org/sources/glib/2.84/glib-2.84.4.tar.xz
-GLIB_VER = 2.84.4
+GLIB_URL = https://download.gnome.org/sources/glib/2.78/glib-2.78.6.tar.xz
+GLIB_VER = 2.78.6
 GLIB_PATH = $(SRC_PATH)/glib-$(GLIB_VER)
 
 # Libffi
@@ -352,8 +352,11 @@ download-glib: .glib-obtained
 glib: download-glib .glib-done
 
 .glib-done:
-	mkdir -p $(GLIB_PATH)/build && cd $(GLIB_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release \
-	-D introspection=disabled -D glib_debug=disabled -D man-pages=enabled -D sysprof=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(GLIB_PATH)/build
+	sed -i 's/free_sized (mem, size)/free(mem)/' $(GLIB_PATH)/glib/gmem.c
+	sed -i 's/free_aligned_sized (mem, alignment, size)/free(mem)/' $(GLIB_PATH)/glib/gmem.c
+	cd $(GLIB_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release \
+	-D glib_debug=disabled -D sysprof=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .glib-done
 
 # Download libffi
