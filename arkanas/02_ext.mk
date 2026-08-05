@@ -328,7 +328,7 @@ LICENSES_EXCEPTIONS = \
 	LLGPL Linux-syscall-note MPL-2.0-no-copyleft-exception
 
 # Targets
-all: less procps-ng iproute2 iputils iptables networkmanager libbpf libmnl libidn2 libunistring libnfnetlink libpsl newt libndp gnutls nettle libtasn1 p11-kit slang curl wget nghttp2 jansson flex libnvme fastfetch findutils sed grep diffutils gawk mpfr nano tar sudo vim rsync dosfstools tzdb parted make-ca gettext which unzip kmod pciutils psmisc licenses firefox
+all: less procps-ng iproute2 iputils iptables libbpf libmnl libidn2 libunistring libnfnetlink libpsl newt libndp networkmanager gnutls nettle libtasn1 p11-kit slang curl wget nghttp2 jansson flex libnvme fastfetch findutils sed grep diffutils gawk mpfr nano tar sudo vim rsync dosfstools tzdb parted make-ca gettext which unzip kmod pciutils psmisc licenses firefox
 
 # Download less
 download-less: .less-obtained

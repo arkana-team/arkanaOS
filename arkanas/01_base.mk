@@ -319,6 +319,7 @@ kernel-headers: .kernel-headers-done
 	cd $(SRC_PATH) && wget -O linux-$(LINUX_HEADERS_VER).tar.gz $(LINUX_HEADERS_URL) && tar xf linux-$(LINUX_HEADERS_VER).tar.gz
 	$(MAKE) -C $(LINUX_HEADERS_PATH) mrproper
 	cd $(LINUX_HEADERS_PATH) && $(MAKE) headers_install INSTALL_HDR_PATH=$(STAGING_PATH)/usr
+	sed -i '/IPPROTO_RAW\b/s/$$/\n#define IPPROTO_AGGFRAG 147/' $(STAGING_PATH)/usr/include/linux/in.h
 	touch .kernel-headers-done
 	ln -sf usr/lib $(STAGING_PATH)/lib64
 	touch .dirs-done
@@ -341,6 +342,8 @@ glibc: download-glibc .glibc-done
 	cd $(GLIBC_PATH)/build && ../configure --prefix=/usr --disable-werror --enable-kernel=5.4 \
 	--enable-stack-protector=strong --disable-nscd --enable-shared libc_cv_slibdir=/usr/lib && $(MAKE) CFLAGS="-O2" -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
+	grep -q 'IPPROTO_AGGFRAG' $(STAGING_PATH)/usr/include/netinet/in.h || \
+	  sed -i '/IPPROTO_RAW = 255/a\\    IPPROTO_AGGFRAG = 147,' $(STAGING_PATH)/usr/include/netinet/in.h
 	touch .glibc-done
 
 # Download systemd
