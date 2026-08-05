@@ -1,0 +1,41 @@
+{
+  /* arkanaOS Window Maker theme - Defaults */
+  
+  /* Colors - arkanaOS palette: navy #0f172a, teal #0f766e, cyan #00a8c6, slate #1e293b, white #f8fafc */
+  WMFrameBuffer3D = NO;
+  
+  /* Titlebar */
+  TitleBackColor = "#0f766e";
+  TitleTextColor = "#ffffff";
+  
+  /* Window background */
+  WindowBackgrColor = "#1e293b";
+  WindowTextColor = "#f8fafc";
+  
+  /* Menu */
+  MenuBackColor = "#0f172a";
+  MenuTextColor = "#f1f5f9";
+  MenuTitleBackColor = "#0f766e";
+  MenuTitleTextColor = "#ffffff";
+  
+  /* Icon */
+  IconBackgrColor = "#1e293b";
+  IconTextColor = "#f8fafc";
+  
+  /* Focus */
+  FocusBackgrColor = "#0f766e";
+  FocusTextColor = "#ffffff";
+  
+  /* Border color */
+  FrameBorderColor = "#00a8c6";
+  
+  /* Font */
+  DefaultFont = "sans-serif-12";
+  
+  /* Workspace */
+  WorkspaceBackgrColor = "#0f172a";
+  
+  /* Clip */
+  ClipTitleTextColor = "#ffffff";
+  ClipTitleBackColor = "#0f766e";
+}

@@ -1,0 +1,42 @@
+{
+  /* arkanaOS Window Maker theme - Window Attributes */
+  
+  /* Global window settings */
+  * {
+    iconifyIcon = "(none, wpixmap)";
+  }
+  
+  /* Titlebar appearance */
+  *Titlebar {
+    titleTextColor = "#ffffff";
+    titleBackColor = "#0f766e";
+    titleFont = "sans-serif-bold-12";
+    closeKeyPixmap = "close";
+    miniaturizeKeyPixmap = "miniaturize";
+  }
+  
+  /* Window frame */
+  *Frame {
+    frameBorderColor = "#00a8c6";
+  }
+  
+  /* Menu */
+  *Menu {
+    menuTextColor = "#f1f5f9";
+    menuBackColor = "#0f172a";
+    menuTitleTextColor = "#ffffff";
+    menuTitleBackColor = "#0f766e";
+    menuFrameBorderColor = "#00a8c6";
+  }
+  
+  /* Icons */
+  *Icon {
+    iconTextColor = "#f8fafc";
+    iconBackgrColor = "#1e293b";
+  }
+  
+  /* App-specific: xterm gets a darker bg */
+  xterm*background = "#0f172a";
+  xterm*foreground = "#f8fafc";
+  xterm*font = "mono-12";
+}

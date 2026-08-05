@@ -195,8 +195,8 @@ X11_LIB_VERS = 1.8.12 1.0.12 0.1.3 1.1.5 1.3.6 2.0.7 1.3.3 1.17.0 1.1.8 1.1.6 0.
 X11_PARSED_LIBS := $(foreach i, $(shell seq 1 $(words $(X11_LIBS))), \
   $(word $(i), $(X11_LIBS))/$(word $(i), $(X11_LIB_VERS)))
 
-X11_APPS = xauth xkbcomp twm xsetroot xrandr
-X11_APP_VERS = 1.1.4 1.4.7 1.0.12 1.1.3 1.5.2
+X11_APPS = xauth xkbcomp xsetroot xrandr
+X11_APP_VERS = 1.1.4 1.4.7 1.1.3 1.5.2
 
 X11_PARSED_APPS := $(foreach i, $(shell seq 1 $(words $(X11_APPS))), \
   $(word $(i), $(X11_APPS))/$(word $(i), $(X11_APP_VERS)))
@@ -208,7 +208,7 @@ X11_PARSED_FONTS := $(foreach i, $(shell seq 1 $(words $(X11_FONTS))), \
   $(word $(i), $(X11_FONTS))/$(word $(i), $(X11_FONT_VERS)))
 
 # Targets
-all: xorgproto xorg-server xorg-libs libbsd libmd libdrm mesa lm-sensors llvm libedit spirv-tools xinit xorg-apps xorg-fonts xorg-xkeyboard-config xf86-input-evdev openbox fribidi xterm luit libinput libevdev mtdev libwacom libgudev feh imlib2 pango libthai libdatrie librsvg libdav1d gdk-pixbuf libjpeg-turbo
+all: xorgproto xorg-server xorg-libs libbsd libmd libdrm mesa lm-sensors llvm libedit spirv-tools xinit xorg-apps xorg-fonts xorg-xkeyboard-config xf86-input-evdev openbox fribidi xterm luit libinput libevdev mtdev libwacom libgudev feh imlib2 pango libthai libdatrie librsvg libdav1d gdk-pixbuf libjpeg-turbo wmaker
 
 XORGPROTO_URL = https://www.x.org/pub/individual/proto/xorgproto-2024.1.tar.xz
 XORGPROTO_VER = 2024.1
@@ -693,3 +693,23 @@ vulkan: .vulkan-done
 	cmake -DCMAKE_INSTALL_PREFIX=/usr -DVULKAN_HEADERS_INSTALL_DIR=$(STAGING_PATH)/usr -DBUILD_TESTS=OFF .. && \
 	$(MAKE) -j$(THREADS) && $(MAKE) install DESTDIR=$(STAGING_PATH)
 	touch .vulkan-done
+
+# Window Maker (wmaker-crm fork)
+# URL: https://repo.or.cz/w/wmaker-crm.git
+WMAKER_URL = https://repo.or.cz/w/wmaker-crm.git/snapshot/wmaker-crm-0.9.6.tar.gz
+WMAKER_VER = 0.9.6
+WMAKER_PATH = $(SRC_PATH)/wmaker-crm-$(WMAKER_VER)
+
+# Download Window Maker
+download-wmaker: .wmaker-obtained
+.wmaker-obtained:
+	cd $(SRC_PATH) && wget -O wmaker-crm-$(WMAKER_VER).tar.gz $(WMAKER_URL) && tar xf wmaker-crm-$(WMAKER_VER).tar.gz
+	touch .wmaker-obtained
+
+# Compile Window Maker
+wmaker: download-wmaker .wmaker-done
+.wmaker-done:
+	cd $(WMAKER_PATH) && ./autogen.sh && \
+	./configure --prefix=/usr --sysconfdir=/etc --enable-modelock --enable-pango --with-x && \
+	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .wmaker-done

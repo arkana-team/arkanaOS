@@ -405,10 +405,10 @@ download-util-linux: .util-linux-obtained
 util-linux: download-util-linux .util-linux-done
 
 .util-linux-done:
-	cd $(UTIL_LINUX_PATH) && sed -i 's/&(struct pollfd){.fd = fd,}/(\&struct pollfd){.fd = fd}/g' lsfd-cmd/lsfd.c && \
+	cd $(UTIL_LINUX_PATH) && \
 	./configure --bindir=/usr/bin --libdir=/usr/lib --sbindir=/usr/sbin \
 	--runstatedir=/run --disable-chfn-chsh --disable-login --disable-nologin --disable-su --disable-setpriv \
-	--disable-runuser --disable-pylibmount --disable-liblastlog2 --without-python \
+	--disable-runuser --disable-pylibmount --disable-liblastlog2 --disable-lsfd --without-python \
 	ADJTIME_PATH=/var/lib/hwclock/adjtime --docdir=/usr/share/doc/util-linux-$(UTIL_LINUX_VER) && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .util-linux-done

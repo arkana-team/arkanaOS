@@ -582,14 +582,16 @@ iso:
 	chmod +x $(STAGING_PATH)/usr/bin/arkcfg
 	cp -a xinitrc $(STAGING_PATH)/root/.xinitrc
 	mkdir -p $(STAGING_PATH)/etc/skel && cp -a xinitrc $(STAGING_PATH)/etc/skel/.xinitrc
-	cp -a twmrc $(STAGING_PATH)/root/.twmrc
-	cp -a twmrc $(STAGING_PATH)/etc/skel/.twmrc
-	mkdir -p $(STAGING_PATH)/usr/share/X11/twm && cp -a twmrc $(STAGING_PATH)/usr/share/X11/twm/system.twmrc
+	mkdir -p $(STAGING_PATH)/root/GNUstep/Library/WindowMaker
+	cp -a wmaker-config/WMDefaults $(STAGING_PATH)/root/GNUstep/Library/WindowMaker/
+	cp -a wmaker-config/WMWindowAttributes $(STAGING_PATH)/root/GNUstep/Library/WindowMaker/
+	cp -a wmaker-config/WMRootMenu $(STAGING_PATH)/root/GNUstep/Library/WindowMaker/
+	mkdir -p $(STAGING_PATH)/etc/skel/GNUstep/Library/WindowMaker
+	cp -a wmaker-config/WMDefaults $(STAGING_PATH)/etc/skel/GNUstep/Library/WindowMaker/
+	cp -a wmaker-config/WMWindowAttributes $(STAGING_PATH)/etc/skel/GNUstep/Library/WindowMaker/
+	cp -a wmaker-config/WMRootMenu $(STAGING_PATH)/etc/skel/GNUstep/Library/WindowMaker/
 	mkdir -p $(STAGING_PATH)/etc/X11/xorg.conf.d
 	printf 'Section "Device"\n    Identifier "Card0"\n    Option "SWcursor" "true"\n    Option "HWCursor" "false"\nEndSection\n' > $(STAGING_PATH)/etc/X11/xorg.conf.d/99-swcursor.conf
-	mkdir -p $(STAGING_PATH)/usr/libexec
-	printf '#!/bin/sh\nexit 0\n' > $(STAGING_PATH)/usr/libexec/mate-session-check-accelerated
-	chmod +x $(STAGING_PATH)/usr/libexec/mate-session-check-accelerated
 	sed -i 's/arkanaOS Dev/arkanaOS nightly/g' $(STAGING_PATH)/etc/os-release 2>/dev/null || true
 	sed -i 's/arkanaOS Dev/arkanaOS nightly/g' $(STAGING_PATH)/etc/issue 2>/dev/null || true
     
@@ -610,8 +612,11 @@ iso:
 
 	echo 'set timeout=5' > $(ISO_STAGING_PATH)/boot/grub/grub.cfg
 	echo 'set default=0' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
+	echo 'serial --unit=0 --speed=115200' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
+	echo 'terminal_input serial console' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
+	echo 'terminal_output serial console' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
 	echo 'menuentry "arkanaOS" {' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
-	echo '    linux /boot/vmlinuz' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
+	echo '    linux /boot/vmlinuz console=ttyS0,115200 console=tty0' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
 	echo '    initrd /boot/initramfs.img' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
 	echo '}' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
 
