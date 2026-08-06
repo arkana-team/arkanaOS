@@ -310,6 +310,31 @@ dirs: .dirs-done
 	ln -sf usr/bin $(STAGING_PATH)/bin
 	ln -sf usr/bin $(STAGING_PATH)/sbin
 	ln -sf usr/lib $(STAGING_PATH)/lib
+	ln -sf usr/lib $(STAGING_PATH)/lib64
+	@printf '%s\n' \
+		'[binaries]' \
+		"c = 'gcc'" \
+		"cpp = 'g++'" \
+		"ar = 'ar'" \
+		"strip = 'strip'" \
+		"pkg-config = 'pkg-config'" \
+		'' \
+		'[built-in options]' \
+		"c_args = ['-I/build/arkana/staging/usr/include']" \
+		"cpp_args = ['-I/build/arkana/staging/usr/include']" \
+		"c_link_args = ['-L/build/arkana/staging/usr/lib', '-Wl,-rpath-link=/build/arkana/staging/usr/lib']" \
+		"cpp_link_args = ['-L/build/arkana/staging/usr/lib', '-Wl,-rpath-link=/build/arkana/staging/usr/lib']" \
+		'' \
+		'[properties]' \
+		"pkg_config_libdir = '/build/arkana/staging/usr/lib/pkgconfig:/build/arkana/staging/usr/share/pkgconfig'" \
+		'' \
+		'[host_machine]' \
+		"system = 'linux'" \
+		"cpu_family = 'x86_64'" \
+		"cpu = 'x86_64'" \
+		"endian = 'little'" \
+		> $(SRC_PATH)/cross_file.txt
+	touch .dirs-done
 
 # Kernel headers only (for IPPROTO_AGGFRAG etc.)
 .PHONY: kernel-headers

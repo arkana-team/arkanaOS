@@ -3,7 +3,7 @@ FROM archlinux:latest
 ENV PACMAN_NOCONFIRM=1
 
 # If set to 1, the builder won't exit on success, and you'll be able to make further changes.
-ENV ARKANA_NO_SUCCESSFUL_EXIT=1
+ENV ARKANA_NO_SUCCESSFUL_EXIT=0
 
 RUN yes | pacman -Syu --noconfirm && \
     yes | pacman -S --noconfirm --needed \
@@ -83,7 +83,7 @@ RUN yes | pacman -Syu --noconfirm && \
         vulkan-headers \
         cpio \
         dbus-glib \
-        && pacman -Scc --noconfirm
+        && (echo y; echo y) | pacman -Scc --noconfirm
 
 RUN useradd -m builder && \
     echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
