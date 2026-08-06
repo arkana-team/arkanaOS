@@ -82,8 +82,7 @@ RUN yes | pacman -Syu --noconfirm && \
         efibootmgr \
         vulkan-headers \
         cpio \
-        dbus-glib \
-        && (echo y; echo y) | pacman -Scc --noconfirm
+        dbus-glib
 
 RUN useradd -m builder && \
     echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers

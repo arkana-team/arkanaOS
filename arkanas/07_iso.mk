@@ -164,10 +164,27 @@ EFIVAR_URL = https://github.com/rhboot/efivar/archive/39/efivar-39.tar.gz
 EFIVAR_VER = 39
 EFIVAR_PATH = $(SRC_PATH)/efivar-$(EFIVAR_VER)
 
+# Firefox
+FIREFOX_URL = https://archive.mozilla.org/pub/firefox/releases/135.0/linux-x86_64/en-US/firefox-135.0.tar.bz2
+FIREFOX_VER = 135.0
+
+download-firefox: .firefox-obtained
+.firefox-obtained:
+	cd $(SRC_PATH) && wget -O firefox-$(FIREFOX_VER).tar.bz2 $(FIREFOX_URL) && tar xf firefox-$(FIREFOX_VER).tar.bz2 -C $(SRC_PATH)
+	touch .firefox-obtained
+
+firefox: download-firefox .firefox-done
+.firefox-done:
+	mkdir -p $(STAGING_PATH)/opt/firefox
+	cp -a $(SRC_PATH)/firefox/* $(STAGING_PATH)/opt/firefox/
+	mkdir -p $(STAGING_PATH)/usr/bin
+	ln -sf /opt/firefox/firefox $(STAGING_PATH)/usr/bin/firefox
+	touch .firefox-done
+
 # Targets
 all: build initramfs boot-initramfs iso
 
-build: cpio busybox linux grub freetype harfbuzz glib libffi elfutils brotli pcre2 cairo fontconfig expat graphite2 pixman libpng libisoburn libburn libisofs mtools squashfs-tools lzo efibootmgr efivar
+build: cpio busybox linux grub freetype harfbuzz glib libffi elfutils brotli pcre2 cairo fontconfig expat graphite2 pixman libpng libisoburn libburn libisofs mtools squashfs-tools lzo efibootmgr efivar firefox
 
 # Download cpio
 download-cpio: .cpio-obtained

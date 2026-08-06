@@ -424,7 +424,7 @@ mesa: download-mesa .mesa-done
 	sed -i '/#include <clang\/Config\/config.h>/i #undef UNUSED' src/compiler/clc/clc_helpers.cpp && \
 	sed -i '/#include "clc_helpers.h"/a #undef UNUSED\n#define UNUSED __attribute__((unused))' src/compiler/clc/clc_helpers.cpp && \
 	mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D platforms=x11 -D gallium-drivers=softpipe,virgl,nouveau,radeonsi \
-	-D valgrind=disabled -D video-codecs=all -D libunwind=disabled -D glvnd=disabled -D llvm=disabled -D werror=false -D vulkan=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	-D valgrind=disabled -D video-codecs=all -D libunwind=disabled -D glvnd=disabled -D llvm=disabled -D werror=false -D vulkan-drivers="" && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .mesa-done
 
 # Download lm-sensors
