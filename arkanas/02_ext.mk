@@ -340,7 +340,7 @@ LICENSES_EXCEPTIONS = \
 	LLGPL Linux-syscall-note MPL-2.0-no-copyleft-exception
 
 # Targets
-all: less procps-ng iproute2 iputils iptables libbpf libmnl libidn2 libunistring libnfnetlink libpsl newt libndp libffi glib networkmanager gnutls nettle libtasn1 p11-kit slang curl wget nghttp2 jansson flex libnvme fastfetch findutils sed grep diffutils gawk mpfr nano tar sudo vim rsync dosfstools tzdb parted make-ca gettext which unzip kmod pciutils psmisc licenses firefox
+all: less procps-ng iproute2 iputils iptables libbpf libmnl libidn2 libunistring libnfnetlink libpsl slang newt libndp libffi glib nettle libtasn1 p11-kit gnutls nghttp2 curl jansson networkmanager wget flex libnvme fastfetch findutils sed grep diffutils gawk mpfr nano tar sudo vim rsync dosfstools tzdb parted make-ca gettext which unzip kmod pciutils psmisc licenses firefox
 
 # Download less
 download-less: .less-obtained
@@ -402,8 +402,8 @@ download-networkmanager: .networkmanager-obtained
 # Compile NetworkManager
 networkmanager: download-networkmanager .networkmanager-done
 .networkmanager-done:
-	mkdir -p $(NETWORKMANAGER_PATH)/build && cd $(NETWORKMANAGER_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D nmtui=true -D ovs=false -D ppp=false -D selinux=false \
-	-D qt=false -D session_tracking=systemd -D modem_manager=false -D introspection=false -D crypto=gnutls && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(NETWORKMANAGER_PATH)/build && cd $(NETWORKMANAGER_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D nmtui=false -D ovs=false -D ppp=false -D selinux=false \
+	-D qt=false -D session_tracking=systemd -D modem_manager=false -D introspection=false -D crypto=gnutls -D polkit=false -D concheck=false -D nbft=false && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	echo "[main]" > $(STAGING_PATH)/etc/NetworkManager/NetworkManager.conf
 	echo "plugins=keyfile" >> $(STAGING_PATH)/etc/NetworkManager/NetworkManager.conf && mkdir -p $(STAGING_PATH)/etc/systemd/system/multi-user.target.wants
 	ln -sf /usr/lib/systemd/system/NetworkManager.service $(STAGING_PATH)/etc/systemd/system/multi-user.target.wants/NetworkManager.service
@@ -609,7 +609,7 @@ download-curl: .curl-obtained
 # Compile curl
 curl: download-curl .curl-done
 .curl-done:
-	cd $(CURL_PATH) && ./configure --prefix=/usr --enable-versioned-symbols --with-gssapi --with-openssl --with-ca-path=/etc/ssl/certs && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(CURL_PATH) && ./configure --prefix=/usr --enable-versioned-symbols --with-gssapi --with-openssl --with-ca-path=/etc/ssl/certs --without-brotli --without-zstd && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .curl-done
 
 # Download wget

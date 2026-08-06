@@ -3,7 +3,7 @@ set -euo pipefail
 mkdir -p output
 
 # Build process can be uncapped. This will be faster but will use up more resources.
-CPUS=8
+CPUS=4
 RAM=$(($(awk '/MemTotal/ {print $2}' /proc/meminfo)/1048576+1))
 SWAP=$(($(awk '/SwapTotal/ {print $2}' /proc/meminfo)/1048576))
 

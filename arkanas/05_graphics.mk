@@ -208,7 +208,7 @@ X11_PARSED_FONTS := $(foreach i, $(shell seq 1 $(words $(X11_FONTS))), \
   $(word $(i), $(X11_FONTS))/$(word $(i), $(X11_FONT_VERS)))
 
 # Targets
-all: xorgproto xorg-server xorg-libs libbsd libmd libdrm mesa lm-sensors llvm libedit spirv-tools xinit xorg-apps xorg-fonts xorg-xkeyboard-config xf86-input-evdev openbox fribidi xterm luit libinput libevdev mtdev libwacom libgudev feh imlib2 pango libthai libdatrie librsvg libdav1d gdk-pixbuf libjpeg-turbo wmaker
+all: xorgproto xtrans pixman freetype font-util xorg-libs libdrm mesa xorg-server libbsd libmd lm-sensors llvm libedit spirv-tools xinit xorg-apps xorg-fonts xorg-xkeyboard-config xf86-input-evdev openbox fribidi xterm luit libinput libevdev mtdev libwacom libgudev feh imlib2 pango libthai libdatrie librsvg libdav1d gdk-pixbuf libjpeg-turbo wmaker
 
 XORGPROTO_URL = https://www.x.org/pub/individual/proto/xorgproto-2024.1.tar.xz
 XORGPROTO_VER = 2024.1
@@ -223,6 +223,75 @@ xorgproto: download-xorgproto .xorgproto-done
 .xorgproto-done:
 	mkdir -p $(XORGPROTO_PATH)/build && cd $(XORGPROTO_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .xorgproto-done
+
+XTRANS_URL = https://www.x.org/pub/individual/lib/xtrans-1.5.1.tar.xz
+XTRANS_VER = 1.5.1
+XTRANS_PATH = $(SRC_PATH)/xtrans-$(XTRANS_VER)
+
+download-xtrans: .xtrans-obtained
+.xtrans-obtained:
+	cd $(SRC_PATH) && wget -O xtrans-$(XTRANS_VER).tar.xz $(XTRANS_URL) && tar xf xtrans-$(XTRANS_VER).tar.xz
+	touch .xtrans-obtained
+
+xtrans: download-xtrans .xtrans-done
+.xtrans-done:
+	cd $(XTRANS_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .xtrans-done
+
+PIXMAN_URL = https://www.cairographics.org/releases/pixman-0.46.4.tar.gz
+PIXMAN_VER = 0.46.4
+PIXMAN_PATH = $(SRC_PATH)/pixman-$(PIXMAN_VER)
+
+download-pixman: .pixman-obtained
+.pixman-obtained:
+	cd $(SRC_PATH) && wget -O pixman-$(PIXMAN_VER).tar.gz $(PIXMAN_URL) && tar xf pixman-$(PIXMAN_VER).tar.gz
+	touch .pixman-obtained
+
+pixman: download-pixman .pixman-done
+.pixman-done:
+	mkdir -p $(PIXMAN_PATH)/build && cd $(PIXMAN_PATH)/build && meson setup --prefix=/usr --native-file $(SRC_PATH)/cross_file.txt --buildtype=release .. && ninja && \
+	DESTDIR=$(STAGING_PATH) ninja install
+	touch .pixman-done
+
+FREETYPE_URL = https://downloads.sourceforge.net/freetype/freetype-2.13.3.tar.xz
+FREETYPE_VER = 2.13.3
+FREETYPE_PATH = $(SRC_PATH)/freetype-$(FREETYPE_VER)
+
+download-freetype: .freetype-obtained
+.freetype-obtained:
+	cd $(SRC_PATH) && wget -O freetype-$(FREETYPE_VER).tar.xz $(FREETYPE_URL) && tar xf freetype-$(FREETYPE_VER).tar.xz
+	touch .freetype-obtained
+
+freetype: download-freetype .freetype-done
+.freetype-done:
+	cd $(FREETYPE_PATH) && sed -ri "s:.*(AUX_MODULES.*valid):\1:" modules.cfg && \
+	sed -r "s:.*(#.*SUBPIXEL_RENDERING) .*:\1:" -i include/freetype/config/ftoption.h && \
+	./configure --prefix=/usr --enable-freetype-config --disable-static --without-harfbuzz --without-png --without-brotli --without-zlib && $(MAKE) -j$(THREADS) && \
+	$(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .freetype-done
+
+FONT_UTIL_URL = https://gitlab.freedesktop.org/xorg/font/util/-/archive/XORG-STABLE/util-XORG-STABLE.tar.gz
+FONT_UTIL_VER = XORG-STABLE
+FONT_UTIL_PATH = $(SRC_PATH)/util-XORG-STABLE
+
+download-font-util: .font-util-obtained
+.font-util-obtained:
+	cd $(SRC_PATH) && wget -O util-$(FONT_UTIL_VER).tar.gz $(FONT_UTIL_URL) && tar xf util-$(FONT_UTIL_VER).tar.gz
+	touch .font-util-obtained
+
+font-util: .font-util-done
+.font-util-done:
+	mkdir -p $(STAGING_PATH)/usr/lib/pkgconfig
+	echo 'prefix=/usr' > $(STAGING_PATH)/usr/lib/pkgconfig/fontutil.pc
+	echo 'exec_prefix=$${prefix}' >> $(STAGING_PATH)/usr/lib/pkgconfig/fontutil.pc
+	echo 'libdir=$${exec_prefix}/lib' >> $(STAGING_PATH)/usr/lib/pkgconfig/fontutil.pc
+	echo 'datarootdir=$${prefix}/share' >> $(STAGING_PATH)/usr/lib/pkgconfig/fontutil.pc
+	echo 'fontrootdir=$${datarootdir}/fonts' >> $(STAGING_PATH)/usr/lib/pkgconfig/fontutil.pc
+	echo '' >> $(STAGING_PATH)/usr/lib/pkgconfig/fontutil.pc
+	echo 'Name: font-util' >> $(STAGING_PATH)/usr/lib/pkgconfig/fontutil.pc
+	echo 'Description: X.Org font utilities' >> $(STAGING_PATH)/usr/lib/pkgconfig/fontutil.pc
+	echo 'Version: 1.4.2' >> $(STAGING_PATH)/usr/lib/pkgconfig/fontutil.pc
+	touch .font-util-done
 
 # Download Xorg server
 download-xorg-server: .xorg-server-obtained
@@ -354,8 +423,8 @@ mesa: download-mesa .mesa-done
 	cd $(MESA_PATH) && \
 	sed -i '/#include <clang\/Config\/config.h>/i #undef UNUSED' src/compiler/clc/clc_helpers.cpp && \
 	sed -i '/#include "clc_helpers.h"/a #undef UNUSED\n#define UNUSED __attribute__((unused))' src/compiler/clc/clc_helpers.cpp && \
-	mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D platforms=x11,wayland -D gallium-drivers=softpipe,virgl,nouveau,r300,r600,radeonsi -D vulkan-drivers=amd \
-	-D valgrind=disabled -D video-codecs=all -D libunwind=disabled -D glvnd=disabled -D llvm=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D platforms=x11 -D gallium-drivers=softpipe,virgl,nouveau,radeonsi \
+	-D valgrind=disabled -D video-codecs=all -D libunwind=disabled -D glvnd=disabled -D llvm=disabled -D werror=false -D vulkan=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .mesa-done
 
 # Download lm-sensors
