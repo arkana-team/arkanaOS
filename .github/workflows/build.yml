@@ -59,15 +59,16 @@ jobs:
             -v "$(pwd)/output:/build/arkana/output" \
             -v "$HOME/.cache/ccache:/home/builder/.cache/ccache" \
             -e CCACHE_DIR=/home/builder/.cache/ccache \
-            arkana-builder bash -c "sudo make -j\$(nproc) -f arkanas/01_base.mk"
+            arkana-builder bash -c "sudo make -f arkanas/01_base.mk"
+
+      - name: Archive Base Staging
+        run: tar -cf arkana-base-staging.tar staging src
 
       - name: Upload Base Staging Artifact
         uses: actions/upload-artifact@v4
         with:
           name: arkana-base-staging
-          path: |
-            staging
-            src
+          path: arkana-base-staging.tar
           retention-days: 1
 
       - name: Upload Base Error Logs on Failure
@@ -106,6 +107,9 @@ jobs:
         with:
           name: arkana-base-staging
 
+      - name: Unarchive Base Staging
+        run: tar -xf arkana-base-staging.tar && rm arkana-base-staging.tar
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -125,15 +129,16 @@ jobs:
             -v "$(pwd)/output:/build/arkana/output" \
             -v "$HOME/.cache/ccache:/home/builder/.cache/ccache" \
             -e CCACHE_DIR=/home/builder/.cache/ccache \
-            arkana-builder bash -c "sudo make -j\$(nproc) -f arkanas/02_ext.mk && sudo make -j\$(nproc) -f arkanas/03_arkpkg.mk && sudo make -j\$(nproc) -f arkanas/04_toolchain.mk"
+            arkana-builder bash -c "sudo make -f arkanas/02_ext.mk && sudo make -f arkanas/03_arkpkg.mk && sudo make -f arkanas/04_toolchain.mk"
+
+      - name: Archive Toolchain Staging
+        run: tar -cf arkana-toolchain-staging.tar staging src
 
       - name: Upload Toolchain Staging Artifact
         uses: actions/upload-artifact@v4
         with:
           name: arkana-toolchain-staging
-          path: |
-            staging
-            src
+          path: arkana-toolchain-staging.tar
           retention-days: 1
 
       - name: Upload Toolchain Error Logs on Failure
@@ -172,6 +177,9 @@ jobs:
         with:
           name: arkana-toolchain-staging
 
+      - name: Unarchive Toolchain Staging
+        run: tar -xf arkana-toolchain-staging.tar && rm arkana-toolchain-staging.tar
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -191,15 +199,16 @@ jobs:
             -v "$(pwd)/output:/build/arkana/output" \
             -v "$HOME/.cache/ccache:/home/builder/.cache/ccache" \
             -e CCACHE_DIR=/home/builder/.cache/ccache \
-            arkana-builder bash -c "sudo make -j\$(nproc) -f arkanas/05_graphics.mk && sudo make -j\$(nproc) -f arkanas/06_graphics_ext.mk"
+            arkana-builder bash -c "sudo make -f arkanas/05_graphics.mk && sudo make -f arkanas/06_graphics_ext.mk"
+
+      - name: Archive Graphics Staging
+        run: tar -cf arkana-graphics-staging.tar staging src
 
       - name: Upload Graphics Staging Artifact
         uses: actions/upload-artifact@v4
         with:
           name: arkana-graphics-staging
-          path: |
-            staging
-            src
+          path: arkana-graphics-staging.tar
           retention-days: 1
 
       - name: Upload Graphics Error Logs on Failure
@@ -238,6 +247,9 @@ jobs:
         with:
           name: arkana-graphics-staging
 
+      - name: Unarchive Graphics Staging
+        run: tar -xf arkana-graphics-staging.tar && rm arkana-graphics-staging.tar
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -258,7 +270,7 @@ jobs:
             -v "$(pwd)/output:/build/arkana/output" \
             -v "$HOME/.cache/ccache:/home/builder/.cache/ccache" \
             -e CCACHE_DIR=/home/builder/.cache/ccache \
-            arkana-builder bash -c "sudo make -j\$(nproc) -f arkanas/07_iso.mk"
+            arkana-builder bash -c "sudo make -f arkanas/07_iso.mk"
 
       - name: Upload Final arkanaOS ISO Artifact
         uses: actions/upload-artifact@v4

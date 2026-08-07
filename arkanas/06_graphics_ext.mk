@@ -1,6 +1,7 @@
 # Enable multi-threaded Bash operation
 SHELL = bash
 THREADS = $(shell nproc)
+.NOTPARALLEL:
 
 # Paths used to build the ISO components
 SRC_PATH = $(shell realpath ./src)

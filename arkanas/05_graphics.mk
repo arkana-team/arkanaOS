@@ -1,6 +1,7 @@
 # Enable multi-threaded Bash operation
 SHELL = bash
 THREADS = $(shell nproc)
+.NOTPARALLEL:
 
 # Paths used to build the ISO components
 SRC_PATH = $(shell realpath ./src)
@@ -297,6 +298,7 @@ font-util: .font-util-done
 download-xorg-server: .xorg-server-obtained
 .xorg-server-obtained:
 	cd $(SRC_PATH) && wget -O xorg-server-$(XORG_SERVER_VER).tar.xz $(XORG_SERVER_URL) && tar xf xorg-server-$(XORG_SERVER_VER).tar.xz
+	touch .xorg-server-obtained
 # Libepoxy
 LIBEPOXY_URL = https://download.gnome.org/sources/libepoxy/1.5/libepoxy-1.5.10.tar.xz
 LIBEPOXY_VER = 1.5.10

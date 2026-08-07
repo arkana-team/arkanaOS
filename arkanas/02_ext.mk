@@ -1,6 +1,7 @@
 # Enable multi-threaded Bash operation
 SHELL = bash
 THREADS = $(shell nproc)
+.NOTPARALLEL:
 
 # Paths used in the build
 SRC_PATH = $(shell realpath ./src)
@@ -376,7 +377,7 @@ download-iproute2: .iproute2-obtained
 # Compile iproute2
 iproute2: download-iproute2 .iproute2-done
 .iproute2-done:
-	cd $(IPROUTE2_PATH) && sed -i /ARPD/d Makefile && rm -f man/man8/arpd.8 && $(MAKE) NETNS_RUN_DIR=/run/netns && \
+	cd $(IPROUTE2_PATH) && sed -i /ARPD/d Makefile && rm -f man/man8/arpd.8 && $(MAKE) NETNS_RUN_DIR=/run/netns&& $(MAKE) NETNS_RUN_DIR=/run/netns $(MAKE) -j$(THREADS) NETNS_RUN_DIR=/run/netns && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .iproute2-done
 
@@ -959,7 +960,7 @@ unzip: download-unzip .unzip-done
 .unzip-done:
 	cd $(UNZIP_PATH) && \
 	sed -i '/struct tm \*gmtime(), \*localtime();/d' unix/unxcfg.h && \
-	$(MAKE) -f unix/Makefile linux_noasm \
+	$(MAKE) -j$(THREADS) -f unix/Makefile linux_noasm \
 		"CF=-O2 -DLARGE_FILE_SUPPORT -DUNICODE_WCHAR -DUNICODE_SUPPORT -DUTF8_MAYBE_NATIVE -I." && \
 	$(MAKE) -f unix/Makefile install \
 		prefix=$(STAGING_PATH)/usr \
@@ -1003,9 +1004,9 @@ download-pciutils: .pciutils-obtained
 pciutils: download-pciutils kmod .pciutils-done
 .pciutils-done:
 	cd $(PCIUTILS_PATH) && \
-	$(MAKE) OPT="-O2" ZLIB=no SHARED=no all && \
+	$(MAKE) -j$(THREADS) OPT="-O2" ZLIB=no SHARED=no all && \
 	$(MAKE) clean && \
-	$(MAKE) OPT="-O2" ZLIB=no SHARED=yes all && \
+	$(MAKE) -j$(THREADS) OPT="-O2" ZLIB=no SHARED=yes all && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) OPT="-O2" ZLIB=no SHARED=yes install install-lib PREFIX=/usr SBINDIR=/usr/bin SHAREDIR=/usr/share/hwdata MANDIR=/usr/share/man
 	rm -f $(STAGING_PATH)/usr/bin/update-pciids $(STAGING_PATH)/usr/share/man/man8/update-pciids.8
 	touch .pciutils-done
