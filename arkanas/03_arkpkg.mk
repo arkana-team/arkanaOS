@@ -1,5 +1,6 @@
 SHELL = bash
 THREADS = $(shell nproc)
+.NOTPARALLEL:
 
 SRC_PATH = $(shell realpath ./src)
 STAGING_PATH = $(shell realpath ./staging)

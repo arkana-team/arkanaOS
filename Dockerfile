@@ -1,7 +1,6 @@
 FROM archlinux:latest
 
 ENV PACMAN_NOCONFIRM=1
-ENV MAKEFLAGS="-j$(nproc)"
 ENV NINJAFLAGS="-j$(nproc)"
 ENV CFLAGS="-O2 -pipe"
 ENV CXXFLAGS="-O2 -pipe"

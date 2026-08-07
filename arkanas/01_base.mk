@@ -1,6 +1,7 @@
 # Enable multi-threaded Bash operation
 SHELL = bash
 THREADS = $(shell nproc)
+.NOTPARALLEL:
 
 # Set working paths
 SRC_PATH = $(shell realpath ./src)

@@ -1,6 +1,7 @@
 # Enable multi-threaded Bash operation
 SHELL = bash
 THREADS = $(shell nproc)
+.NOTPARALLEL:
 DOCKER = $(shell \
 	if [ -f /.dockerenv ]; then echo true; \
 	elif [ -n "$$container" ]; then echo true; \
