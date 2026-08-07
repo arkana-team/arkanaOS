@@ -24,6 +24,13 @@ jobs:
           sudo docker image prune --all --force || true
           df -h
 
+      - name: Setup & Persist Ccache Across Runs
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ runner.os }}-ccache-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: ${{ runner.os }}-ccache-
+          max-size: 10G
+
       - name: Cache Downloaded Sources
         uses: actions/cache@v4
         with:
@@ -31,15 +38,28 @@ jobs:
           key: arkana-src-${{ hashFiles('arkanas/01_base.mk') }}
           restore-keys: arkana-src-
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          tags: arkana-builder:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Build Base Stage
         run: |
           mkdir -p src staging output
-          docker build -t arkana-builder .
           docker run --rm \
             -v "$(pwd)/src:/build/arkana/src" \
             -v "$(pwd)/staging:/build/arkana/staging" \
             -v "$(pwd)/output:/build/arkana/output" \
-            arkana-builder bash -c "sudo make -f arkanas/01_base.mk"
+            -v "$HOME/.cache/ccache:/home/builder/.cache/ccache" \
+            -e CCACHE_DIR=/home/builder/.cache/ccache \
+            arkana-builder bash -c "sudo make -j\$(nproc) -f arkanas/01_base.mk"
 
       - name: Upload Base Staging Artifact
         uses: actions/upload-artifact@v4
@@ -74,19 +94,38 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /opt/hostedtoolcache
           sudo docker image prune --all --force || true
 
+      - name: Setup & Persist Ccache Across Runs
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ runner.os }}-ccache-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: ${{ runner.os }}-ccache-
+          max-size: 10G
+
       - name: Download Base Staging Artifact
         uses: actions/download-artifact@v4
         with:
           name: arkana-base-staging
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          tags: arkana-builder:latest
+          cache-from: type=gha
+
       - name: Build Extensions & Toolchain Stage
         run: |
-          docker build -t arkana-builder .
           docker run --rm \
             -v "$(pwd)/src:/build/arkana/src" \
             -v "$(pwd)/staging:/build/arkana/staging" \
             -v "$(pwd)/output:/build/arkana/output" \
-            arkana-builder bash -c "sudo make -f arkanas/02_ext.mk && sudo make -f arkanas/03_arkpkg.mk && sudo make -f arkanas/04_toolchain.mk"
+            -v "$HOME/.cache/ccache:/home/builder/.cache/ccache" \
+            -e CCACHE_DIR=/home/builder/.cache/ccache \
+            arkana-builder bash -c "sudo make -j\$(nproc) -f arkanas/02_ext.mk && sudo make -j\$(nproc) -f arkanas/03_arkpkg.mk && sudo make -j\$(nproc) -f arkanas/04_toolchain.mk"
 
       - name: Upload Toolchain Staging Artifact
         uses: actions/upload-artifact@v4
@@ -121,19 +160,38 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /opt/hostedtoolcache
           sudo docker image prune --all --force || true
 
+      - name: Setup & Persist Ccache Across Runs
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ runner.os }}-ccache-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: ${{ runner.os }}-ccache-
+          max-size: 10G
+
       - name: Download Toolchain Staging Artifact
         uses: actions/download-artifact@v4
         with:
           name: arkana-toolchain-staging
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          tags: arkana-builder:latest
+          cache-from: type=gha
+
       - name: Build Graphics Stage
         run: |
-          docker build -t arkana-builder .
           docker run --rm \
             -v "$(pwd)/src:/build/arkana/src" \
             -v "$(pwd)/staging:/build/arkana/staging" \
             -v "$(pwd)/output:/build/arkana/output" \
-            arkana-builder bash -c "sudo make -f arkanas/05_graphics.mk && sudo make -f arkanas/06_graphics_ext.mk"
+            -v "$HOME/.cache/ccache:/home/builder/.cache/ccache" \
+            -e CCACHE_DIR=/home/builder/.cache/ccache \
+            arkana-builder bash -c "sudo make -j\$(nproc) -f arkanas/05_graphics.mk && sudo make -j\$(nproc) -f arkanas/06_graphics_ext.mk"
 
       - name: Upload Graphics Staging Artifact
         uses: actions/upload-artifact@v4
@@ -168,20 +226,39 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /opt/hostedtoolcache
           sudo docker image prune --all --force || true
 
+      - name: Setup & Persist Ccache Across Runs
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ runner.os }}-ccache-${{ github.job }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: ${{ runner.os }}-ccache-
+          max-size: 10G
+
       - name: Download Graphics Staging Artifact
         uses: actions/download-artifact@v4
         with:
           name: arkana-graphics-staging
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          tags: arkana-builder:latest
+          cache-from: type=gha
+
       - name: Build ISO Stage
         run: |
           mkdir -p output
-          docker build -t arkana-builder .
           docker run --rm \
             -v "$(pwd)/src:/build/arkana/src" \
             -v "$(pwd)/staging:/build/arkana/staging" \
             -v "$(pwd)/output:/build/arkana/output" \
-            arkana-builder bash -c "sudo make -f arkanas/07_iso.mk"
+            -v "$HOME/.cache/ccache:/home/builder/.cache/ccache" \
+            -e CCACHE_DIR=/home/builder/.cache/ccache \
+            arkana-builder bash -c "sudo make -j\$(nproc) -f arkanas/07_iso.mk"
 
       - name: Upload Final arkanaOS ISO Artifact
         uses: actions/upload-artifact@v4
