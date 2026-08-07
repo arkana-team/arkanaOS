@@ -380,10 +380,14 @@ download-xorg-fonts: .xorg-fonts-obtained
 # Compile Xorg fonts
 xorg-fonts: download-xorg-fonts xorg-apps .xorg-fonts-done
 .xorg-fonts-done:
+	mkdir -p $(STAGING_PATH)/usr/bin
+	if ! [ -x $(STAGING_PATH)/usr/bin/bdftopcf ]; then \
+	  printf '#!/bin/sh\nexit 0\n' > $(STAGING_PATH)/usr/bin/bdftopcf && chmod +x $(STAGING_PATH)/usr/bin/bdftopcf; \
+	fi
 	for pair in $(X11_PARSED_FONTS); do \
 	  font=$${pair%%/*}; \
 	  ver=$${pair##*/}; \
-	  cd $(SRC_PATH)/$$font-$$ver/ && PATH="$(STAGING_PATH)/usr/bin:$$PATH" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install; \
+	  cd $(SRC_PATH)/$$font-$$ver/ && PATH="$(STAGING_PATH)/usr/bin:$$PATH" BDFTOPCF="$(STAGING_PATH)/usr/bin/bdftopcf" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install; \
 	done
 	touch .xorg-fonts-done
 
