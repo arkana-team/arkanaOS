@@ -1,2 +1,8 @@
 .*-obtained
 .*-done
+src/
+staging/
+output/
+iso-staging/
+cpio-staging/
+logs/

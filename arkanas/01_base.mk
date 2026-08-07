@@ -238,10 +238,10 @@ KRB5_VER = 1.22
 KRB5_PATH = $(SRC_PATH)/krb5-$(KRB5_VER)
 
 # Lmdb
-# URL: https://www.linuxfromscratch.org/blfs/view/systemd/server/lmdb.html
-LMDB_URL = https://git.openldap.org/openldap/openldap/-/archive/LMDB_0.9.33.tar.bz2
+# URL: https://github.com/LMDB/lmdb (official GitHub mirror)
+LMDB_URL = https://github.com/LMDB/lmdb/archive/refs/tags/LMDB_0.9.33.tar.gz
 LMDB_VER = 0.9.33
-LMDB_PATH = $(SRC_PATH)/openldap-LMDB_$(LMDB_VER)
+LMDB_PATH = $(SRC_PATH)/lmdb-LMDB_$(LMDB_VER)
 
 # Libnsl
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/basicnet/libnsl.html
@@ -286,9 +286,14 @@ KBD_URL = https://www.kernel.org/pub/linux/utils/kbd/kbd-2.8.0.tar.gz
 KBD_VER = 2.8.0
 KBD_PATH = $(SRC_PATH)/kbd-$(KBD_VER)
 
+# Kernel headers (only, no full build) - needed early for IPPROTO_AGGFRAG
+LINUX_HEADERS_URL = https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.17.6.tar.gz
+LINUX_HEADERS_VER = 6.17.6
+LINUX_HEADERS_PATH = $(SRC_PATH)/linux-$(LINUX_HEADERS_VER)
+
 # Targets
 .PHONY: all
-all: dirs timestamp gmp zlib libgpg-error libgcrypt libxcrypt libcap libcap-ng acl attr libaio libtirpc libnsl lmdb keyutils krb5 libfuse glibc ncurses readline file json-c popt linux-audit linux-pam shadow cyrus-sasl openldap bzip2 xz-utils lz4 zstd gzip openssl cryptsetup coreutils util-linux bash e2fsprogs systemd lvm2 gcc libseccomp dbus dbus-broker kbd
+all: dirs timestamp gmp zlib libgpg-error libgcrypt libxcrypt libcap libcap-ng acl attr libaio libtirpc libnsl lmdb keyutils krb5 libfuse glibc kernel-headers ncurses readline file json-c popt linux-audit linux-pam shadow cyrus-sasl openldap bzip2 xz-utils lz4 zstd gzip openssl cryptsetup coreutils util-linux bash e2fsprogs systemd lvm2 gcc libseccomp dbus dbus-broker kbd
 
 # Create system hierarchy
 .PHONY: dirs
@@ -305,6 +310,42 @@ dirs: .dirs-done
 	ln -sf usr/bin $(STAGING_PATH)/bin
 	ln -sf usr/bin $(STAGING_PATH)/sbin
 	ln -sf usr/lib $(STAGING_PATH)/lib
+	ln -sf usr/lib $(STAGING_PATH)/lib64
+	@printf '%s\n' \
+		'[binaries]' \
+		"c = 'gcc'" \
+		"cpp = 'g++'" \
+		"ar = 'ar'" \
+		"strip = 'strip'" \
+		"pkg-config = 'pkg-config'" \
+		'' \
+		'[built-in options]' \
+		"c_args = ['-I/build/arkana/staging/usr/include']" \
+		"cpp_args = ['-I/build/arkana/staging/usr/include']" \
+		"c_link_args = ['-L/build/arkana/staging/usr/lib', '-Wl,-rpath-link=/build/arkana/staging/usr/lib']" \
+		"cpp_link_args = ['-L/build/arkana/staging/usr/lib', '-Wl,-rpath-link=/build/arkana/staging/usr/lib']" \
+		'' \
+		'[properties]' \
+		"pkg_config_libdir = '/build/arkana/staging/usr/lib/pkgconfig:/build/arkana/staging/usr/share/pkgconfig'" \
+		'' \
+		'[host_machine]' \
+		"system = 'linux'" \
+		"cpu_family = 'x86_64'" \
+		"cpu = 'x86_64'" \
+		"endian = 'little'" \
+		> $(SRC_PATH)/cross_file.txt
+	touch .dirs-done
+
+# Kernel headers only (for IPPROTO_AGGFRAG etc.)
+.PHONY: kernel-headers
+kernel-headers: .kernel-headers-done
+
+.kernel-headers-done:
+	cd $(SRC_PATH) && wget -O linux-$(LINUX_HEADERS_VER).tar.gz $(LINUX_HEADERS_URL) && tar xf linux-$(LINUX_HEADERS_VER).tar.gz
+	$(MAKE) -C $(LINUX_HEADERS_PATH) mrproper
+	cd $(LINUX_HEADERS_PATH) && $(MAKE) headers_install INSTALL_HDR_PATH=$(STAGING_PATH)/usr
+	sed -i '/IPPROTO_RAW\b/s/$$/\n#define IPPROTO_AGGFRAG 147/' $(STAGING_PATH)/usr/include/linux/in.h
+	touch .kernel-headers-done
 	ln -sf usr/lib $(STAGING_PATH)/lib64
 	touch .dirs-done
 
@@ -326,6 +367,8 @@ glibc: download-glibc .glibc-done
 	cd $(GLIBC_PATH)/build && ../configure --prefix=/usr --disable-werror --enable-kernel=5.4 \
 	--enable-stack-protector=strong --disable-nscd --enable-shared libc_cv_slibdir=/usr/lib && $(MAKE) CFLAGS="-O2" -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
+	grep -q 'IPPROTO_AGGFRAG' $(STAGING_PATH)/usr/include/netinet/in.h || \
+	  sed -i '/IPPROTO_RAW = 255/a\\    IPPROTO_AGGFRAG = 147,' $(STAGING_PATH)/usr/include/netinet/in.h
 	touch .glibc-done
 
 # Download systemd
@@ -338,7 +381,7 @@ download-systemd: .systemd-obtained
 
 # Compile systemd
 .PHONY: systemd
-systemd: download-systemd .systemd-done
+systemd: download-systemd kernel-headers .systemd-done
 
 .systemd-done:
 	rm -rf $(SYSTEMD_PATH)/build
@@ -371,7 +414,7 @@ systemd: download-systemd .systemd-done
 
 .PHONY: timestamp
 timestamp:
-	BUILD=$$(($$(cat $(BUILDNUM_FILE))+1)); \
+	BUILD=$$(($$(cat $(BUILDNUM_FILE) 2>/dev/null || echo 0)+1)); \
 	echo "arkanaOS nightly ($$(date +%Y%m%d)) (build $$BUILD)" > $(STAGING_PATH)/etc/issue; \
 	echo $$BUILD > $(BUILDNUM_FILE)
 
@@ -405,10 +448,10 @@ download-util-linux: .util-linux-obtained
 util-linux: download-util-linux .util-linux-done
 
 .util-linux-done:
-	cd $(UTIL_LINUX_PATH) && sed -i 's/&(struct pollfd){.fd = fd,}/(\&struct pollfd){.fd = fd}/g' lsfd-cmd/lsfd.c && \
+	cd $(UTIL_LINUX_PATH) && \
 	./configure --bindir=/usr/bin --libdir=/usr/lib --sbindir=/usr/sbin \
 	--runstatedir=/run --disable-chfn-chsh --disable-login --disable-nologin --disable-su --disable-setpriv \
-	--disable-runuser --disable-pylibmount --disable-liblastlog2 --without-python \
+	--disable-runuser --disable-pylibmount --disable-liblastlog2 --disable-lsfd --without-python \
 	ADJTIME_PATH=/var/lib/hwclock/adjtime --docdir=/usr/share/doc/util-linux-$(UTIL_LINUX_VER) && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .util-linux-done
@@ -1065,7 +1108,7 @@ download-lmdb: .lmdb-obtained
 lmdb: download-lmdb .lmdb-done
 
 .lmdb-done:
-	cd $(LMDB_PATH)*/libraries/liblmdb && $(MAKE) -j$(THREADS) && $(MAKE) prefix=$(STAGING_PATH)/usr install
+	cd $(LMDB_PATH)/libraries/liblmdb && $(MAKE) -j$(THREADS) && $(MAKE) prefix=$(STAGING_PATH)/usr install
 	touch .lmdb-done
 
 # Download libfuse

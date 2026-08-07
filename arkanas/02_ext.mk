@@ -92,6 +92,18 @@ LIBNDP_URL = http://libndp.org/files/libndp-1.9.tar.gz
 LIBNDP_VER = 1.9
 LIBNDP_PATH = $(SRC_PATH)/libndp-$(LIBNDP_VER)
 
+# Libffi
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/libffi.html
+LIBFFI_URL = https://github.com/libffi/libffi/releases/download/v3.4.7/libffi-3.4.7.tar.gz
+LIBFFI_VER = 3.4.7
+LIBFFI_PATH = $(SRC_PATH)/libffi-$(LIBFFI_VER)
+
+# Glib
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/glib2.html
+GLIB_URL = https://download.gnome.org/sources/glib/2.78/glib-2.78.6.tar.xz
+GLIB_VER = 2.78.6
+GLIB_PATH = $(SRC_PATH)/glib-$(GLIB_VER)
+
 # Gnutls
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/gnutls.html
 GNUTLS_URL = https://www.gnupg.org/ftp/gcrypt/gnutls/v3.8/gnutls-3.8.10.tar.xz
@@ -127,6 +139,12 @@ P11_KIT_PATH = $(SRC_PATH)/p11-kit-$(P11_KIT_VER)
 CURL_URL = https://curl.se/download/curl-8.15.0.tar.xz
 CURL_VER = 8.15.0
 CURL_PATH = $(SRC_PATH)/curl-$(CURL_VER)
+
+# Wget (non-interactive file downloader; complements curl)
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/basicnet/wget.html
+WGET_URL = https://ftp.gnu.org/gnu/wget/wget-1.25.0.tar.gz
+WGET_VER = 1.25.0
+WGET_PATH = $(SRC_PATH)/wget-$(WGET_VER)
 
 # Nghttp2
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/basicnet/nghttp2.html
@@ -249,8 +267,80 @@ MAKE_CA_URL = https://github.com/lfs-book/make-ca/archive/v1.16.1/make-ca-1.16.1
 MAKE_CA_VER = 1.16.1
 MAKE_CA_PATH = $(SRC_PATH)/make-ca-$(MAKE_CA_VER)
 
+# Gettext (provides libintl.so and internationalisation tools)
+# URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/gettext.html
+# NOTE: gettext is also downloaded inline during the GCC build, but must be
+#       installed standalone so that libintl.so is available to third-party packages.
+GETTEXT_URL = https://mirrors.ocf.berkeley.edu/gnu/gettext/gettext-0.24.tar.xz
+GETTEXT_VER = 0.24
+GETTEXT_PATH = $(SRC_PATH)/gettext-$(GETTEXT_VER)
+
+# Which (command-location tool expected by many build systems)
+# URL: https://savannah.gnu.org/projects/which/ (w/o instructions)
+WHICH_URL = https://mirrors.ocf.berkeley.edu/gnu/which/which-2.21.tar.gz
+WHICH_VER = 2.21
+WHICH_PATH = $(SRC_PATH)/which-$(WHICH_VER)
+
+# UnZip (needed to extract .zip source archives in many build scripts)
+# URL: https://sourceforge.net/projects/infozip/files/UnZip%206.x/
+UNZIP_URL = https://downloads.sourceforge.net/infozip/unzip60.tar.gz
+UNZIP_VER = 6.0
+UNZIP_PATH = $(SRC_PATH)/unzip60
+
+# Kmod (kernel module utilities: modprobe, modinfo, depmod, lsmod...)
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/kmod.html
+KMOD_URL = https://www.kernel.org/pub/linux/utils/kernel/kmod/kmod-34.2.tar.xz
+KMOD_VER = 34.2
+KMOD_PATH = $(SRC_PATH)/kmod-$(KMOD_VER)
+
+# Pciutils (lspci, setpci - PCI bus tools; needs libkmod from the kmod package)
+# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/pciutils.html
+PCIUTILS_URL = https://www.kernel.org/pub/software/utils/pciutils/pciutils-3.15.0.tar.gz
+PCIUTILS_VER = 3.15.0
+PCIUTILS_PATH = $(SRC_PATH)/pciutils-$(PCIUTILS_VER)
+
+# Psmisc (killall, pstree, fuser - process management tools)
+# URL: https://gitlab.com/psmisc/psmisc/-/releases
+PSMISC_URL = https://gitlab.com/psmisc/psmisc/-/archive/v23.7/psmisc-v23.7.tar.gz
+PSMISC_VER = 23.7
+PSMISC_PATH = $(SRC_PATH)/psmisc-v$(PSMISC_VER)
+
+# Licenses (SPDX license texts; the "licenses" package of Arch's base group)
+# URL: https://github.com/spdx/license-list-data
+LICENSES_URL = https://github.com/spdx/license-list-data/archive/refs/tags/v3.24.0.tar.gz
+LICENSES_VER = 3.24.0
+LICENSES_PATH = $(SRC_PATH)/license-list-data-$(LICENSES_VER)
+
+# Curated set of common SPDX license texts installed to /usr/share/licenses/spdx/
+# (mirrors the standard_licenses list in Arch's licenses PKGBUILD)
+LICENSES_STANDARD = \
+	AGPL-3.0-only AGPL-3.0-or-later Apache-2.0 Artistic-1.0-Perl Artistic-2.0 BSL-1.0 CC0-1.0 \
+	CC-BY-1.0 CC-BY-2.0 CC-BY-2.5 CC-BY-3.0-AT CC-BY-3.0 CC-BY-3.0-US CC-BY-4.0 \
+	CC-BY-NC-1.0 CC-BY-NC-2.0 CC-BY-NC-2.5 CC-BY-NC-3.0 CC-BY-NC-4.0 \
+	CC-BY-NC-ND-1.0 CC-BY-NC-ND-2.0 CC-BY-NC-ND-2.5 CC-BY-NC-ND-3.0-IGO CC-BY-NC-ND-3.0 CC-BY-NC-ND-4.0 \
+	CC-BY-NC-SA-1.0 CC-BY-NC-SA-2.0 CC-BY-NC-SA-2.5 CC-BY-NC-SA-3.0 CC-BY-NC-SA-4.0 \
+	CC-BY-ND-1.0 CC-BY-ND-2.0 CC-BY-ND-2.5 CC-BY-ND-3.0 CC-BY-ND-4.0 \
+	CC-BY-SA-1.0 CC-BY-SA-2.0 CC-BY-SA-2.0-UK CC-BY-SA-2.1-JP CC-BY-SA-2.5 CC-BY-SA-3.0-AT CC-BY-SA-3.0 CC-BY-SA-4.0 \
+	CC-PDDC CDDL-1.0 CDDL-1.1 CPL-1.0 EPL-1.0 EPL-2.0 FSFAP \
+	GFDL-1.1-invariants-only GFDL-1.1-invariants-or-later GFDL-1.1-no-invariants-only GFDL-1.1-no-invariants-or-later \
+	GFDL-1.1-only GFDL-1.1-or-later \
+	GFDL-1.2-invariants-only GFDL-1.2-invariants-or-later GFDL-1.2-no-invariants-only GFDL-1.2-no-invariants-or-later \
+	GFDL-1.2-only GFDL-1.2-or-later \
+	GFDL-1.3-invariants-only GFDL-1.3-invariants-or-later GFDL-1.3-no-invariants-only GFDL-1.3-no-invariants-or-later \
+	GFDL-1.3-only GFDL-1.3-or-later \
+	GPL-1.0-only GPL-1.0-or-later GPL-2.0-only GPL-2.0-or-later GPL-3.0-only GPL-3.0-or-later GPL-CC-1.0 \
+	LGPL-2.0-only LGPL-2.0-or-later LGPL-2.1-only LGPL-2.1-or-later LGPL-3.0-only LGPL-3.0-or-later LGPLLR \
+	LPPL-1.0 LPPL-1.1 LPPL-1.2 LPPL-1.3a LPPL-1.3c MPL-1.0 MPL-1.1 MPL-2.0 PHP-3.0 PHP-3.01 PSF-2.0 \
+	Ruby Unlicense W3C WTFPL ZPL-1.1 ZPL-2.0 ZPL-2.1
+
+# Curated set of common SPDX license exceptions (mirrors standard_exceptions in
+# Arch's licenses PKGBUILD), installed to /usr/share/licenses/spdx/exceptions/
+LICENSES_EXCEPTIONS = \
+	GPL-3.0-linking-exception GPL-3.0-linking-source-exception LGPL-3.0-linking-exception \
+	LLGPL Linux-syscall-note MPL-2.0-no-copyleft-exception
+
 # Targets
-all: less procps-ng iproute2 iputils iptables networkmanager libbpf libmnl libidn2 libunistring libnfnetlink libpsl newt libndp gnutls nettle libtasn1 p11-kit slang curl nghttp2 jansson flex libnvme fastfetch findutils sed grep diffutils gawk mpfr nano tar sudo vim rsync dosfstools tzdb parted make-ca
+all: less procps-ng iproute2 iputils iptables libbpf libmnl libidn2 libunistring libnfnetlink libpsl slang newt libndp libffi glib nettle libtasn1 p11-kit gnutls nghttp2 curl jansson networkmanager wget flex libnvme fastfetch findutils sed grep diffutils gawk mpfr nano tar sudo vim rsync dosfstools tzdb parted make-ca gettext which unzip kmod pciutils psmisc licenses firefox
 
 # Download less
 download-less: .less-obtained
@@ -312,8 +402,8 @@ download-networkmanager: .networkmanager-obtained
 # Compile NetworkManager
 networkmanager: download-networkmanager .networkmanager-done
 .networkmanager-done:
-	mkdir -p $(NETWORKMANAGER_PATH)/build && cd $(NETWORKMANAGER_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D nmtui=true -D ovs=false -D ppp=false -D selinux=false \
-	-D qt=false -D session_tracking=systemd -D modem_manager=false -D introspection=false -D crypto=gnutls && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(NETWORKMANAGER_PATH)/build && cd $(NETWORKMANAGER_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D nmtui=false -D ovs=false -D ppp=false -D selinux=false \
+	-D qt=false -D session_tracking=systemd -D modem_manager=false -D introspection=false -D crypto=gnutls -D polkit=false -D concheck=false -D nbft=false && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	echo "[main]" > $(STAGING_PATH)/etc/NetworkManager/NetworkManager.conf
 	echo "plugins=keyfile" >> $(STAGING_PATH)/etc/NetworkManager/NetworkManager.conf && mkdir -p $(STAGING_PATH)/etc/systemd/system/multi-user.target.wants
 	ln -sf /usr/lib/systemd/system/NetworkManager.service $(STAGING_PATH)/etc/systemd/system/multi-user.target.wants/NetworkManager.service
@@ -417,6 +507,34 @@ libndp: download-libndp .libndp-done
 	cd $(LIBNDP_PATH) && ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libndp-done
 
+# Download libffi
+download-libffi: .libffi-obtained
+.libffi-obtained:
+	cd $(SRC_PATH) && wget -O libffi-$(LIBFFI_VER).tar.gz $(LIBFFI_URL) && tar xf libffi-$(LIBFFI_VER).tar.gz
+	touch .libffi-obtained
+
+# Compile libffi
+libffi: download-libffi .libffi-done
+.libffi-done:
+	cd $(LIBFFI_PATH) && ./configure --prefix=/usr --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .libffi-done
+
+# Download glib
+download-glib: .glib-obtained
+.glib-obtained:
+	cd $(SRC_PATH) && wget -O glib-$(GLIB_VER).tar.xz $(GLIB_URL) && tar xf glib-$(GLIB_VER).tar.xz
+	touch .glib-obtained
+
+# Compile glib
+glib: download-glib .glib-done
+.glib-done:
+	mkdir -p $(GLIB_PATH)/build
+	sed -i 's/free_sized (mem, size)/free(mem)/' $(GLIB_PATH)/glib/gmem.c
+	sed -i 's/free_aligned_sized (mem, alignment, size)/free(mem)/' $(GLIB_PATH)/glib/gmem.c
+	cd $(GLIB_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release \
+	-D glib_debug=disabled -D sysprof=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	touch .glib-done
+
 # Download GnuTLS
 download-gnutls: .gnutls-obtained
 .gnutls-obtained:
@@ -491,8 +609,21 @@ download-curl: .curl-obtained
 # Compile curl
 curl: download-curl .curl-done
 .curl-done:
-	cd $(CURL_PATH) && ./configure --prefix=/usr --enable-versioned-symbols --with-gssapi --with-openssl --with-ca-path=/etc/ssl/certs && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(CURL_PATH) && ./configure --prefix=/usr --enable-versioned-symbols --with-gssapi --with-openssl --with-ca-path=/etc/ssl/certs --without-brotli --without-zstd && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .curl-done
+
+# Download wget
+download-wget: .wget-obtained
+.wget-obtained:
+	cd $(SRC_PATH) && wget -O wget-$(WGET_VER).tar.gz $(WGET_URL) && tar xf wget-$(WGET_VER).tar.gz
+	touch .wget-obtained
+
+# Compile wget
+wget: download-wget .wget-done
+.wget-done:
+	cd $(WGET_PATH) && ./configure --prefix=/usr --sysconfdir=/etc --with-ssl=openssl && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	printf 'ca_certificate = /etc/ssl/ca-bundle.crt\n' > $(STAGING_PATH)/etc/wgetrc
+	touch .wget-done
 
 # Download nghttp2
 download-nghttp2: .nghttp2-obtained
@@ -763,3 +894,172 @@ make-ca: download-make-ca .make-ca-done
 	curl -k -o $(STAGING_PATH)/etc/ssl/ca-bundle.crt https://curl.se/ca/cacert.pem && chmod 644 $(STAGING_PATH)/etc/ssl/ca-bundle.crt && \
 	echo 'export CURL_CA_BUNDLE=/etc/ssl/ca-bundle.crt' >> $(STAGING_PATH)/etc/profile
 	touch .make-ca-done
+
+# ---------------------------------------------------------------------------
+# Basic dependencies: gettext, which, unzip
+# These are part of Arch Linux's base / base-devel groups and are required by
+# a large number of third-party packages either at build time or runtime.
+# ---------------------------------------------------------------------------
+
+# Download gettext
+download-gettext: .gettext-obtained
+.gettext-obtained:
+	cd $(SRC_PATH) && wget -O gettext-$(GETTEXT_VER).tar.xz $(GETTEXT_URL) && tar xf gettext-$(GETTEXT_VER).tar.xz
+	touch .gettext-obtained
+
+# Compile gettext
+# We build with --disable-java and --disable-native-java to avoid a JDK
+# dependency, and --disable-csharp because we have no Mono toolchain.
+# The important outputs are:
+#   /usr/lib/libintl.so   – linked by virtually every i18n-aware C program
+#   /usr/bin/gettext      – runtime message lookup
+#   /usr/bin/xgettext     – extract translatable strings (needed by autotools)
+gettext: download-gettext .gettext-done
+.gettext-done:
+	cd $(GETTEXT_PATH) && \
+	./configure --prefix=/usr \
+		--disable-java \
+		--disable-native-java \
+		--disable-csharp \
+		--disable-openmp \
+		--docdir=/usr/share/doc/gettext-$(GETTEXT_VER) && \
+	$(MAKE) -j$(THREADS) && \
+	$(MAKE) DESTDIR=$(STAGING_PATH) install && \
+	chmod -v 0755 $(STAGING_PATH)/usr/lib/preloadable_libintl.so || true
+	touch .gettext-done
+
+# Download which
+download-which: .which-obtained
+.which-obtained:
+	cd $(SRC_PATH) && wget -O which-$(WHICH_VER).tar.gz $(WHICH_URL) && tar xf which-$(WHICH_VER).tar.gz
+	touch .which-obtained
+
+# Compile which
+which: download-which .which-done
+.which-done:
+	cd $(WHICH_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .which-done
+
+# Download unzip
+download-unzip: .unzip-obtained
+.unzip-obtained:
+	cd $(SRC_PATH) && wget -O unzip60.tar.gz $(UNZIP_URL) && tar xf unzip60.tar.gz
+	touch .unzip-obtained
+
+# Compile unzip
+# Note: unzip uses a custom non-autoconf build system; we pass CF for CFLAGS.
+# The -DLARGE_FILE_SUPPORT enables handling of >2 GB ZIP files.
+# The "generic" target is avoided: its bundled unix/configure misdetects
+# modern glibc and emits stale -DNO_DIR/-DNO_FCHMOD/... flags that break the
+# build. "linux_noasm" compiles directly with explicit flags instead.
+# unix/unxcfg.h also declares gmtime/localtime with empty prototypes, which
+# conflicts with glibc's proper prototypes; time.h is already included above,
+# so the stale declarations are simply dropped.
+unzip: download-unzip .unzip-done
+.unzip-done:
+	cd $(UNZIP_PATH) && \
+	sed -i '/struct tm \*gmtime(), \*localtime();/d' unix/unxcfg.h && \
+	$(MAKE) -f unix/Makefile linux_noasm \
+		"CF=-O2 -DLARGE_FILE_SUPPORT -DUNICODE_WCHAR -DUNICODE_SUPPORT -DUTF8_MAYBE_NATIVE -I." && \
+	$(MAKE) -f unix/Makefile install \
+		prefix=$(STAGING_PATH)/usr \
+		mandir=$(STAGING_PATH)/usr/share/man
+	touch .unzip-done
+
+# Firefox (pre-built binary from Mozilla)
+# URL: https://download.mozilla.org/
+FIREFOX_URL = https://download-installer.cdn.mozilla.net/pub/firefox/releases/153.0.3/linux-x86_64/en-US/firefox-153.0.3.tar.xz
+FIREFOX_VER = 153.0.3
+
+# ---------------------------------------------------------------------------
+# Remaining Arch base-group members: kmod, pciutils, psmisc, licenses
+# ---------------------------------------------------------------------------
+
+# Download kmod
+download-kmod: .kmod-obtained
+.kmod-obtained:
+	cd $(SRC_PATH) && wget -O kmod-$(KMOD_VER).tar.xz $(KMOD_URL) && tar xf kmod-$(KMOD_VER).tar.xz
+	touch .kmod-obtained
+
+# Compile kmod (meson build; -Dmanpages=false skips the scdoc dependency)
+kmod: download-kmod .kmod-done
+.kmod-done:
+	mkdir -p $(KMOD_PATH)/build && cd $(KMOD_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -Dmanpages=false .. && ninja && \
+	DESTDIR=$(STAGING_PATH) ninja install
+	touch .kmod-done
+
+# Download pciutils
+download-pciutils: .pciutils-obtained
+.pciutils-obtained:
+	cd $(SRC_PATH) && wget -O pciutils-$(PCIUTILS_VER).tar.gz $(PCIUTILS_URL) && tar xf pciutils-$(PCIUTILS_VER).tar.gz
+	touch .pciutils-obtained
+
+# Compile pciutils
+# pciutils uses a custom Makefile. We build the static lib first (SHARED=no),
+# clean, then build with SHARED=yes so lspci/setpci link against libpci.so.3
+# and get libkmod pulled in from the staging tree (built by the kmod package).
+# HWDB/ZLIB disabled: no hwdb files in arkanaOS yet and no compressed pci.ids.
+# update-pciids is deliberately not installed (it needs a CA bundle at runtime).
+pciutils: download-pciutils kmod .pciutils-done
+.pciutils-done:
+	cd $(PCIUTILS_PATH) && \
+	$(MAKE) OPT="-O2" ZLIB=no SHARED=no all && \
+	$(MAKE) clean && \
+	$(MAKE) OPT="-O2" ZLIB=no SHARED=yes all && \
+	$(MAKE) DESTDIR=$(STAGING_PATH) OPT="-O2" ZLIB=no SHARED=yes install install-lib PREFIX=/usr SBINDIR=/usr/bin SHAREDIR=/usr/share/hwdata MANDIR=/usr/share/man
+	rm -f $(STAGING_PATH)/usr/bin/update-pciids $(STAGING_PATH)/usr/share/man/man8/update-pciids.8
+	touch .pciutils-done
+
+# Download psmisc
+download-psmisc: .psmisc-obtained
+.psmisc-obtained:
+	cd $(SRC_PATH) && wget -O psmisc-$(PSMISC_VER).tar.gz $(PSMISC_URL) && tar xf psmisc-$(PSMISC_VER).tar.gz
+	touch .psmisc-obtained
+
+# Compile psmisc
+psmisc: download-psmisc .psmisc-done
+.psmisc-done:
+	cd $(PSMISC_PATH) && ./autogen.sh && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .psmisc-done
+
+# Download licenses (SPDX license-list-data)
+download-licenses: .licenses-obtained
+.licenses-obtained:
+	cd $(SRC_PATH) && wget -O license-list-data-$(LICENSES_VER).tar.gz $(LICENSES_URL) && tar xf license-list-data-$(LICENSES_VER).tar.gz
+	touch .licenses-obtained
+
+# Compile licenses
+# Replicates Arch's licenses PKGBUILD: curate the common SPDX license texts and
+# exceptions, and generate the known-identifier lists from the JSON metadata
+# (jq is not installed in the build container, so python3 is used instead).
+licenses: download-licenses .licenses-done
+.licenses-done:
+	mkdir -p $(STAGING_PATH)/usr/share/licenses/spdx/exceptions
+	@for lic in $(LICENSES_STANDARD); do \
+		install -m 644 $(LICENSES_PATH)/text/$$lic.txt $(STAGING_PATH)/usr/share/licenses/spdx/ || exit 1; \
+	done
+	@for exc in $(LICENSES_EXCEPTIONS); do \
+		install -m 644 $(LICENSES_PATH)/text/$$exc.txt $(STAGING_PATH)/usr/share/licenses/spdx/exceptions/ || exit 1; \
+	done
+	python3 -c "import json; ids=[l['licenseId'] for l in json.load(open('$(LICENSES_PATH)/json/licenses.json'))['licenses'] if not l['isDeprecatedLicenseId']]; open('$(STAGING_PATH)/usr/share/licenses/known_spdx_license_identifiers.txt','w').write('\n'.join(ids)+'\n'); ids=[e['licenseExceptionId'] for e in json.load(open('$(LICENSES_PATH)/json/exceptions.json'))['exceptions']]; open('$(STAGING_PATH)/usr/share/licenses/known_spdx_license_exceptions.txt','w').write('\n'.join(ids)+'\n')"
+	touch .licenses-done
+
+# ---------------------------------------------------------------------------
+# Firefox (pre-built binary tarball from Mozilla)
+# ---------------------------------------------------------------------------
+
+# Download Firefox
+download-firefox: .firefox-obtained
+.firefox-obtained:
+	cd $(SRC_PATH) && wget -O firefox-$(FIREFOX_VER).tar.xz $(FIREFOX_URL) && tar xf firefox-$(FIREFOX_VER).tar.xz
+	touch .firefox-obtained
+
+# Install Firefox (pre-built binary, just extract + symlink)
+firefox: download-firefox .firefox-done
+.firefox-done:
+	mkdir -p $(STAGING_PATH)/opt/firefox && cp -a $(SRC_PATH)/firefox/* $(STAGING_PATH)/opt/firefox/
+	chmod 755 $(STAGING_PATH)/opt/firefox/firefox
+	ln -sf /opt/firefox/firefox $(STAGING_PATH)/usr/bin/firefox
+	mkdir -p $(STAGING_PATH)/usr/share/applications
+	printf '[Desktop Entry]\nName=Firefox\nComment=Browse the World Wide Web\nExec=/opt/firefox/firefox %%u\nTerminal=false\nType=Application\nCategories=Network;WebBrowser;\nMimeType=text/html;text/xml;application/xhtml+xml;application/xml;application/rss+xml;application/rdf+xml;x-scheme-handler/http;x-scheme-handler/https;x-scheme-handler/ftp;\n' > $(STAGING_PATH)/usr/share/applications/firefox.desktop
+	touch .firefox-done

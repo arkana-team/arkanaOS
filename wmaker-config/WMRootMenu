@@ -1,0 +1,46 @@
+{
+  /* arkanaOS Window Maker theme - Root Menu */
+  
+  /* Main menu */
+  ("  -- arkanaOS --  ", title),
+  ("Terminal", exec, "xterm &"),
+  ("Dillo Web Browser", exec, "dillo &"),
+  ("Firefox", exec, "firefox &"),
+  ("System Info", exec, "xterm -e 'arkcfg sysinfo; read' &"),
+  ("", nop),
+  ("Display Settings", menu, displayops),
+  ("Window Controls", menu, windowops),
+  ("Power Options", menu, powerops),
+  ("", nop),
+  ("Reload Wallpaper", exec, "feh --bg-fill /usr/share/backgrounds/X11-bg.png"),
+  ("Restart Window Maker", restart),
+  ("Exit Session", exit),
+  
+  /* Display settings submenu */
+  (displayops,
+    ("Display Settings", title),
+    ("Set 1366x768", exec, "arkcfg display set 1366x768"),
+    ("Set 1920x1080", exec, "arkcfg display set 1920x1080"),
+    ("Set 1024x768", exec, "arkcfg display set 1024x768"),
+    ("", nop),
+    ("List Displays", exec, "xterm -e 'arkcfg display list; read' &"),
+    ("Show Current", exec, "xterm -e 'arkcfg display current; read' &")
+  ),
+  
+  /* Window controls submenu */
+  (windowops,
+    ("Window Controls", title),
+    ("Miniaturize", miniaturize),
+    ("Maximize", maximize),
+    ("", nop),
+    ("Close Window", close),
+    ("Kill Window", kill)
+  ),
+  
+  /* Power submenu */
+  (powerops,
+    ("Power Options", title),
+    ("Reboot System", exec, "arkcfg power restart"),
+    ("Power Off System", exec, "arkcfg power poweroff")
+  )
+}

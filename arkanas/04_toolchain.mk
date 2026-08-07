@@ -162,9 +162,11 @@ download-ninja: .ninja-obtained
 	touch .ninja-obtained
 
 # Compile ninja
+# The sed below adds NINJAJOBS support to GuessParallelism(); guard it with
+# grep so retries don't insert the line twice (which breaks compilation).
 ninja: download-ninja .ninja-done
 .ninja-done:
-	cd $(NINJA_PATH) && sed -i '/int Guess/a int   j = 0;char* jobs = getenv( "NINJAJOBS" );if ( jobs != NULL ) j = atoi( jobs );if ( j > 0 ) return j;' src/ninja.cc && \
+	cd $(NINJA_PATH) && grep -q 'NINJAJOBS' src/ninja.cc || sed -i '/int Guess/a int   j = 0;char* jobs = getenv( "NINJAJOBS" );if ( jobs != NULL ) j = atoi( jobs );if ( j > 0 ) return j;' src/ninja.cc && \
 	python3 configure.py --bootstrap --verbose && install -m755 ninja $(STAGING_PATH)/usr/bin/ && \
 	install -Dm644 misc/bash-completion $(STAGING_PATH)/usr/share/bash-completion/completions/ninja
 	touch .ninja-done

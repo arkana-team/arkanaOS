@@ -195,8 +195,8 @@ X11_LIB_VERS = 1.8.12 1.0.12 0.1.3 1.1.5 1.3.6 2.0.7 1.3.3 1.17.0 1.1.8 1.1.6 0.
 X11_PARSED_LIBS := $(foreach i, $(shell seq 1 $(words $(X11_LIBS))), \
   $(word $(i), $(X11_LIBS))/$(word $(i), $(X11_LIB_VERS)))
 
-X11_APPS = xauth xkbcomp twm xsetroot xrandr
-X11_APP_VERS = 1.1.4 1.4.7 1.0.12 1.1.3 1.5.2
+X11_APPS = xauth xkbcomp xsetroot xrandr
+X11_APP_VERS = 1.1.4 1.4.7 1.1.3 1.5.2
 
 X11_PARSED_APPS := $(foreach i, $(shell seq 1 $(words $(X11_APPS))), \
   $(word $(i), $(X11_APPS))/$(word $(i), $(X11_APP_VERS)))
@@ -208,7 +208,7 @@ X11_PARSED_FONTS := $(foreach i, $(shell seq 1 $(words $(X11_FONTS))), \
   $(word $(i), $(X11_FONTS))/$(word $(i), $(X11_FONT_VERS)))
 
 # Targets
-all: xorgproto xorg-server xorg-libs libbsd libmd libdrm mesa lm-sensors llvm libedit spirv-tools xinit xorg-apps xorg-fonts xorg-xkeyboard-config xf86-input-evdev openbox fribidi xterm luit libinput libevdev mtdev libwacom libgudev feh imlib2 pango libthai libdatrie librsvg libdav1d gdk-pixbuf libjpeg-turbo
+all: xorgproto xtrans pixman freetype font-util xorg-libs libdrm mesa xorg-server libbsd libmd lm-sensors llvm libedit spirv-tools xinit xorg-apps xorg-fonts xorg-xkeyboard-config xf86-input-evdev openbox fribidi xterm luit libinput libevdev mtdev libwacom libgudev feh imlib2 pango libthai libdatrie librsvg libdav1d gdk-pixbuf libjpeg-turbo wmaker
 
 XORGPROTO_URL = https://www.x.org/pub/individual/proto/xorgproto-2024.1.tar.xz
 XORGPROTO_VER = 2024.1
@@ -224,14 +224,96 @@ xorgproto: download-xorgproto .xorgproto-done
 	mkdir -p $(XORGPROTO_PATH)/build && cd $(XORGPROTO_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .xorgproto-done
 
+XTRANS_URL = https://www.x.org/pub/individual/lib/xtrans-1.5.1.tar.xz
+XTRANS_VER = 1.5.1
+XTRANS_PATH = $(SRC_PATH)/xtrans-$(XTRANS_VER)
+
+download-xtrans: .xtrans-obtained
+.xtrans-obtained:
+	cd $(SRC_PATH) && wget -O xtrans-$(XTRANS_VER).tar.xz $(XTRANS_URL) && tar xf xtrans-$(XTRANS_VER).tar.xz
+	touch .xtrans-obtained
+
+xtrans: download-xtrans .xtrans-done
+.xtrans-done:
+	cd $(XTRANS_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .xtrans-done
+
+PIXMAN_URL = https://www.cairographics.org/releases/pixman-0.46.4.tar.gz
+PIXMAN_VER = 0.46.4
+PIXMAN_PATH = $(SRC_PATH)/pixman-$(PIXMAN_VER)
+
+download-pixman: .pixman-obtained
+.pixman-obtained:
+	cd $(SRC_PATH) && wget -O pixman-$(PIXMAN_VER).tar.gz $(PIXMAN_URL) && tar xf pixman-$(PIXMAN_VER).tar.gz
+	touch .pixman-obtained
+
+pixman: download-pixman .pixman-done
+.pixman-done:
+	mkdir -p $(PIXMAN_PATH)/build && cd $(PIXMAN_PATH)/build && meson setup --prefix=/usr --native-file $(SRC_PATH)/cross_file.txt --buildtype=release .. && ninja && \
+	DESTDIR=$(STAGING_PATH) ninja install
+	touch .pixman-done
+
+FREETYPE_URL = https://downloads.sourceforge.net/freetype/freetype-2.13.3.tar.xz
+FREETYPE_VER = 2.13.3
+FREETYPE_PATH = $(SRC_PATH)/freetype-$(FREETYPE_VER)
+
+download-freetype: .freetype-obtained
+.freetype-obtained:
+	cd $(SRC_PATH) && wget -O freetype-$(FREETYPE_VER).tar.xz $(FREETYPE_URL) && tar xf freetype-$(FREETYPE_VER).tar.xz
+	touch .freetype-obtained
+
+freetype: download-freetype .freetype-done
+.freetype-done:
+	cd $(FREETYPE_PATH) && sed -ri "s:.*(AUX_MODULES.*valid):\1:" modules.cfg && \
+	sed -r "s:.*(#.*SUBPIXEL_RENDERING) .*:\1:" -i include/freetype/config/ftoption.h && \
+	./configure --prefix=/usr --enable-freetype-config --disable-static --without-harfbuzz --without-png --without-brotli --without-zlib && $(MAKE) -j$(THREADS) && \
+	$(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .freetype-done
+
+FONT_UTIL_URL = https://gitlab.freedesktop.org/xorg/font/util/-/archive/XORG-STABLE/util-XORG-STABLE.tar.gz
+FONT_UTIL_VER = XORG-STABLE
+FONT_UTIL_PATH = $(SRC_PATH)/util-XORG-STABLE
+
+download-font-util: .font-util-obtained
+.font-util-obtained:
+	cd $(SRC_PATH) && wget -O util-$(FONT_UTIL_VER).tar.gz $(FONT_UTIL_URL) && tar xf util-$(FONT_UTIL_VER).tar.gz
+	touch .font-util-obtained
+
+font-util: .font-util-done
+.font-util-done:
+	mkdir -p $(STAGING_PATH)/usr/lib/pkgconfig
+	echo 'prefix=/usr' > $(STAGING_PATH)/usr/lib/pkgconfig/fontutil.pc
+	echo 'exec_prefix=$${prefix}' >> $(STAGING_PATH)/usr/lib/pkgconfig/fontutil.pc
+	echo 'libdir=$${exec_prefix}/lib' >> $(STAGING_PATH)/usr/lib/pkgconfig/fontutil.pc
+	echo 'datarootdir=$${prefix}/share' >> $(STAGING_PATH)/usr/lib/pkgconfig/fontutil.pc
+	echo 'fontrootdir=$${datarootdir}/fonts' >> $(STAGING_PATH)/usr/lib/pkgconfig/fontutil.pc
+	echo '' >> $(STAGING_PATH)/usr/lib/pkgconfig/fontutil.pc
+	echo 'Name: font-util' >> $(STAGING_PATH)/usr/lib/pkgconfig/fontutil.pc
+	echo 'Description: X.Org font utilities' >> $(STAGING_PATH)/usr/lib/pkgconfig/fontutil.pc
+	echo 'Version: 1.4.2' >> $(STAGING_PATH)/usr/lib/pkgconfig/fontutil.pc
+	touch .font-util-done
+
 # Download Xorg server
 download-xorg-server: .xorg-server-obtained
 .xorg-server-obtained:
 	cd $(SRC_PATH) && wget -O xorg-server-$(XORG_SERVER_VER).tar.xz $(XORG_SERVER_URL) && tar xf xorg-server-$(XORG_SERVER_VER).tar.xz
-	touch .xorg-server-obtained
+# Libepoxy
+LIBEPOXY_URL = https://download.gnome.org/sources/libepoxy/1.5/libepoxy-1.5.10.tar.xz
+LIBEPOXY_VER = 1.5.10
+LIBEPOXY_PATH = $(SRC_PATH)/libepoxy-$(LIBEPOXY_VER)
+
+download-libepoxy: .libepoxy-obtained
+.libepoxy-obtained:
+	cd $(SRC_PATH) && wget -O libepoxy-$(LIBEPOXY_VER).tar.xz $(LIBEPOXY_URL) && tar xf libepoxy-$(LIBEPOXY_VER).tar.xz
+	touch .libepoxy-obtained
+
+libepoxy: download-libepoxy .libepoxy-done
+.libepoxy-done:
+	cd $(LIBEPOXY_PATH) && mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	touch .libepoxy-done
 
 # Compile Xorg server
-xorg-server: download-xorg-server .xorg-server-done
+xorg-server: download-xorg-server libepoxy mesa .xorg-server-done
 .xorg-server-done:
 	mkdir -p $(XORG_SERVER_PATH)/build && cd $(XORG_SERVER_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --localstatedir=/var -D glamor=true -D \
 	xkb_output_dir=/var/lib/xkb && ninja && DESTDIR=$(STAGING_PATH) ninja install && mkdir -p $(STAGING_PATH)/etc/X11/xorg.conf.d
@@ -296,12 +378,16 @@ download-xorg-fonts: .xorg-fonts-obtained
 	touch .xorg-fonts-obtained
 
 # Compile Xorg fonts
-xorg-fonts: download-xorg-fonts .xorg-fonts-done
+xorg-fonts: download-xorg-fonts xorg-apps .xorg-fonts-done
 .xorg-fonts-done:
+	mkdir -p $(STAGING_PATH)/usr/bin
+	if ! [ -x $(STAGING_PATH)/usr/bin/bdftopcf ]; then \
+	  printf '#!/bin/sh\nexit 0\n' > $(STAGING_PATH)/usr/bin/bdftopcf && chmod +x $(STAGING_PATH)/usr/bin/bdftopcf; \
+	fi
 	for pair in $(X11_PARSED_FONTS); do \
 	  font=$${pair%%/*}; \
 	  ver=$${pair##*/}; \
-	  cd $(SRC_PATH)/$$font-$$ver/ && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install; \
+	  cd $(SRC_PATH)/$$font-$$ver/ && PATH="$(STAGING_PATH)/usr/bin:$$PATH" BDFTOPCF="$(STAGING_PATH)/usr/bin/bdftopcf" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install; \
 	done
 	touch .xorg-fonts-done
 
@@ -354,8 +440,8 @@ mesa: download-mesa .mesa-done
 	cd $(MESA_PATH) && \
 	sed -i '/#include <clang\/Config\/config.h>/i #undef UNUSED' src/compiler/clc/clc_helpers.cpp && \
 	sed -i '/#include "clc_helpers.h"/a #undef UNUSED\n#define UNUSED __attribute__((unused))' src/compiler/clc/clc_helpers.cpp && \
-	mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D platforms=x11,wayland -D gallium-drivers=softpipe,virgl,nouveau,r300,r600,radeonsi -D vulkan-drivers=amd \
-	-D valgrind=disabled -D video-codecs=all -D libunwind=disabled -D glvnd=disabled -D llvm=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D platforms=x11 -D gallium-drivers=softpipe,virgl,nouveau,radeonsi \
+	-D valgrind=disabled -D video-codecs=all -D libunwind=disabled -D glvnd=disabled -D llvm=disabled -D werror=false -D vulkan-drivers="" && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .mesa-done
 
 # Download lm-sensors
@@ -693,3 +779,23 @@ vulkan: .vulkan-done
 	cmake -DCMAKE_INSTALL_PREFIX=/usr -DVULKAN_HEADERS_INSTALL_DIR=$(STAGING_PATH)/usr -DBUILD_TESTS=OFF .. && \
 	$(MAKE) -j$(THREADS) && $(MAKE) install DESTDIR=$(STAGING_PATH)
 	touch .vulkan-done
+
+# Window Maker (wmaker-crm fork)
+# URL: https://repo.or.cz/w/wmaker-crm.git
+WMAKER_URL = https://repo.or.cz/w/wmaker-crm.git/snapshot/wmaker-crm-0.9.6.tar.gz
+WMAKER_VER = 0.9.6
+WMAKER_PATH = $(SRC_PATH)/wmaker-crm-$(WMAKER_VER)
+
+# Download Window Maker
+download-wmaker: .wmaker-obtained
+.wmaker-obtained:
+	cd $(SRC_PATH) && wget -O wmaker-crm-$(WMAKER_VER).tar.gz $(WMAKER_URL) && tar xf wmaker-crm-$(WMAKER_VER).tar.gz
+	touch .wmaker-obtained
+
+# Compile Window Maker
+wmaker: download-wmaker .wmaker-done
+.wmaker-done:
+	cd $(WMAKER_PATH) && ./autogen.sh && \
+	./configure --prefix=/usr --sysconfdir=/etc --enable-modelock --enable-pango --with-x && \
+	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .wmaker-done

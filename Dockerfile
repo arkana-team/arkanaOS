@@ -3,7 +3,7 @@ FROM archlinux:latest
 ENV PACMAN_NOCONFIRM=1
 
 # If set to 1, the builder won't exit on success, and you'll be able to make further changes.
-ENV ARKANA_NO_SUCCESSFUL_EXIT=1
+ENV ARKANA_NO_SUCCESSFUL_EXIT=0
 
 RUN yes | pacman -Syu --noconfirm && \
     yes | pacman -S --noconfirm --needed \
@@ -82,8 +82,7 @@ RUN yes | pacman -Syu --noconfirm && \
         efibootmgr \
         vulkan-headers \
         cpio \
-        dbus-glib \
-        && pacman -Scc --noconfirm
+        dbus-glib
 
 RUN useradd -m builder && \
     echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
@@ -99,7 +98,10 @@ COPY --chown=builder:builder . /build/arkana
 
 WORKDIR /build/arkana
 
-RUN sudo ln -sf /bin/true /sbin/ldconfig
+RUN sudo ln -sf /bin/true /sbin/ldconfig && \
+    echo 'tries = 5' | sudo tee -a /etc/wgetrc && \
+    echo 'timeout = 30' | sudo tee -a /etc/wgetrc && \
+    echo 'read_timeout = 30' | sudo tee -a /etc/wgetrc
 
 CMD ["bash", "-c", "set +e; sudo make; ret=$?; \
 if [ $ret -eq 130 ]; then \
