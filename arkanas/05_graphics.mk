@@ -297,10 +297,23 @@ font-util: .font-util-done
 download-xorg-server: .xorg-server-obtained
 .xorg-server-obtained:
 	cd $(SRC_PATH) && wget -O xorg-server-$(XORG_SERVER_VER).tar.xz $(XORG_SERVER_URL) && tar xf xorg-server-$(XORG_SERVER_VER).tar.xz
-	touch .xorg-server-obtained
+# Libepoxy
+LIBEPOXY_URL = https://download.gnome.org/sources/libepoxy/1.5/libepoxy-1.5.10.tar.xz
+LIBEPOXY_VER = 1.5.10
+LIBEPOXY_PATH = $(SRC_PATH)/libepoxy-$(LIBEPOXY_VER)
+
+download-libepoxy: .libepoxy-obtained
+.libepoxy-obtained:
+	cd $(SRC_PATH) && wget -O libepoxy-$(LIBEPOXY_VER).tar.xz $(LIBEPOXY_URL) && tar xf libepoxy-$(LIBEPOXY_VER).tar.xz
+	touch .libepoxy-obtained
+
+libepoxy: download-libepoxy .libepoxy-done
+.libepoxy-done:
+	cd $(LIBEPOXY_PATH) && mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	touch .libepoxy-done
 
 # Compile Xorg server
-xorg-server: download-xorg-server .xorg-server-done
+xorg-server: download-xorg-server libepoxy mesa .xorg-server-done
 .xorg-server-done:
 	mkdir -p $(XORG_SERVER_PATH)/build && cd $(XORG_SERVER_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --localstatedir=/var -D glamor=true -D \
 	xkb_output_dir=/var/lib/xkb && ninja && DESTDIR=$(STAGING_PATH) ninja install && mkdir -p $(STAGING_PATH)/etc/X11/xorg.conf.d
@@ -365,12 +378,12 @@ download-xorg-fonts: .xorg-fonts-obtained
 	touch .xorg-fonts-obtained
 
 # Compile Xorg fonts
-xorg-fonts: download-xorg-fonts .xorg-fonts-done
+xorg-fonts: download-xorg-fonts xorg-apps .xorg-fonts-done
 .xorg-fonts-done:
 	for pair in $(X11_PARSED_FONTS); do \
 	  font=$${pair%%/*}; \
 	  ver=$${pair##*/}; \
-	  cd $(SRC_PATH)/$$font-$$ver/ && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install; \
+	  cd $(SRC_PATH)/$$font-$$ver/ && PATH="$(STAGING_PATH)/usr/bin:$$PATH" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install; \
 	done
 	touch .xorg-fonts-done
 

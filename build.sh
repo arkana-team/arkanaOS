@@ -3,22 +3,19 @@ set -euo pipefail
 mkdir -p output
 
 # Build process can be uncapped. This will be faster but will use up more resources.
-CPUS=$(( $(nproc) * 40 / 100 ))
-if [ "$CPUS" -lt 1 ]; then
-  CPUS=1
-fi
+CPUS=$(nproc)
 RAM=$(($(awk '/MemTotal/ {print $2}' /proc/meminfo)/1048576+1))
 SWAP=$(($(awk '/SwapTotal/ {print $2}' /proc/meminfo)/1048576))
 
 echo "The system reports $(nproc) CPUs, $RAM GB of RAM, and $SWAP GB of swap."
 
-CONTAINER_RAM=$(( RAM * 40 / 100 ))
-CONTAINER_SWAP=$(( SWAP * 40 / 100 ))
-if [ "$CONTAINER_RAM" -lt 2 ]; then
-  CONTAINER_RAM=2
+CONTAINER_RAM=$(( RAM * 80 / 100 ))
+CONTAINER_SWAP=$(( SWAP * 80 / 100 ))
+if [ "$CONTAINER_RAM" -lt 4 ]; then
+  CONTAINER_RAM=4
 fi
-if [ "$CONTAINER_SWAP" -lt 2 ]; then
-  CONTAINER_SWAP=2
+if [ "$CONTAINER_SWAP" -lt 4 ]; then
+  CONTAINER_SWAP=4
 fi
 
 TOTAL_MEM_SWAP=$(( CONTAINER_RAM + CONTAINER_SWAP ))

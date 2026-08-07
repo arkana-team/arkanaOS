@@ -414,7 +414,7 @@ systemd: download-systemd kernel-headers .systemd-done
 
 .PHONY: timestamp
 timestamp:
-	BUILD=$$(($$(cat $(BUILDNUM_FILE))+1)); \
+	BUILD=$$(($$(cat $(BUILDNUM_FILE) 2>/dev/null || echo 0)+1)); \
 	echo "arkanaOS nightly ($$(date +%Y%m%d)) (build $$BUILD)" > $(STAGING_PATH)/etc/issue; \
 	echo $$BUILD > $(BUILDNUM_FILE)
 
