@@ -1,6 +1,7 @@
 # Enable multi-threaded Bash operation
 SHELL = bash
 THREADS = $(shell nproc)
+.NOTPARALLEL:
 
 # Build the Arkana toolchain?
 BUILD_TOOLCHAIN = true
@@ -125,8 +126,8 @@ all:
 # Install the GCC compilers
 gcc-compilers: .gcc-compilers-done
 .gcc-compilers-done:
-	# GCC has been pre-compiled before in 01_base.mk to obtain the libgcc_s and libstdc++, the compilers can be installed directly.
-	cd $(GCC_PATH)/build && $(MAKE) DESTDIR=$(STAGING_PATH) install-gcc install-target-libgcc install-target-libstdc++-v3
+	# GCC has been pre-configured before in 01_base.mk, now we build the compilers.
+	cd $(GCC_PATH)/build && $(MAKE) -j$(THREADS) all-gcc && $(MAKE) DESTDIR=$(STAGING_PATH) install-gcc install-target-libgcc install-target-libstdc++-v3
 	touch .gcc-compilers-done
 
 # Download binutils
@@ -296,7 +297,7 @@ download-expat: .expat-obtained
 expat: download-expat .expat-done
 
 .expat-done:
-	cd $(EXPAT_PATH) && ./configure --prefix=/usr --disable-static --docdir=/usr/share/doc/expat-$(EXPAT_VER) && $(MAKE) && \
+	cd $(EXPAT_PATH) && ./configure --prefix=/usr --disable-static --docdir=/usr/share/doc/expat-$(EXPAT_VER) && $(MAKE) &&&& $(MAKE) && $(MAKE) -j$(THREADS) && $(MAKE) &&&& $(MAKE) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .expat-done
 

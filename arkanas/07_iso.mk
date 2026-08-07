@@ -1,6 +1,7 @@
 # Enable multi-threaded Bash operation
 SHELL = bash
 THREADS = $(shell nproc)
+.NOTPARALLEL:
 
 # Paths used to build the ISO components
 SRC_PATH = $(shell realpath ./src)
@@ -434,7 +435,7 @@ pcre2: download-pcre2 .pcre2-done
 
 .pcre2-done:
 	cd $(PCRE2_PATH) && ./configure --prefix=/usr --docdir=/usr/share/doc/pcre2-$(PCRE2_VER) --enable-unicode --enable-jit --enable-pcre2-16 \
-	--enable-pcre2-32 --enable-pcre2grep-libz --enable-pcre2grep-libbz2 --enable-pcre2test-libreadline --disable-static && $(MAKE) && \
+	--enable-pcre2-32 --enable-pcre2grep-libz --enable-pcre2grep-libbz2 --enable-pcre2test-libreadline --disable-static && $(MAKE) &&&& $(MAKE) && $(MAKE) -j$(THREADS) && $(MAKE) &&&& $(MAKE) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .pcre2-done
 
@@ -479,7 +480,7 @@ download-expat: .expat-obtained
 expat: download-expat .expat-done
 
 .expat-done:
-	cd $(EXPAT_PATH) && ./configure --prefix=/usr --disable-static --docdir=/usr/share/doc/expat-$(EXPAT_VER) && $(MAKE) && \
+	cd $(EXPAT_PATH) && ./configure --prefix=/usr --disable-static --docdir=/usr/share/doc/expat-$(EXPAT_VER) && $(MAKE) &&&& $(MAKE) && $(MAKE) -j$(THREADS) && $(MAKE) &&&& $(MAKE) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .expat-done
 
@@ -496,7 +497,7 @@ graphite2: download-graphite2 .graphite2-done
 .graphite2-done:
     # Outdated build system, cool.
 	mkdir -p $(GRAPHITE2_PATH)/build && cd $(GRAPHITE2_PATH)/build && sed -i '/Font.h/i #include <cstdint>' ../tests/featuremap/featuremaptest.cpp && \
-	cmake -D CMAKE_POLICY_VERSION_MINIMUM=3.5 -D CMAKE_INSTALL_PREFIX=/usr .. && $(MAKE) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cmake -D CMAKE_POLICY_VERSION_MINIMUM=3.5 -D CMAKE_INSTALL_PREFIX=/usr .. && $(MAKE) &&&& $(MAKE) && $(MAKE) -j$(THREADS) && $(MAKE) &&&& $(MAKE) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .graphite2-done
 
 # Download pixman
@@ -526,7 +527,7 @@ download-libpng: .libpng-obtained
 libpng: download-libpng .libpng-done
 
 .libpng-done:
-	cd $(LIBPNG_PATH) && ./configure --prefix=/usr --disable-static && $(MAKE) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
+	cd $(LIBPNG_PATH) && ./configure --prefix=/usr --disable-static && $(MAKE) &&&& $(MAKE) && $(MAKE) -j$(THREADS) && $(MAKE) &&&& $(MAKE) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
 	mkdir -p $(STAGING_PATH)/usr/share/doc/libpng-$(LIBPNG_VER) && cp README libpng-manual.txt $(STAGING_PATH)/usr/share/doc/libpng-$(LIBPNG_VER)
 	touch .libpng-done
 
