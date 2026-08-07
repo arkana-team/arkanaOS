@@ -1,10 +1,6 @@
 name: Build arkanaOS ISO Pipeline
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
 
 # Cancel redundant build runs if a new commit is pushed
@@ -206,7 +202,7 @@ jobs:
 
       - name: Publish GitHub Release (with Release Notes)
         uses: softprops/action-gh-release@v2
-        if: github.ref == 'refs/heads/main'
+        if: success()
         with:
           tag_name: nightly-${{ env.BUILD_DATE }}-build-${{ env.BUILD_NUM }}
           name: arkanaOS Nightly Build (${{ env.BUILD_DATE }})
