@@ -1,0 +1,218 @@
+name: Build arkanaOS ISO Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+# Cancel redundant build runs if a new commit is pushed
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Stage 1: Base System (GCC, Glibc, Systemd, Coreutils)
+  base:
+    name: 1. Build Base System (Glibc, GCC, Systemd)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Free Disk Space (Frees 35+ GB)
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /opt/hostedtoolcache
+          sudo docker image prune --all --force || true
+          df -h
+
+      - name: Cache Downloaded Sources
+        uses: actions/cache@v4
+        with:
+          path: src
+          key: arkana-src-${{ hashFiles('arkanas/01_base.mk') }}
+          restore-keys: arkana-src-
+
+      - name: Build Base Stage
+        run: |
+          mkdir -p src staging output
+          docker build -t arkana-builder .
+          docker run --rm \
+            -v "$(pwd)/src:/build/arkana/src" \
+            -v "$(pwd)/staging:/build/arkana/staging" \
+            -v "$(pwd)/output:/build/arkana/output" \
+            arkana-builder bash -c "sudo make -f arkanas/01_base.mk"
+
+      - name: Upload Base Staging Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: arkana-base-staging
+          path: |
+            staging
+            src
+          retention-days: 1
+
+      - name: Upload Base Error Logs on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: base-error-logs
+          path: |
+            src/*/build/meson-logs/
+          retention-days: 7
+
+  # Stage 2: Extensions & Toolchain
+  toolchain:
+    name: 2. Build Extensions & Toolchain
+    needs: base
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Free Disk Space (Frees 35+ GB)
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /opt/hostedtoolcache
+          sudo docker image prune --all --force || true
+
+      - name: Download Base Staging Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: arkana-base-staging
+
+      - name: Build Extensions & Toolchain Stage
+        run: |
+          docker build -t arkana-builder .
+          docker run --rm \
+            -v "$(pwd)/src:/build/arkana/src" \
+            -v "$(pwd)/staging:/build/arkana/staging" \
+            -v "$(pwd)/output:/build/arkana/output" \
+            arkana-builder bash -c "sudo make -f arkanas/02_ext.mk && sudo make -f arkanas/03_arkpkg.mk && sudo make -f arkanas/04_toolchain.mk"
+
+      - name: Upload Toolchain Staging Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: arkana-toolchain-staging
+          path: |
+            staging
+            src
+          retention-days: 1
+
+      - name: Upload Toolchain Error Logs on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: toolchain-error-logs
+          path: |
+            src/*/build/meson-logs/
+          retention-days: 7
+
+  # Stage 3: Graphics & Window Maker Desktop
+  graphics:
+    name: 3. Build Graphics Stack & Window Maker
+    needs: toolchain
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Free Disk Space (Frees 35+ GB)
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /opt/hostedtoolcache
+          sudo docker image prune --all --force || true
+
+      - name: Download Toolchain Staging Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: arkana-toolchain-staging
+
+      - name: Build Graphics Stage
+        run: |
+          docker build -t arkana-builder .
+          docker run --rm \
+            -v "$(pwd)/src:/build/arkana/src" \
+            -v "$(pwd)/staging:/build/arkana/staging" \
+            -v "$(pwd)/output:/build/arkana/output" \
+            arkana-builder bash -c "sudo make -f arkanas/05_graphics.mk && sudo make -f arkanas/06_graphics_ext.mk"
+
+      - name: Upload Graphics Staging Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: arkana-graphics-staging
+          path: |
+            staging
+            src
+          retention-days: 1
+
+      - name: Upload Graphics Error Logs on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: graphics-error-logs
+          path: |
+            src/*/build/meson-logs/
+          retention-days: 7
+
+  # Stage 4: Firefox Placement, Initramfs & Final ISO Creation (ALWAYS LAST!)
+  iso:
+    name: 4. Assemble Bootable ISO (Firefox & GRUB)
+    needs: graphics
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Free Disk Space (Frees 35+ GB)
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /opt/hostedtoolcache
+          sudo docker image prune --all --force || true
+
+      - name: Download Graphics Staging Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: arkana-graphics-staging
+
+      - name: Build ISO Stage
+        run: |
+          mkdir -p output
+          docker build -t arkana-builder .
+          docker run --rm \
+            -v "$(pwd)/src:/build/arkana/src" \
+            -v "$(pwd)/staging:/build/arkana/staging" \
+            -v "$(pwd)/output:/build/arkana/output" \
+            arkana-builder bash -c "sudo make -f arkanas/07_iso.mk"
+
+      - name: Upload Final arkanaOS ISO Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: arkanaOS-nightly-iso
+          path: output/arkana.iso
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Generate Release Notes & Tags from Template
+        run: |
+          BUILD_DATE=$(date +%Y%m%d)
+          BUILD_NUM=$(cat .buildnum 2>/dev/null || echo "143")
+          sed -i "s/BUILD_DATE/$BUILD_DATE/g" RELEASE_TEMPLATE.md
+          sed -i "s/BUILD_NUM/$BUILD_NUM/g" RELEASE_TEMPLATE.md
+          echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
+          echo "BUILD_NUM=$BUILD_NUM" >> $GITHUB_ENV
+
+      - name: Publish GitHub Release (with Release Notes)
+        uses: softprops/action-gh-release@v2
+        if: github.ref == 'refs/heads/main'
+        with:
+          tag_name: nightly-${{ env.BUILD_DATE }}-build-${{ env.BUILD_NUM }}
+          name: arkanaOS Nightly Build (${{ env.BUILD_DATE }})
+          body_path: RELEASE_TEMPLATE.md
+          files: output/arkana.iso
+          prerelease: true
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
