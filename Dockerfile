@@ -1,6 +1,15 @@
 FROM archlinux:latest
 
 ENV PACMAN_NOCONFIRM=1
+ENV MAKEFLAGS="-j$(nproc)"
+ENV NINJAFLAGS="-j$(nproc)"
+ENV CFLAGS="-O2 -pipe"
+ENV CXXFLAGS="-O2 -pipe"
+ENV LDFLAGS="-fuse-ld=mold -Wl,-O1 --as-needed"
+ENV RUSTFLAGS="-C link-arg=-fuse-ld=mold"
+ENV PATH="/usr/lib/ccache/bin:$PATH"
+ENV CCACHE_COMPRESS=1
+ENV CCACHE_SLOPPINESS=include_file_ctime,include_file_mtime,time_macros
 
 # If set to 1, the builder won't exit on success, and you'll be able to make further changes.
 ENV ARKANA_NO_SUCCESSFUL_EXIT=0
@@ -20,6 +29,7 @@ RUN yes | pacman -Syu --noconfirm && \
         strace \
         wget \
         ccache \
+        mold \
         meson \
         ninja \
         cmake \
