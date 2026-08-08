@@ -217,7 +217,7 @@ XORGPROTO_PATH = $(SRC_PATH)/xorgproto-$(XORGPROTO_VER)
 
 download-xorgproto: .xorgproto-obtained
 .xorgproto-obtained:
-	cd $(SRC_PATH) && wget -O xorgproto-$(XORGPROTO_VER).tar.xz $(XORGPROTO_URL) && tar xf xorgproto-$(XORGPROTO_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O xorgproto-$(XORGPROTO_VER).tar.xz $(XORGPROTO_URL) && tar xf xorgproto-$(XORGPROTO_VER).tar.xz
 	touch .xorgproto-obtained
 
 xorgproto: download-xorgproto .xorgproto-done
@@ -231,7 +231,7 @@ XTRANS_PATH = $(SRC_PATH)/xtrans-$(XTRANS_VER)
 
 download-xtrans: .xtrans-obtained
 .xtrans-obtained:
-	cd $(SRC_PATH) && wget -O xtrans-$(XTRANS_VER).tar.xz $(XTRANS_URL) && tar xf xtrans-$(XTRANS_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O xtrans-$(XTRANS_VER).tar.xz $(XTRANS_URL) && tar xf xtrans-$(XTRANS_VER).tar.xz
 	touch .xtrans-obtained
 
 xtrans: download-xtrans .xtrans-done
@@ -245,7 +245,7 @@ PIXMAN_PATH = $(SRC_PATH)/pixman-$(PIXMAN_VER)
 
 download-pixman: .pixman-obtained
 .pixman-obtained:
-	cd $(SRC_PATH) && wget -O pixman-$(PIXMAN_VER).tar.gz $(PIXMAN_URL) && tar xf pixman-$(PIXMAN_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O pixman-$(PIXMAN_VER).tar.gz $(PIXMAN_URL) && tar xf pixman-$(PIXMAN_VER).tar.gz
 	touch .pixman-obtained
 
 pixman: download-pixman .pixman-done
@@ -260,7 +260,7 @@ FREETYPE_PATH = $(SRC_PATH)/freetype-$(FREETYPE_VER)
 
 download-freetype: .freetype-obtained
 .freetype-obtained:
-	cd $(SRC_PATH) && wget -O freetype-$(FREETYPE_VER).tar.xz $(FREETYPE_URL) && tar xf freetype-$(FREETYPE_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O freetype-$(FREETYPE_VER).tar.xz $(FREETYPE_URL) && tar xf freetype-$(FREETYPE_VER).tar.xz
 	touch .freetype-obtained
 
 freetype: download-freetype .freetype-done
@@ -277,7 +277,7 @@ FONT_UTIL_PATH = $(SRC_PATH)/util-XORG-STABLE
 
 download-font-util: .font-util-obtained
 .font-util-obtained:
-	cd $(SRC_PATH) && wget -O util-$(FONT_UTIL_VER).tar.gz $(FONT_UTIL_URL) && tar xf util-$(FONT_UTIL_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O util-$(FONT_UTIL_VER).tar.gz $(FONT_UTIL_URL) && tar xf util-$(FONT_UTIL_VER).tar.gz
 	touch .font-util-obtained
 
 font-util: .font-util-done
@@ -297,7 +297,7 @@ font-util: .font-util-done
 # Download Xorg server
 download-xorg-server: .xorg-server-obtained
 .xorg-server-obtained:
-	cd $(SRC_PATH) && wget -O xorg-server-$(XORG_SERVER_VER).tar.xz $(XORG_SERVER_URL) && tar xf xorg-server-$(XORG_SERVER_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O xorg-server-$(XORG_SERVER_VER).tar.xz $(XORG_SERVER_URL) && tar xf xorg-server-$(XORG_SERVER_VER).tar.xz
 	touch .xorg-server-obtained
 # Libepoxy
 LIBEPOXY_URL = https://download.gnome.org/sources/libepoxy/1.5/libepoxy-1.5.10.tar.xz
@@ -306,7 +306,7 @@ LIBEPOXY_PATH = $(SRC_PATH)/libepoxy-$(LIBEPOXY_VER)
 
 download-libepoxy: .libepoxy-obtained
 .libepoxy-obtained:
-	cd $(SRC_PATH) && wget -O libepoxy-$(LIBEPOXY_VER).tar.xz $(LIBEPOXY_URL) && tar xf libepoxy-$(LIBEPOXY_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libepoxy-$(LIBEPOXY_VER).tar.xz $(LIBEPOXY_URL) && tar xf libepoxy-$(LIBEPOXY_VER).tar.xz
 	touch .libepoxy-obtained
 
 libepoxy: download-libepoxy .libepoxy-done
@@ -327,7 +327,7 @@ download-xorg-libs: .xorg-libs-obtained
 	for pair in $(X11_PARSED_LIBS); do \
 	  lib=$${pair%%/*}; \
 	  ver=$${pair##*/}; \
-	  cd $(SRC_PATH) && wget -O "lib$$lib-$$ver.tar.xz" "https://www.x.org/pub/individual/lib/lib$$lib-$$ver.tar.xz" && \
+	  cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O "lib$$lib-$$ver.tar.xz" "https://www.x.org/pub/individual/lib/lib$$lib-$$ver.tar.xz" && \
 	  tar xf "lib$$lib-$$ver.tar.xz"; \
 	done
 	touch .xorg-libs-obtained
@@ -339,10 +339,10 @@ xorg-libs: download-xorg-libs .xorg-libs-done
 	  lib=$${pair%%/*}; \
 	  ver=$${pair##*/}; \
 	  if [ -f $(SRC_PATH)/lib$$lib-$$ver/meson.build ]; then \
-	    mkdir -p $(SRC_PATH)/lib$$lib-$$ver/build && cd $(SRC_PATH)/lib$$lib-$$ver/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release && \
+	    LIBDIR=$(SRC_PATH)/lib$$lib-$$ver; [ -d "$$LIBDIR" ] || LIBDIR=$(SRC_PATH)/$$lib-$$ver; mkdir -p "$$LIBDIR/build" && cd "$$LIBDIR/build" && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release && \
 	    ninja && DESTDIR=$(STAGING_PATH) ninja install || exit 1; \
 	  else \
-	    cd $(SRC_PATH)/lib$$lib-$$ver && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install || exit 1; \
+	    LIBDIR=$(SRC_PATH)/lib$$lib-$$ver; [ -d "$$LIBDIR" ] || LIBDIR=$(SRC_PATH)/$$lib-$$ver; cd "$$LIBDIR" && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install || exit 1; \
 	  fi; \
 	done
 	touch .xorg-libs-done
@@ -353,7 +353,7 @@ download-xorg-apps: .xorg-apps-obtained
 	for pair in $(X11_PARSED_APPS); do \
 	  app=$${pair%%/*}; \
 	  ver=$${pair##*/}; \
-	  cd $(SRC_PATH) && wget -O "$$app-$$ver.tar.xz" "http://xorg.freedesktop.org/releases/individual/app/$$app-$$ver.tar.xz" && \
+	  cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O "$$app-$$ver.tar.xz" "http://xorg.freedesktop.org/releases/individual/app/$$app-$$ver.tar.xz" && \
 	  tar xf "$$app-$$ver.tar.xz"; \
 	done
 	touch .xorg-apps-obtained
@@ -374,7 +374,7 @@ download-xorg-fonts: .xorg-fonts-obtained
 	for pair in $(X11_PARSED_FONTS); do \
 	  font=$${pair%%/*}; \
 	  ver=$${pair##*/}; \
-	  cd $(SRC_PATH) && wget -O "$$font-$$ver.tar.xz" "http://xorg.freedesktop.org/releases/individual/font/$$font-$$ver.tar.xz" && \
+	  cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O "$$font-$$ver.tar.xz" "http://xorg.freedesktop.org/releases/individual/font/$$font-$$ver.tar.xz" && \
 	  tar xf "$$font-$$ver.tar.xz"; \
 	done
 	touch .xorg-fonts-obtained
@@ -396,7 +396,7 @@ xorg-fonts: download-xorg-fonts xorg-apps .xorg-fonts-done
 # Download libbsd
 download-libbsd: .libbsd-obtained
 .libbsd-obtained:
-	cd $(SRC_PATH) && wget -O libbsd-$(LIBBSD_VER).tar.xz $(LIBBSD_URL) && tar xf libbsd-$(LIBBSD_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libbsd-$(LIBBSD_VER).tar.xz $(LIBBSD_URL) && tar xf libbsd-$(LIBBSD_VER).tar.xz
 	touch .libbsd-obtained
 
 # Compile libbsd
@@ -408,7 +408,7 @@ libbsd: download-libbsd .libbsd-done
 # Download libmd
 download-libmd: .libmd-obtained
 .libmd-obtained:
-	cd $(SRC_PATH) && wget -O libmd-$(LIBMD_VER).tar.xz $(LIBMD_URL) && tar xf libmd-$(LIBMD_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libmd-$(LIBMD_VER).tar.xz $(LIBMD_URL) && tar xf libmd-$(LIBMD_VER).tar.xz
 	touch .libmd-obtained
 
 # Compile libmd
@@ -420,7 +420,7 @@ libmd: download-libmd .libmd-done
 # Download libdrm
 download-libdrm: .libdrm-obtained
 .libdrm-obtained:
-	cd $(SRC_PATH) && wget -O libdrm-$(LIBDRM_VER).tar.xz $(LIBDRM_URL) && tar xf libdrm-$(LIBDRM_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libdrm-$(LIBDRM_VER).tar.xz $(LIBDRM_URL) && tar xf libdrm-$(LIBDRM_VER).tar.xz
 	touch .libdrm-obtained
 
 # Compile libdrm
@@ -433,7 +433,7 @@ libdrm: download-libdrm .libdrm-done
 # Download Mesa
 download-mesa: .mesa-obtained
 .mesa-obtained:
-	cd $(SRC_PATH) && wget -O mesa-$(MESA_VER).tar.xz $(MESA_URL) && tar xf mesa-$(MESA_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O mesa-$(MESA_VER).tar.xz $(MESA_URL) && tar xf mesa-$(MESA_VER).tar.xz
 	touch .mesa-obtained
 
 # Compile Mesa
@@ -449,7 +449,7 @@ mesa: download-mesa .mesa-done
 # Download lm-sensors
 download-lm-sensors: .lm-sensors-obtained
 .lm-sensors-obtained:
-	cd $(SRC_PATH) && wget -O lm-sensors-$(LM_SENSORS_VER).tar.gz $(LM_SENSORS_URL) && tar xf lm-sensors-$(LM_SENSORS_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O lm-sensors-$(LM_SENSORS_VER).tar.gz $(LM_SENSORS_URL) && tar xf lm-sensors-$(LM_SENSORS_VER).tar.gz
 	touch .lm-sensors-obtained
 
 # Compile lm-sensors
@@ -461,7 +461,7 @@ lm-sensors: download-lm-sensors .lm-sensors-done
 # Download LLVM
 download-llvm: .llvm-obtained
 .llvm-obtained:
-	cd $(SRC_PATH) && wget -O llvm-$(LLVM_VER).tar.xz $(LLVM_URL) && tar xf llvm-$(LLVM_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O llvm-$(LLVM_VER).tar.xz $(LLVM_URL) && tar xf llvm-$(LLVM_VER).tar.xz
 	touch .llvm-obtained
 
 # Compile LLVM
@@ -477,7 +477,7 @@ llvm: download-llvm .llvm-done
 # Download libedit
 download-libedit: .libedit-obtained
 .libedit-obtained:
-	cd $(SRC_PATH) && wget -O libedit-$(LIBEDIT_VER).tar.gz $(LIBEDIT_URL) && tar xf libedit-$(LIBEDIT_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libedit-$(LIBEDIT_VER).tar.gz $(LIBEDIT_URL) && tar xf libedit-$(LIBEDIT_VER).tar.gz
 	touch .libedit-obtained
 
 # Compile libedit
@@ -489,8 +489,8 @@ libedit: download-libedit .libedit-done
 # Download SPIRV-Tools
 download-spirv-tools: .spirv-tools-obtained
 .spirv-tools-obtained:
-	cd $(SRC_PATH) && wget -O spirv-tools-$(SPIRV_TOOLS_VER).tar.gz $(SPIRV_TOOLS_URL) && tar xf spirv-tools-$(SPIRV_TOOLS_VER).tar.gz
-	cd $(SRC_PATH) && wget -O spirv-headers-$(SPIRV_TOOLS_VER).tar.gz $(SPIRV_HEADERS_URL) && tar xf spirv-headers-$(SPIRV_TOOLS_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O spirv-tools-$(SPIRV_TOOLS_VER).tar.gz $(SPIRV_TOOLS_URL) && tar xf spirv-tools-$(SPIRV_TOOLS_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O spirv-headers-$(SPIRV_TOOLS_VER).tar.gz $(SPIRV_HEADERS_URL) && tar xf spirv-headers-$(SPIRV_TOOLS_VER).tar.gz
 	cp -a $(SRC_PATH)/SPIRV-Headers-vulkan-sdk-$(SPIRV_TOOLS_VER) $(SPIRV_TOOLS_PATH)/external/spirv-headers
 	touch .spirv-tools-obtained
 
@@ -505,7 +505,7 @@ spirv-tools: download-spirv-tools .spirv-tools-done
 # Download xinit
 download-xinit: .xinit-obtained
 .xinit-obtained:
-	cd $(SRC_PATH) && wget -O xinit-$(XORG_XINIT_VER).tar.xz $(XORG_XINIT_URL) && tar xf xinit-$(XORG_XINIT_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O xinit-$(XORG_XINIT_VER).tar.xz $(XORG_XINIT_URL) && tar xf xinit-$(XORG_XINIT_VER).tar.xz
 	touch .xinit-obtained
 
 # Compile xinit
@@ -517,7 +517,7 @@ xinit: download-xinit .xinit-done
 # Download xorg-xkeyboard-config
 download-xorg-xkeyboard-config: .xorg-xkeyboard-config-obtained
 .xorg-xkeyboard-config-obtained:
-	cd $(SRC_PATH) && wget -O xkeyboard-config-$(XORG_XKEYBOARD_CONFIG_VER).tar.xz $(XORG_XKEYBOARD_CONFIG_URL) && tar xf xkeyboard-config-$(XORG_XKEYBOARD_CONFIG_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O xkeyboard-config-$(XORG_XKEYBOARD_CONFIG_VER).tar.xz $(XORG_XKEYBOARD_CONFIG_URL) && tar xf xkeyboard-config-$(XORG_XKEYBOARD_CONFIG_VER).tar.xz
 	touch .xorg-xkeyboard-config-obtained
 
 # Compile xorg-xkeyboard-config
@@ -529,7 +529,7 @@ xorg-xkeyboard-config: download-xorg-xkeyboard-config .xorg-xkeyboard-config-don
 # Download xf86-input-evdev
 download-xf86-input-evdev: .xf86-input-evdev-obtained
 .xf86-input-evdev-obtained:
-	cd $(SRC_PATH) && wget -O xf86-input-evdev-$(XF86_INPUT_EVDEV_VER).tar.xz $(XF86_INPUT_EVDEV_URL) && tar xf xf86-input-evdev-$(XF86_INPUT_EVDEV_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O xf86-input-evdev-$(XF86_INPUT_EVDEV_VER).tar.xz $(XF86_INPUT_EVDEV_URL) && tar xf xf86-input-evdev-$(XF86_INPUT_EVDEV_VER).tar.xz
 	touch .xf86-input-evdev-obtained
 
 # Compile xf86-input-evdev
@@ -541,57 +541,57 @@ xf86-input-evdev: download-xf86-input-evdev .xf86-input-evdev-done
 # Download openbox
 download-openbox: .openbox-obtained
 .openbox-obtained:
-	cd $(SRC_PATH) && wget -O openbox-$(OPENBOX_VER).tar.gz $(OPENBOX_URL) && tar xf openbox-$(OPENBOX_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O openbox-$(OPENBOX_VER).tar.gz $(OPENBOX_URL) && tar xf openbox-$(OPENBOX_VER).tar.gz
 	touch .openbox-obtained
 
 # Compile openbox
 openbox: download-openbox .openbox-done
 .openbox-done:
-	cd $(OPENBOX_PATH) && autoreconf -fi && ./configure --prefix=/usr --sysconfdir=/etc --docdir=/usr/share/doc/openbox-$(OPENBOX_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(OPENBOX_PATH) && autoreconf -fi && CFLAGS="-std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --docdir=/usr/share/doc/openbox-$(OPENBOX_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	cp -a xinitrc $(STAGING_PATH)/root/.xinitrc
 	touch .openbox-done
 
 # Download fribidi
 download-fribidi: .fribidi-obtained
 .fribidi-obtained:
-	cd $(SRC_PATH) && wget -O fribidi-$(FRIBIDI_VER).tar.xz $(FRIBIDI_URL) && tar xf fribidi-$(FRIBIDI_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O fribidi-$(FRIBIDI_VER).tar.xz $(FRIBIDI_URL) && tar xf fribidi-$(FRIBIDI_VER).tar.xz
 	touch .fribidi-obtained
 
 # Compile fribidi
 fribidi: download-fribidi .fribidi-done
 .fribidi-done:
-	mkdir -p $(FRIBIDI_PATH)/build && cd $(FRIBIDI_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(FRIBIDI_PATH)/build && cd $(FRIBIDI_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -Dc_args="-Wno-error" .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .fribidi-done
 
 # Download xterm
 download-xterm: .xterm-obtained
 .xterm-obtained:
-	cd $(SRC_PATH) && wget -O xterm-$(XTERM_VER).tar.xz $(XTERM_URL) && tar xf xterm-$(XTERM_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O xterm-$(XTERM_VER).tar.xz $(XTERM_URL) && tar xf xterm-$(XTERM_VER).tar.xz
 	touch .xterm-obtained
 
 # Compile xterm
 xterm: download-xterm .xterm-done
 .xterm-done:
-	cd $(XTERM_PATH) && sed -i '/v0/{n;s/new:/new:kb=^?:/}' termcap && printf '\tkbs=\\177,\n' >> terminfo && TERMINFO=/usr/share/terminfo ./configure --prefix=/usr --with-app-defaults=/etc/X11/app-defaults && $(MAKE) -j$(THREADS) && \
+	cd $(XTERM_PATH) && sed -i '/v0/{n;s/new:/new:kb=^?:/}' termcap && printf '\tkbs=\\177,\n' >> terminfo && CFLAGS="-std=gnu17" TERMINFO=/usr/share/terminfo ./configure --prefix=/usr --with-app-defaults=/etc/X11/app-defaults && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install && mkdir -p $(STAGING_PATH)/usr/share/applications && cp *.desktop $(STAGING_PATH)/usr/share/applications/
 	touch .xterm-done
 
 # Download luit
 download-luit: .luit-obtained
 .luit-obtained:
-	cd $(SRC_PATH) && wget -O luit-$(LUIT_VER).tar.xz $(LUIT_URL) && tar xf luit-$(LUIT_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O luit-$(LUIT_VER).tar.xz $(LUIT_URL) && tar xf luit-$(LUIT_VER).tar.xz
 	touch .luit-obtained
 
 # Compile luit
 luit: download-luit .luit-done
 .luit-done:
-	cd $(LUIT_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LUIT_PATH) && CFLAGS="-std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .luit-done
 
 # Download libinput
 download-libinput: .libinput-obtained
 .libinput-obtained:
-	cd $(SRC_PATH) && wget -O libinput-$(LIBINPUT_VER).tar.xz $(LIBINPUT_URL) && tar xf libinput-$(LIBINPUT_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libinput-$(LIBINPUT_VER).tar.xz $(LIBINPUT_URL) && tar xf libinput-$(LIBINPUT_VER).tar.xz
 	touch .libinput-obtained
 
 # Compile libinput
@@ -603,7 +603,7 @@ libinput: download-libinput .libinput-done
 # Download libevdev
 download-libevdev: .libevdev-obtained
 .libevdev-obtained:
-	cd $(SRC_PATH) && wget -O libevdev-$(LIBEVDEV_VER).tar.xz $(LIBEVDEV_URL) && tar xf libevdev-$(LIBEVDEV_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libevdev-$(LIBEVDEV_VER).tar.xz $(LIBEVDEV_URL) && tar xf libevdev-$(LIBEVDEV_VER).tar.xz
 	touch .libevdev-obtained
 
 # Compile libevdev
@@ -615,7 +615,7 @@ libevdev: download-libevdev .libevdev-done
 # Download mtdev
 download-mtdev: .mtdev-obtained
 .mtdev-obtained:
-	cd $(SRC_PATH) && wget -O mtdev-$(MTDEV_VER).tar.bz2 $(MTDEV_URL) && tar xf mtdev-$(MTDEV_VER).tar.bz2
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O mtdev-$(MTDEV_VER).tar.bz2 $(MTDEV_URL) && tar xf mtdev-$(MTDEV_VER).tar.bz2
 	touch .mtdev-obtained
 
 # Compile mtdev
@@ -627,7 +627,7 @@ mtdev: download-mtdev .mtdev-done
 # Download libwacom
 download-libwacom: .libwacom-obtained
 .libwacom-obtained:
-	cd $(SRC_PATH) && wget -O libwacom-$(LIBWACOM_VER).tar.xz $(LIBWACOM_URL) && tar xf libwacom-$(LIBWACOM_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libwacom-$(LIBWACOM_VER).tar.xz $(LIBWACOM_URL) && tar xf libwacom-$(LIBWACOM_VER).tar.xz
 	touch .libwacom-obtained
 
 # Compile libwacom
@@ -640,19 +640,19 @@ libwacom: download-libwacom .libwacom-done
 # Download libgudev
 download-libgudev: .libgudev-obtained
 .libgudev-obtained:
-	cd $(SRC_PATH) && wget -O libgudev-$(LIBGUDEV_VER).tar.xz $(LIBGUDEV_URL) && tar xf libgudev-$(LIBGUDEV_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libgudev-$(LIBGUDEV_VER).tar.xz $(LIBGUDEV_URL) && tar xf libgudev-$(LIBGUDEV_VER).tar.xz
 	touch .libgudev-obtained
 
 # Compile libgudev
 libgudev: download-libgudev .libgudev-done
 .libgudev-done:
-	mkdir -p $(LIBGUDEV_PATH)/build && cd $(LIBGUDEV_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(LIBGUDEV_PATH)/build && cd $(LIBGUDEV_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -Dc_args="-Wno-error" .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .libgudev-done
 
 # Download feh
 download-feh: .feh-obtained
 .feh-obtained:
-	cd $(SRC_PATH) && wget -O feh-$(FEH_VER).tar.bz2 $(FEH_URL) && tar xf feh-$(FEH_VER).tar.bz2
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O feh-$(FEH_VER).tar.bz2 $(FEH_URL) && tar xf feh-$(FEH_VER).tar.bz2
 	touch .feh-obtained
 
 # Compile feh
@@ -665,20 +665,20 @@ feh: download-feh .feh-done
 # Download imlib2
 download-imlib2: .imlib2-obtained
 .imlib2-obtained:
-	cd $(SRC_PATH) && wget -O imlib2-$(IMLIB2_VER).tar.xz $(IMLIB2_URL) && tar xf imlib2-$(IMLIB2_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O imlib2-$(IMLIB2_VER).tar.xz $(IMLIB2_URL) && tar xf imlib2-$(IMLIB2_VER).tar.xz
 	touch .imlib2-obtained
 
 # Compile imlib2
 imlib2: download-imlib2 .imlib2-done
 .imlib2-done:
 	rm -f $(STAGING_PATH)/usr/lib/libbz2.a
-	cd $(IMLIB2_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(IMLIB2_PATH) && CFLAGS="-std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .imlib2-done
 
 # Download pango
 download-pango: .pango-obtained
 .pango-obtained:
-	cd $(SRC_PATH) && wget -O pango-$(PANGO_VER).tar.xz $(PANGO_URL) && tar xf pango-$(PANGO_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O pango-$(PANGO_VER).tar.xz $(PANGO_URL) && tar xf pango-$(PANGO_VER).tar.xz
 	touch .pango-obtained
 
 # Compile pango
@@ -691,7 +691,7 @@ pango: download-pango .pango-done
 # Download libthai
 download-libthai: .libthai-obtained
 .libthai-obtained:
-	cd $(SRC_PATH) && wget -O libthai-$(LIBTHAI_VER).tar.xz $(LIBTHAI_URL) && tar xf libthai-$(LIBTHAI_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libthai-$(LIBTHAI_VER).tar.xz $(LIBTHAI_URL) && tar xf libthai-$(LIBTHAI_VER).tar.xz
 	touch .libthai-obtained
 
 # Compile libthai
@@ -703,7 +703,7 @@ libthai: download-libthai .libthai-done
 # Download libdatrie
 download-libdatrie: .libdatrie-obtained
 .libdatrie-obtained:
-	cd $(SRC_PATH) && wget -O libdatrie-$(LIBDATRIE_VER).tar.xz $(LIBDATRIE_URL) && tar xf libdatrie-$(LIBDATRIE_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libdatrie-$(LIBDATRIE_VER).tar.xz $(LIBDATRIE_URL) && tar xf libdatrie-$(LIBDATRIE_VER).tar.xz
 	touch .libdatrie-obtained
 
 # Compile libdatrie
@@ -715,7 +715,7 @@ libdatrie: download-libdatrie .libdatrie-done
 # Download librsvg
 download-librsvg: .librsvg-obtained
 .librsvg-obtained:
-	cd $(SRC_PATH) && wget -O librsvg-$(LIBRSVG_VER).tar.xz $(LIBRSVG_URL) && tar xf librsvg-$(LIBRSVG_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O librsvg-$(LIBRSVG_VER).tar.xz $(LIBRSVG_URL) && tar xf librsvg-$(LIBRSVG_VER).tar.xz
 	touch .librsvg-obtained
 
 # Compile librsvg
@@ -728,7 +728,7 @@ librsvg: download-librsvg .librsvg-done
 # Download libdav1d
 download-libdav1d: .libdav1d-obtained
 .libdav1d-obtained:
-	cd $(SRC_PATH) && wget -O libdav1d-$(LIBDAV1D_VER).tar.xz $(LIBDAV1D_URL) && tar xf libdav1d-$(LIBDAV1D_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libdav1d-$(LIBDAV1D_VER).tar.xz $(LIBDAV1D_URL) && tar xf libdav1d-$(LIBDAV1D_VER).tar.xz
 	touch .libdav1d-obtained
 
 # Compile libdav1d
@@ -740,7 +740,7 @@ libdav1d: download-libdav1d .libdav1d-done
 # Download gdk-pixbuf
 download-gdk-pixbuf: .gdk-pixbuf-obtained
 .gdk-pixbuf-obtained:
-	cd $(SRC_PATH) && wget -O gdk-pixbuf-$(GDK_PIXBUF_VER).tar.xz $(GDK_PIXBUF_URL) && tar xf gdk-pixbuf-$(GDK_PIXBUF_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O gdk-pixbuf-$(GDK_PIXBUF_VER).tar.xz $(GDK_PIXBUF_URL) && tar xf gdk-pixbuf-$(GDK_PIXBUF_VER).tar.xz
 	touch .gdk-pixbuf-obtained
 
 # Compile gdk-pixbuf
@@ -753,7 +753,7 @@ gdk-pixbuf: download-gdk-pixbuf .gdk-pixbuf-done
 # Download libjpeg-turbo
 download-libjpeg-turbo: .libjpeg-turbo-obtained
 .libjpeg-turbo-obtained:
-	cd $(SRC_PATH) && wget -O libjpeg-turbo-$(LIBJPEG_TURBO_VER).tar.gz $(LIBJPEG_TURBO_URL) && tar xf libjpeg-turbo-$(LIBJPEG_TURBO_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libjpeg-turbo-$(LIBJPEG_TURBO_VER).tar.gz $(LIBJPEG_TURBO_URL) && tar xf libjpeg-turbo-$(LIBJPEG_TURBO_VER).tar.gz
 	touch .libjpeg-turbo-obtained
 
 # Compile libjpeg-turbo
@@ -771,10 +771,10 @@ VULKAN_LOADER_URL = https://github.com/KhronosGroup/Vulkan-Loader/archive/refs/t
 
 vulkan: .vulkan-done
 .vulkan-done:
-	cd $(SRC_PATH) && wget -O vulkan-headers-$(VULKAN_VER).tar.gz $(VULKAN_HEADERS_URL) && tar xf vulkan-headers-$(VULKAN_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O vulkan-headers-$(VULKAN_VER).tar.gz $(VULKAN_HEADERS_URL) && tar xf vulkan-headers-$(VULKAN_VER).tar.gz
 	mkdir -p $(SRC_PATH)/Vulkan-Headers-$(VULKAN_VER)/build && cd $(SRC_PATH)/Vulkan-Headers-$(VULKAN_VER)/build && \
 	cmake -DCMAKE_INSTALL_PREFIX=/usr .. && make install DESTDIR=$(STAGING_PATH)
-	cd $(SRC_PATH) && wget -O vulkan-loader-$(VULKAN_VER).tar.gz $(VULKAN_LOADER_URL) && tar xf vulkan-loader-$(VULKAN_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O vulkan-loader-$(VULKAN_VER).tar.gz $(VULKAN_LOADER_URL) && tar xf vulkan-loader-$(VULKAN_VER).tar.gz
 	mkdir -p $(SRC_PATH)/Vulkan-Loader-$(VULKAN_VER)/build && cd $(SRC_PATH)/Vulkan-Loader-$(VULKAN_VER)/build && \
 	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
 	CFLAGS="--sysroot=$(STAGING_PATH) -I$(STAGING_PATH)/usr/include" LDFLAGS="--sysroot=$(STAGING_PATH) -L$(STAGING_PATH)/usr/lib" \
@@ -791,13 +791,13 @@ WMAKER_PATH = $(SRC_PATH)/wmaker-crm-$(WMAKER_VER)
 # Download Window Maker
 download-wmaker: .wmaker-obtained
 .wmaker-obtained:
-	cd $(SRC_PATH) && wget -O wmaker-crm-$(WMAKER_VER).tar.gz $(WMAKER_URL) && tar xf wmaker-crm-$(WMAKER_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O wmaker-crm-$(WMAKER_VER).tar.gz $(WMAKER_URL) && tar xf wmaker-crm-$(WMAKER_VER).tar.gz
 	touch .wmaker-obtained
 
 # Compile Window Maker
 wmaker: download-wmaker .wmaker-done
 .wmaker-done:
 	cd $(WMAKER_PATH) && ./autogen.sh && \
-	./configure --prefix=/usr --sysconfdir=/etc --enable-modelock --enable-pango --with-x && \
+	CFLAGS="-std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --enable-modelock --enable-pango --with-x --disable-imagemagick && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .wmaker-done

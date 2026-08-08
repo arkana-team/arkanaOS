@@ -93,8 +93,8 @@ RUN yes | pacman -Syu --noconfirm && \
         cpio \
         dbus-glib
 
-RUN useradd -m builder && \
-    echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+RUN useradd -m -s /bin/bash builder && \
+    echo "builder ALL=(ALL) NOPASSWD: ALL" | sudo tee /etc/sudoers.d/builder && sudo chmod 440 /etc/sudoers.d/builder
 
 USER builder
 WORKDIR /build
@@ -110,7 +110,9 @@ WORKDIR /build/arkana
 RUN sudo ln -sf /bin/true /sbin/ldconfig && \
     echo 'tries = 5' | sudo tee -a /etc/wgetrc && \
     echo 'timeout = 30' | sudo tee -a /etc/wgetrc && \
-    echo 'read_timeout = 30' | sudo tee -a /etc/wgetrc
+    echo 'read_timeout = 30' | sudo tee -a /etc/wgetrc && \
+    echo 'waitretry = 10' | sudo tee -a /etc/wgetrc && \
+    echo 'retry_connrefused = on' | sudo tee -a /etc/wgetrc
 
 CMD ["bash", "-c", "set +e; sudo make; ret=$?; \
 if [ $ret -eq 130 ]; then \

@@ -111,7 +111,7 @@ all: wayland wayland-protocols weston libxkbcommon libunwind libwebp giflib libt
 
 download-wayland: .wayland-obtained
 .wayland-obtained:
-	cd $(SRC_PATH) && wget -O wayland-$(WAYLAND_VER).tar.xz $(WAYLAND_URL) && tar xf wayland-$(WAYLAND_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O wayland-$(WAYLAND_VER).tar.xz $(WAYLAND_URL) && tar xf wayland-$(WAYLAND_VER).tar.xz
 	touch .wayland-obtained
 
 wayland: download-wayland .wayland-done
@@ -122,7 +122,7 @@ wayland: download-wayland .wayland-done
 
 download-wayland-protocols: .wayland-protocols-obtained
 .wayland-protocols-obtained:
-	cd $(SRC_PATH) && wget -O wayland-protocols-$(WAYLAND_PROTOCOLS_VER).tar.xz $(WAYLAND_PROTOCOLS_URL) && tar xf wayland-protocols-$(WAYLAND_PROTOCOLS_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O wayland-protocols-$(WAYLAND_PROTOCOLS_VER).tar.xz $(WAYLAND_PROTOCOLS_URL) && tar xf wayland-protocols-$(WAYLAND_PROTOCOLS_VER).tar.xz
 	touch .wayland-protocols-obtained
 
 wayland-protocols: download-wayland-protocols .wayland-protocols-done
@@ -133,19 +133,19 @@ wayland-protocols: download-wayland-protocols .wayland-protocols-done
 
 download-weston: .weston-obtained
 .weston-obtained:
-	cd $(SRC_PATH) && wget -O weston-$(WESTON_VER).tar.xz $(WESTON_URL) && tar xf weston-$(WESTON_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O weston-$(WESTON_VER).tar.xz $(WESTON_URL) && tar xf weston-$(WESTON_VER).tar.xz
 	touch .weston-obtained
 
 weston: download-weston .weston-done
 .weston-done:
     # Why are you using outdated FFmpeg syntax?
-	mkdir -p $(WESTON_PATH)/build && cd $(WESTON_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -Ddemo-clients=false -Dbackend-vnc=false && \
+	mkdir -p $(WESTON_PATH)/build && cd $(WESTON_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -Ddemo-clients=false -Dbackend-vnc=false -Dcolor-management-lcms=false -Dimage-webp=false -Dpipewire=false -Dshell-kiosk=false -Dshell-fullscreen=false && \
 	DESTDIR=$(STAGING_PATH) ninja install
 	touch .weston-done
 
 download-libxkbcommon: .libxkbcommon-obtained
 .libxkbcommon-obtained:
-	cd $(SRC_PATH) && wget -O libxkbcommon-$(LIBXKBCOMMON_VER).tar.gz $(LIBXKBCOMMON_URL) && tar xf libxkbcommon-$(LIBXKBCOMMON_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libxkbcommon-$(LIBXKBCOMMON_VER).tar.gz $(LIBXKBCOMMON_URL) && tar xf libxkbcommon-$(LIBXKBCOMMON_VER).tar.gz
 	touch .libxkbcommon-obtained
 
 libxkbcommon: download-libxkbcommon .libxkbcommon-done
@@ -156,7 +156,7 @@ libxkbcommon: download-libxkbcommon .libxkbcommon-done
 
 download-libunwind: .libunwind-obtained
 .libunwind-obtained:
-	cd $(SRC_PATH) && wget -O libunwind-$(LIBUNWIND_VER).tar.gz $(LIBUNWIND_URL) && tar xf libunwind-$(LIBUNWIND_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libunwind-$(LIBUNWIND_VER).tar.gz $(LIBUNWIND_URL) && tar xf libunwind-$(LIBUNWIND_VER).tar.gz
 	touch .libunwind-obtained
 
 libunwind: download-libunwind .libunwind-done
@@ -167,7 +167,7 @@ libunwind: download-libunwind .libunwind-done
 
 download-libwebp: .libwebp-obtained
 .libwebp-obtained:
-	cd $(SRC_PATH) && wget -O libwebp-$(LIBWEBP_VER).tar.gz $(LIBWEBP_URL) && tar xf libwebp-$(LIBWEBP_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libwebp-$(LIBWEBP_VER).tar.gz $(LIBWEBP_URL) && tar xf libwebp-$(LIBWEBP_VER).tar.gz
 	touch .libwebp-obtained
 
 libwebp: download-libwebp .libwebp-done
@@ -178,7 +178,7 @@ libwebp: download-libwebp .libwebp-done
 
 download-giflib: .giflib-obtained
 .giflib-obtained:
-	cd $(SRC_PATH) && wget -O giflib-$(GIFLIB_VER).tar.gz $(GIFLIB_URL) && tar xf giflib-$(GIFLIB_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O giflib-$(GIFLIB_VER).tar.gz $(GIFLIB_URL) && tar xf giflib-$(GIFLIB_VER).tar.gz
 	touch .giflib-obtained
 
 giflib: download-giflib .giflib-done
@@ -188,7 +188,7 @@ giflib: download-giflib .giflib-done
 
 download-libtiff: .libtiff-obtained
 .libtiff-obtained:
-	cd $(SRC_PATH) && wget -O libtiff-$(LIBTIFF_VER).tar.gz $(LIBTIFF_URL) && tar xf libtiff-$(LIBTIFF_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libtiff-$(LIBTIFF_VER).tar.gz $(LIBTIFF_URL) && tar xf libtiff-$(LIBTIFF_VER).tar.gz
 	touch .libtiff-obtained
 
 libtiff: download-libtiff .libtiff-done
@@ -199,7 +199,7 @@ libtiff: download-libtiff .libtiff-done
 
 download-libdeflate: .libdeflate-obtained
 .libdeflate-obtained:
-	cd $(SRC_PATH) && wget -O libdeflate-$(LIBDEFLATE_VER).tar.gz $(LIBDEFLATE_URL) && tar xf libdeflate-$(LIBDEFLATE_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libdeflate-$(LIBDEFLATE_VER).tar.gz $(LIBDEFLATE_URL) && tar xf libdeflate-$(LIBDEFLATE_VER).tar.gz
 	touch .libdeflate-obtained
 
 libdeflate: download-libdeflate .libdeflate-done
@@ -213,19 +213,19 @@ libdeflate: download-libdeflate .libdeflate-done
 	
 download-libjbig: .libjbig-obtained
 .libjbig-obtained:
-	cd $(SRC_PATH) && wget -O jbigkit-$(JBIG_KIT_VER).tar.gz $(JBIG_KIT_URL) && tar xf jbigkit-$(JBIG_KIT_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O jbigkit-$(JBIG_KIT_VER).tar.gz $(JBIG_KIT_URL) && tar xf jbigkit-$(JBIG_KIT_VER).tar.gz
 	touch .libjbig-obtained
 
 # Hey Mr. Cambridge guy, care to update your build system? It's so UNIX.
 libjbig: download-libjbig .libjbig-done
 .libjbig-done:
-	cd $(JBIG_KIT_PATH) && (curl -s -f $(JBIG_KIT_PATCH_URL) | patch -N -p1 || true) && $(MAKE) -j$(THREADS) && cp -a libjbig/libjbig.so.2.1 $(STAGING_PATH)/usr/lib && \
+	cd $(JBIG_KIT_PATH) && (curl -s -f $(JBIG_KIT_PATCH_URL) | patch -N -p1 || true) && $(MAKE) -j$(THREADS) CFLAGS="-g -O2 -std=gnu17" && cp -a libjbig/libjbig.so.2.1 $(STAGING_PATH)/usr/lib && \
 	ln -sf libjbig.so.2.1 $(STAGING_PATH)/usr/lib/libjbig.so
 	touch .libjbig-done
 
 download-xwayland: .xwayland-obtained
 .xwayland-obtained:
-	cd $(SRC_PATH) && wget -O xwayland-$(XWAYLAND_VER).tar.xz $(XWAYLAND_URL) && tar xf xwayland-$(XWAYLAND_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O xwayland-$(XWAYLAND_VER).tar.xz $(XWAYLAND_URL) && tar xf xwayland-$(XWAYLAND_VER).tar.xz
 	touch .xwayland-obtained
 
 xwayland: download-xwayland .xwayland-done
@@ -236,7 +236,7 @@ xwayland: download-xwayland .xwayland-done
 
 download-libepoxy: .libepoxy-obtained
 .libepoxy-obtained:
-	cd $(SRC_PATH) && wget -O libepoxy-$(LIBEPOXY_VER).tar.xz $(LIBEPOXY_URL) && tar xf libepoxy-$(LIBEPOXY_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libepoxy-$(LIBEPOXY_VER).tar.xz $(LIBEPOXY_URL) && tar xf libepoxy-$(LIBEPOXY_VER).tar.xz
 	touch .libepoxy-obtained
 
 libepoxy: download-libepoxy .libepoxy-done
@@ -246,7 +246,7 @@ libepoxy: download-libepoxy .libepoxy-done
 
 download-libdisplay-info: .libdisplay-info-obtained
 .libdisplay-info-obtained:
-	cd $(SRC_PATH) && wget -O libdisplay-info-$(LIBDISPLAY_INFO_VER).tar.gz $(LIBDISPLAY_INFO_URL) && tar xf libdisplay-info-$(LIBDISPLAY_INFO_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libdisplay-info-$(LIBDISPLAY_INFO_VER).tar.gz $(LIBDISPLAY_INFO_URL) && tar xf libdisplay-info-$(LIBDISPLAY_INFO_VER).tar.gz
 	touch .libdisplay-info-obtained
 
 libdisplay-info: download-libdisplay-info .libdisplay-info-done
@@ -260,7 +260,7 @@ HWDATA_PATH = $(SRC_PATH)/hwdata-$(HWDATA_VER)
 
 download-hwdata: .hwdata-obtained
 .hwdata-obtained:
-	cd $(SRC_PATH) && wget -O hwdata-$(HWDATA_VER).tar.gz $(HWDATA_URL) && tar xf hwdata-$(HWDATA_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O hwdata-$(HWDATA_VER).tar.gz $(HWDATA_URL) && tar xf hwdata-$(HWDATA_VER).tar.gz
 	touch .hwdata-obtained
 
 hwdata: download-hwdata .hwdata-done
@@ -270,7 +270,7 @@ hwdata: download-hwdata .hwdata-done
 
 download-wlroots: .wlroots-obtained
 .wlroots-obtained:
-	cd $(SRC_PATH) && wget -O wlroots-$(WLROOTS_VER).tar.gz $(WLROOTS_URL) && tar xf wlroots-$(WLROOTS_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O wlroots-$(WLROOTS_VER).tar.gz $(WLROOTS_URL) && tar xf wlroots-$(WLROOTS_VER).tar.gz
 	touch .wlroots-obtained
 
 wlroots: download-wlroots libdisplay-info seatd hwdata .wlroots-done
@@ -285,7 +285,7 @@ wlroots: download-wlroots libdisplay-info seatd hwdata .wlroots-done
 
 download-xcb-util-wm: .xcb-util-wm-obtained
 .xcb-util-wm-obtained:
-	cd $(SRC_PATH) && wget -O xcb-util-wm-$(XCB_UTIL_WM_VER).tar.xz $(XCB_UTIL_WM_URL) && tar xf xcb-util-wm-$(XCB_UTIL_WM_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O xcb-util-wm-$(XCB_UTIL_WM_VER).tar.xz $(XCB_UTIL_WM_URL) && tar xf xcb-util-wm-$(XCB_UTIL_WM_VER).tar.xz
 	touch .xcb-util-wm-obtained
 
 xcb-util-wm: download-xcb-util-wm .xcb-util-wm-done
@@ -296,7 +296,7 @@ xcb-util-wm: download-xcb-util-wm .xcb-util-wm-done
 
 download-libsfdo: .libsfdo-obtained
 .libsfdo-obtained:
-	cd $(SRC_PATH) && wget -O libsfdo-$(LIBSFDO_VER).tar.gz $(LIBSFDO_URL) && tar xf libsfdo-$(LIBSFDO_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libsfdo-$(LIBSFDO_VER).tar.gz $(LIBSFDO_URL) && tar xf libsfdo-$(LIBSFDO_VER).tar.gz
 	touch .libsfdo-obtained
 
 libsfdo: download-libsfdo .libsfdo-done
@@ -307,7 +307,7 @@ libsfdo: download-libsfdo .libsfdo-done
 
 download-labwc: .labwc-obtained
 .labwc-obtained:
-	cd $(SRC_PATH) && wget -O labwc-$(LABWC_VER).tar.gz $(LABWC_URL) && tar xf labwc-$(LABWC_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O labwc-$(LABWC_VER).tar.gz $(LABWC_URL) && tar xf labwc-$(LABWC_VER).tar.gz
 	touch .labwc-obtained
 
 LIBXML2_URL = https://download.gnome.org/sources/libxml2/2.14/libxml2-2.14.5.tar.xz
@@ -316,7 +316,7 @@ LIBXML2_PATH = $(SRC_PATH)/libxml2-$(LIBXML2_VER)
 
 download-libxml2: .libxml2-obtained
 .libxml2-obtained:
-	cd $(SRC_PATH) && wget -O libxml2-$(LIBXML2_VER).tar.gz $(LIBXML2_URL) && tar xf libxml2-$(LIBXML2_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libxml2-$(LIBXML2_VER).tar.gz $(LIBXML2_URL) && tar xf libxml2-$(LIBXML2_VER).tar.gz
 	touch .libxml2-obtained
 
 libxml2: download-libxml2 .libxml2-done
@@ -352,7 +352,7 @@ labwc: download-labwc wlroots xcb-util-wm libsfdo libxml2 .labwc-done
 
 download-seatd: .seatd-obtained
 .seatd-obtained:
-	cd $(SRC_PATH) && wget -O seatd-$(SEATD_VER).tar.gz $(SEATD_URL) && tar xf seatd-$(SEATD_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O seatd-$(SEATD_VER).tar.gz $(SEATD_URL) && tar xf seatd-$(SEATD_VER).tar.gz
 	touch .seatd-obtained
 
 seatd: download-seatd .seatd-done

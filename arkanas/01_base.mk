@@ -342,7 +342,7 @@ dirs: .dirs-done
 kernel-headers: .kernel-headers-done
 
 .kernel-headers-done:
-	cd $(SRC_PATH) && wget -O linux-$(LINUX_HEADERS_VER).tar.gz $(LINUX_HEADERS_URL) && tar xf linux-$(LINUX_HEADERS_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O linux-$(LINUX_HEADERS_VER).tar.gz $(LINUX_HEADERS_URL) && tar xf linux-$(LINUX_HEADERS_VER).tar.gz
 	$(MAKE) -C $(LINUX_HEADERS_PATH) mrproper
 	cd $(LINUX_HEADERS_PATH) && $(MAKE) headers_install INSTALL_HDR_PATH=$(STAGING_PATH)/usr
 	sed -i '/IPPROTO_RAW\b/s/$$/\n#define IPPROTO_AGGFRAG 147/' $(STAGING_PATH)/usr/include/linux/in.h
@@ -356,7 +356,7 @@ download-glibc: .glibc-obtained
 
 .glibc-obtained:
 	mkdir -p $(SRC_PATH)
-	cd $(SRC_PATH) && wget -O glibc-$(GLIBC_VER).tar.gz $(GLIBC_URL) && tar xf glibc-$(GLIBC_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O glibc-$(GLIBC_VER).tar.gz $(GLIBC_URL) && tar xf glibc-$(GLIBC_VER).tar.gz
 	touch .glibc-obtained
 
 # Compile Glibc
@@ -377,7 +377,7 @@ glibc: download-glibc .glibc-done
 download-systemd: .systemd-obtained
 
 .systemd-obtained:
-	cd $(SRC_PATH) && wget -O systemd-$(SYSTEMD_VER).tar.gz $(SYSTEMD_URL) && tar xf systemd-$(SYSTEMD_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O systemd-$(SYSTEMD_VER).tar.gz $(SYSTEMD_URL) && tar xf systemd-$(SYSTEMD_VER).tar.gz
 	touch .systemd-obtained
 
 # Compile systemd
@@ -424,7 +424,7 @@ timestamp:
 download-coreutils: .coreutils-obtained
 
 .coreutils-obtained:
-	cd $(SRC_PATH) && wget -O coreutils-$(COREUTILS_VER).tar.gz $(COREUTILS_URL) && tar xf coreutils-$(COREUTILS_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O coreutils-$(COREUTILS_VER).tar.gz $(COREUTILS_URL) && tar xf coreutils-$(COREUTILS_VER).tar.gz
 	touch .coreutils-obtained
 
 # Compile coreutils
@@ -441,7 +441,7 @@ coreutils: download-coreutils .coreutils-done
 download-util-linux: .util-linux-obtained
 
 .util-linux-obtained:
-	cd $(SRC_PATH) && wget -O util-linux-$(UTIL_LINUX_VER).tar.gz $(UTIL_LINUX_URL) && tar xf util-linux-$(UTIL_LINUX_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O util-linux-$(UTIL_LINUX_VER).tar.gz $(UTIL_LINUX_URL) && tar xf util-linux-$(UTIL_LINUX_VER).tar.gz
 	touch .util-linux-obtained
 
 # Compile util-linux
@@ -462,7 +462,7 @@ util-linux: download-util-linux .util-linux-done
 download-bash: .bash-obtained
 
 .bash-obtained:
-	cd $(SRC_PATH) && wget -O bash-$(BASH_VER).tar.gz $(BASH_URL) && tar xf bash-$(BASH_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O bash-$(BASH_VER).tar.gz $(BASH_URL) && tar xf bash-$(BASH_VER).tar.gz
 	touch .bash-obtained
 
 # Compile bash
@@ -478,7 +478,7 @@ bash: download-bash .bash-done
 download-file: .file-obtained
 
 .file-obtained:
-	cd $(SRC_PATH) && wget -O file-$(FILE_VER).tar.gz $(FILE_URL) && tar xf file-$(FILE_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O file-$(FILE_VER).tar.gz $(FILE_URL) && tar xf file-$(FILE_VER).tar.gz
 	touch .file-obtained
 
 .PHONY: file
@@ -493,7 +493,7 @@ file: download-file .file-done
 download-lvm2: .lvm2-obtained
 
 .lvm2-obtained:
-	cd $(SRC_PATH) && wget -O lvm2-$(LVM2_VER).tar.gz $(LVM2_URL) && tar xf lvm2-$(LVM2_VER).tar.gz && rm -rf LVM2.$(LVM2_VER) && mv lvm2-2_03_34 LVM2.$(LVM2_VER)
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O lvm2-$(LVM2_VER).tar.gz $(LVM2_URL) && tar xf lvm2-$(LVM2_VER).tar.gz && rm -rf LVM2.$(LVM2_VER) && mv lvm2-2_03_34 LVM2.$(LVM2_VER)
 	touch .lvm2-obtained
 
 # Compile LVM2
@@ -510,7 +510,7 @@ lvm2: download-lvm2 .lvm2-done
 download-e2fsprogs: .e2fsprogs-obtained
 
 .e2fsprogs-obtained:
-	cd $(SRC_PATH) && wget -O e2fsprogs-$(E2FSPROGS_VER).tar.gz $(E2FSPROGS_URL) && tar xf e2fsprogs-$(E2FSPROGS_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O e2fsprogs-$(E2FSPROGS_VER).tar.gz $(E2FSPROGS_URL) && tar xf e2fsprogs-$(E2FSPROGS_VER).tar.gz
 	touch .e2fsprogs-obtained
 
 # Compile e2fsprogs
@@ -529,7 +529,7 @@ e2fsprogs: download-e2fsprogs .e2fsprogs-done
 download-gcc: .gcc-obtained
 
 .gcc-obtained:
-	cd $(SRC_PATH) && wget -O gcc-$(GCC_VER).tar.gz $(GCC_URL) && tar xf gcc-$(GCC_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O gcc-$(GCC_VER).tar.gz $(GCC_URL) && tar xf gcc-$(GCC_VER).tar.gz
 	touch .gcc-obtained
 
 # Compile GCC (libs only)
@@ -537,11 +537,11 @@ download-gcc: .gcc-obtained
 gcc: download-gcc .gcc-done
 
 .gcc-done:
-	cd $(GCC_PATH) && wget -c https://ftp.gnu.org/gnu/gettext/gettext-0.22.tar.gz && \
-	wget -c https://ftp.gnu.org/gnu/gmp/gmp-6.2.1.tar.bz2 && \
-	wget -c https://ftp.gnu.org/gnu/mpfr/mpfr-4.1.0.tar.bz2 && \
-	wget -c https://ftp.gnu.org/gnu/mpc/mpc-1.2.1.tar.gz && \
-	wget -c https://www.mirrorservice.org/sites/sourceware.org/pub/gcc/infrastructure/isl-0.24.tar.bz2 && \
+	cd $(GCC_PATH) && wget --tries=5 --timeout=30 -c https://ftp.gnu.org/gnu/gettext/gettext-0.22.tar.gz && \
+	wget --tries=5 --timeout=30 -c https://ftp.gnu.org/gnu/gmp/gmp-6.2.1.tar.bz2 && \
+	wget --tries=5 --timeout=30 -c https://ftp.gnu.org/gnu/mpfr/mpfr-4.1.0.tar.bz2 && \
+	wget --tries=5 --timeout=30 -c https://ftp.gnu.org/gnu/mpc/mpc-1.2.1.tar.gz && \
+	wget --tries=5 --timeout=30 -c https://www.mirrorservice.org/sites/sourceware.org/pub/gcc/infrastructure/isl-0.24.tar.bz2 && \
 	./contrib/download_prerequisites --no-force && \
 	find libcody -type f \( -name "*.cc" -o -name "*.hh" \) -exec sed -i 's/u8"/\"/g' {} +
 	rm -rf $(GCC_PATH)/build
@@ -554,7 +554,7 @@ gcc: download-gcc .gcc-done
 download-ncurses: .ncurses-obtained
 
 .ncurses-obtained:
-	cd $(SRC_PATH) && wget -O ncurses-$(NCURSES_VER).tar.gz $(NCURSES_URL) && tar xf ncurses-$(NCURSES_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O ncurses-$(NCURSES_VER).tar.gz $(NCURSES_URL) && tar xf ncurses-$(NCURSES_VER).tar.gz
 	touch .ncurses-obtained
 
 # Compile ncurses
@@ -573,7 +573,7 @@ ncurses: download-ncurses .ncurses-done
 download-acl: .acl-obtained
 
 .acl-obtained:
-	cd $(SRC_PATH) && wget -O acl-$(ACL_VER).tar.gz $(ACL_URL) && tar xf acl-$(ACL_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O acl-$(ACL_VER).tar.gz $(ACL_URL) && tar xf acl-$(ACL_VER).tar.gz
 	touch .acl-obtained
 
 # Compile acl
@@ -590,7 +590,7 @@ acl: download-acl .acl-done
 download-libcap: .libcap-obtained
 
 .libcap-obtained:
-	cd $(SRC_PATH) && wget -O libcap-$(LIBCAP_VER).tar.gz $(LIBCAP_URL) && tar xf libcap-$(LIBCAP_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libcap-$(LIBCAP_VER).tar.gz $(LIBCAP_URL) && tar xf libcap-$(LIBCAP_VER).tar.gz
 	touch .libcap-obtained
 
 # Compile libcap
@@ -608,7 +608,7 @@ libcap: download-libcap .libcap-done
 download-libseccomp: .libseccomp-obtained
 
 .libseccomp-obtained:
-	cd $(SRC_PATH) && wget -O libseccomp-$(LIBSECCOMP_VER).tar.gz $(LIBSECCOMP_URL) && tar xf libseccomp-$(LIBSECCOMP_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libseccomp-$(LIBSECCOMP_VER).tar.gz $(LIBSECCOMP_URL) && tar xf libseccomp-$(LIBSECCOMP_VER).tar.gz
 	touch .libseccomp-obtained
 
 # Compile libseccomp
@@ -624,7 +624,7 @@ libseccomp: download-libseccomp .libseccomp-done
 download-gmp: .gmp-obtained
 
 .gmp-obtained:
-	cd $(SRC_PATH) && wget -O gmp-$(GMP_VER).tar.gz $(GMP_URL) && tar xf gmp-$(GMP_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O gmp-$(GMP_VER).tar.gz $(GMP_URL) && tar xf gmp-$(GMP_VER).tar.gz
 	touch .gmp-obtained
 
 # Compile GMP
@@ -641,7 +641,7 @@ gmp: download-gmp .gmp-done
 download-libxcrypt: .libxcrypt-obtained
 
 .libxcrypt-obtained:
-	cd $(SRC_PATH) && wget -O libxcrypt-$(LIBXCRYPT_VER).tar.xz $(LIBXCRYPT_URL) && tar xf libxcrypt-$(LIBXCRYPT_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libxcrypt-$(LIBXCRYPT_VER).tar.xz $(LIBXCRYPT_URL) && tar xf libxcrypt-$(LIBXCRYPT_VER).tar.xz
 	touch .libxcrypt-obtained
 
 # Compile libxcrypt
@@ -658,7 +658,7 @@ libxcrypt: download-libxcrypt .libxcrypt-done
 download-openssl: .openssl-obtained
 
 .openssl-obtained:
-	cd $(SRC_PATH) && wget -O openssl-$(OPENSSL_VER).tar.gz $(OPENSSL_URL) && tar xf openssl-$(OPENSSL_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O openssl-$(OPENSSL_VER).tar.gz $(OPENSSL_URL) && tar xf openssl-$(OPENSSL_VER).tar.gz
 	touch .openssl-obtained
 
 # Compile OpenSSL
@@ -675,8 +675,8 @@ openssl: download-openssl .openssl-done
 download-linux-pam: .linux-pam-obtained
 
 .linux-pam-obtained:
-	cd $(SRC_PATH) && wget -O linux-pam-$(LINUX_PAM_VER).tar.xz $(LINUX_PAM_URL) && tar xf linux-pam-$(LINUX_PAM_VER).tar.xz
-	mkdir -p $(STAGING_PATH)/usr/share/doc && cd $(SRC_PATH) && wget -O linux-pam-$(LINUX_PAM_VER)-docs.tar.xz $(LINUX_PAM_DOC_URL) && tar xf linux-pam-$(LINUX_PAM_VER)-docs.tar.xz -C $(STAGING_PATH)/usr/share/doc
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O linux-pam-$(LINUX_PAM_VER).tar.xz $(LINUX_PAM_URL) && tar xf linux-pam-$(LINUX_PAM_VER).tar.xz
+	mkdir -p $(STAGING_PATH)/usr/share/doc && cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O linux-pam-$(LINUX_PAM_VER)-docs.tar.xz $(LINUX_PAM_DOC_URL) && tar xf linux-pam-$(LINUX_PAM_VER)-docs.tar.xz -C $(STAGING_PATH)/usr/share/doc
 	touch .linux-pam-obtained
 
 # Compile Linux-PAM
@@ -700,7 +700,7 @@ linux-pam: download-linux-pam .linux-pam-done
 download-shadow: .shadow-obtained
 
 .shadow-obtained:
-	cd $(SRC_PATH) && wget -O shadow-$(SHADOW_VER).tar.xz $(SHADOW_URL) && tar xf shadow-$(SHADOW_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O shadow-$(SHADOW_VER).tar.xz $(SHADOW_URL) && tar xf shadow-$(SHADOW_VER).tar.xz
 	touch .shadow-obtained
 
 # Compile shadow
@@ -711,7 +711,7 @@ shadow: download-shadow .shadow-done
 	find man -name Makefile.in -exec sed -i 's/passwd\.5 / /' {} \; && \
 	sed -e 's@#ENCRYPT_METHOD DES@ENCRYPT_METHOD YESCRYPT@' -e 's@/var/spool/mail@/var/mail@' -e '/PATH=/{s@/sbin:@@;s@/bin:@@}' -i etc/login.defs && \
 	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
-	CPPFLAGS="-I$(STAGING_PATH)/usr/include" CFLAGS="-I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib" \
+	CPPFLAGS="-I$(STAGING_PATH)/usr/include" CFLAGS="-I$(STAGING_PATH)/usr/include -std=gnu17" LDFLAGS="-L$(STAGING_PATH)/usr/lib" \
 	ac_cv_func_memset_explicit=no ./configure --sysconfdir=/etc --without-libbsd --with-{b,yes}crypt && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .shadow-done
 
@@ -720,7 +720,7 @@ shadow: download-shadow .shadow-done
 download-attr: .attr-obtained
 
 .attr-obtained:
-	cd $(SRC_PATH) && wget -O attr-$(ATTR_VER).tar.gz $(ATTR_URL) && tar xf attr-$(ATTR_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O attr-$(ATTR_VER).tar.gz $(ATTR_URL) && tar xf attr-$(ATTR_VER).tar.gz
 	touch .attr-obtained
 
 # Compile attr
@@ -737,7 +737,7 @@ attr: download-attr .attr-done
 download-linux-audit: .linux-audit-obtained
 
 .linux-audit-obtained:
-	cd $(SRC_PATH) && wget -O linux-audit-$(LINUX_AUDIT_VER).tar.gz $(LINUX_AUDIT_URL) && tar xf linux-audit-$(LINUX_AUDIT_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O linux-audit-$(LINUX_AUDIT_VER).tar.gz $(LINUX_AUDIT_URL) && tar xf linux-audit-$(LINUX_AUDIT_VER).tar.gz
 	touch .linux-audit-obtained
 
 # Compile Linux-audit
@@ -745,7 +745,7 @@ download-linux-audit: .linux-audit-obtained
 linux-audit: download-linux-audit .linux-audit-done
 
 .linux-audit-done:
-	cd $(LINUX_AUDIT_PATH) && autoreconf -fi && ./configure --prefix=/usr --without-python3 --with-libcap-ng=yes --without-golang --with-io_uring && \
+	cd $(LINUX_AUDIT_PATH) && autoreconf -fi && ./configure --prefix=/usr --without-python3 --with-libcap-ng=yes --without-golang --with-io_uring --disable-werror && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && mkdir -p $(STAGING_PATH)/etc/systemd/system && ln -sf /dev/null $(STAGING_PATH)/etc/systemd/system/auditd.service && \
 	ln -sf /dev/null $(STAGING_PATH)/etc/systemd/system/audit-rules.service
 	touch .linux-audit-done
@@ -755,7 +755,7 @@ linux-audit: download-linux-audit .linux-audit-done
 download-libcap-ng: .libcap-ng-obtained
 
 .libcap-ng-obtained:
-	cd $(SRC_PATH) && wget -O libcap-ng-$(LIBCAP_NG_VER).tar.gz $(LIBCAP_NG_URL) && tar xf libcap-ng-$(LIBCAP_NG_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libcap-ng-$(LIBCAP_NG_VER).tar.gz $(LIBCAP_NG_URL) && tar xf libcap-ng-$(LIBCAP_NG_VER).tar.gz
 	touch .libcap-ng-obtained
 
 # Compile libcap-ng
@@ -763,7 +763,7 @@ download-libcap-ng: .libcap-ng-obtained
 libcap-ng: download-libcap-ng .libcap-ng-done
 
 .libcap-ng-done:
-	cd $(LIBCAP_NG_PATH) && ./autogen.sh && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBCAP_NG_PATH) && ./autogen.sh && ./configure --prefix=/usr --disable-werror && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libcap-ng-done
 
 # Download zlib
@@ -795,7 +795,7 @@ download-openldap: .openldap-obtained
 openldap: download-openldap .openldap-done
 
 .openldap-done:
-	cd $(OPENLDAP_PATH) && autoconf && ./configure --prefix=/usr --sysconfdir=/etc --enable-dynamic \
+	cd $(OPENLDAP_PATH) && autoconf && CFLAGS="-std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --enable-dynamic \
 	--disable-debug && $(MAKE) -j$(THREADS) depend && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
 	ln -sf /dev/null $(STAGING_PATH)/etc/systemd/system/slapd.service
 	touch .openldap-done
@@ -805,7 +805,7 @@ openldap: download-openldap .openldap-done
 download-libgcrypt: .libgcrypt-obtained
 
 .libgcrypt-obtained:
-	cd $(SRC_PATH) && wget -O libgcrypt-$(LIBGCRYPT_VER).tar.bz2 $(LIBGCRYPT_URL) && tar xf libgcrypt-$(LIBGCRYPT_VER).tar.bz2
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libgcrypt-$(LIBGCRYPT_VER).tar.bz2 $(LIBGCRYPT_URL) && tar xf libgcrypt-$(LIBGCRYPT_VER).tar.bz2
 	touch .libgcrypt-obtained
 
 # Compile libgcrypt
@@ -827,7 +827,7 @@ libgcrypt: download-libgcrypt .libgcrypt-done
 download-libgpg-error: .libgpg-error-obtained
 
 .libgpg-error-obtained:
-	cd $(SRC_PATH) && wget -O libgpg-error-$(LIBGPG_ERROR_VER).tar.gz $(LIBGPG_ERROR_URL) && tar xf libgpg-error-$(LIBGPG_ERROR_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libgpg-error-$(LIBGPG_ERROR_VER).tar.gz $(LIBGPG_ERROR_URL) && tar xf libgpg-error-$(LIBGPG_ERROR_VER).tar.gz
 	touch .libgpg-error-obtained
 
 # Compile libgpg-error
@@ -844,7 +844,7 @@ libgpg-error: download-libgpg-error .libgpg-error-done
 download-readline: .readline-obtained
 
 .readline-obtained:
-	cd $(SRC_PATH) && wget -O readline-$(READLINE_VER).tar.gz $(READLINE_URL) && tar xf readline-$(READLINE_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O readline-$(READLINE_VER).tar.gz $(READLINE_URL) && tar xf readline-$(READLINE_VER).tar.gz
 	touch .readline-obtained
 
 # Compile readline
@@ -861,7 +861,7 @@ readline: download-readline .readline-done
 download-cryptsetup: .cryptsetup-obtained
 
 .cryptsetup-obtained:
-	cd $(SRC_PATH) && wget -O cryptsetup-$(CRYPTSETUP_VER).tar.gz $(CRYPTSETUP_URL) && tar xf cryptsetup-$(CRYPTSETUP_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O cryptsetup-$(CRYPTSETUP_VER).tar.gz $(CRYPTSETUP_URL) && tar xf cryptsetup-$(CRYPTSETUP_VER).tar.gz
 	touch .cryptsetup-obtained
 
 # Compile cryptsetup
@@ -877,7 +877,7 @@ cryptsetup: download-cryptsetup .cryptsetup-done
 download-cyrus-sasl: .cyrus-sasl-obtained
 
 .cyrus-sasl-obtained:
-	cd $(SRC_PATH) && wget -O cyrus-sasl-$(CYRUS_SASL_VER).tar.gz $(CYRUS_SASL_URL) && tar xf cyrus-sasl-$(CYRUS_SASL_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O cyrus-sasl-$(CYRUS_SASL_VER).tar.gz $(CYRUS_SASL_URL) && tar xf cyrus-sasl-$(CYRUS_SASL_VER).tar.gz
 	touch .cyrus-sasl-obtained
 
 # Compile Cyrus-SASL
@@ -897,7 +897,7 @@ cyrus-sasl: download-cyrus-sasl .cyrus-sasl-done
 download-popt: .popt-obtained
 
 .popt-obtained:
-	cd $(SRC_PATH) && wget -O popt-$(POPT_VER).tar.gz $(POPT_URL) && tar xf popt-$(POPT_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O popt-$(POPT_VER).tar.gz $(POPT_URL) && tar xf popt-$(POPT_VER).tar.gz
 	touch .popt-obtained
 
 # Compile popt
@@ -913,7 +913,7 @@ popt: download-popt .popt-done
 download-json-c: .json-c-obtained
 
 .json-c-obtained:
-	cd $(SRC_PATH) && wget -O json-c-$(JSON_C_VER).tar.gz $(JSON_C_URL) && tar xf json-c-$(JSON_C_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O json-c-$(JSON_C_VER).tar.gz $(JSON_C_URL) && tar xf json-c-$(JSON_C_VER).tar.gz
 	touch .json-c-obtained
 
 # Compile JSON-C
@@ -932,7 +932,7 @@ json-c: download-json-c .json-c-done
 download-zstd: .zstd-obtained
 
 .zstd-obtained:
-	cd $(SRC_PATH) && wget -O zstd-$(ZSTD_VER).tar.gz $(ZSTD_URL) && tar xf zstd-$(ZSTD_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O zstd-$(ZSTD_VER).tar.gz $(ZSTD_URL) && tar xf zstd-$(ZSTD_VER).tar.gz
 	touch .zstd-obtained
 
 # Compile zstd
@@ -948,7 +948,7 @@ zstd: download-zstd .zstd-done
 download-bzip2: .bzip2-obtained
 
 .bzip2-obtained:
-	cd $(SRC_PATH) && wget -O bzip2-$(BZIP2_VER).tar.gz $(BZIP2_URL) && tar xf bzip2-$(BZIP2_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O bzip2-$(BZIP2_VER).tar.gz $(BZIP2_URL) && tar xf bzip2-$(BZIP2_VER).tar.gz
 	touch .bzip2-obtained
 
 # Compile bzip2
@@ -969,7 +969,7 @@ bzip2: download-bzip2 .bzip2-done
 download-xz-utils: .xz-utils-obtained
 
 .xz-utils-obtained:
-	cd $(SRC_PATH) && wget -O xz-$(XZ_UTILS_VER).tar.gz $(XZ_UTILS_URL) && tar xf xz-$(XZ_UTILS_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O xz-$(XZ_UTILS_VER).tar.gz $(XZ_UTILS_URL) && tar xf xz-$(XZ_UTILS_VER).tar.gz
 	touch .xz-utils-obtained
 
 # Compile XZ Utils
@@ -986,7 +986,7 @@ xz-utils: download-xz-utils .xz-utils-done
 download-lz4: .lz4-obtained
 
 .lz4-obtained:
-	cd $(SRC_PATH) && wget -O lz4-$(LZ4_VER).tar.gz $(LZ4_URL) && tar xf lz4-$(LZ4_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O lz4-$(LZ4_VER).tar.gz $(LZ4_URL) && tar xf lz4-$(LZ4_VER).tar.gz
 	touch .lz4-obtained
 
 # Compile lz4
@@ -1002,7 +1002,7 @@ lz4: download-lz4 .lz4-done
 download-gzip: .gzip-obtained
 
 .gzip-obtained:
-	cd $(SRC_PATH) && wget -O gzip-$(GZIP_VER).tar.gz $(GZIP_URL) && tar xf gzip-$(GZIP_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O gzip-$(GZIP_VER).tar.gz $(GZIP_URL) && tar xf gzip-$(GZIP_VER).tar.gz
 	touch .gzip-obtained
 
 # Compile gzip
@@ -1018,7 +1018,7 @@ gzip: download-gzip .gzip-done
 download-libaio: .libaio-obtained
 
 .libaio-obtained:
-	cd $(SRC_PATH) && wget -O libaio-$(LIBAIO_VER).tar.gz $(LIBAIO_URL) && tar xf libaio-$(LIBAIO_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libaio-$(LIBAIO_VER).tar.gz $(LIBAIO_URL) && tar xf libaio-$(LIBAIO_VER).tar.gz
 	touch .libaio-obtained
 
 # Compile libaio
@@ -1026,7 +1026,7 @@ download-libaio: .libaio-obtained
 libaio: download-libaio .libaio-done
 
 .libaio-done:
-	cd $(LIBAIO_PATH) && $(MAKE) && $(MAKE) -j$(THREADS) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBAIO_PATH) && $(MAKE) CFLAGS="-std=gnu17" && $(MAKE) CFLAGS="-std=gnu17" -j$(THREADS) DESTDIR=$(STAGING_PATH) install
 	touch .libaio-done
 
 # Download krb5
@@ -1034,7 +1034,7 @@ libaio: download-libaio .libaio-done
 download-krb5: .krb5-obtained
 
 .krb5-obtained:
-	cd $(SRC_PATH) && wget -O krb5-$(KRB5_VER).tar.gz $(KRB5_URL) && tar xf krb5-$(KRB5_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O krb5-$(KRB5_VER).tar.gz $(KRB5_URL) && tar xf krb5-$(KRB5_VER).tar.gz
 	touch .krb5-obtained
 
 # Compile krb5
@@ -1052,7 +1052,7 @@ krb5: download-krb5 .krb5-done
 download-libnsl: .libnsl-obtained
 
 .libnsl-obtained:
-	cd $(SRC_PATH) && wget -O libnsl-$(LIBNSL_VER).tar.xz $(LIBNSL_URL) && tar xf libnsl-$(LIBNSL_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libnsl-$(LIBNSL_VER).tar.xz $(LIBNSL_URL) && tar xf libnsl-$(LIBNSL_VER).tar.xz
 	touch .libnsl-obtained
 
 # Compile libnsl
@@ -1068,7 +1068,7 @@ libnsl: download-libnsl .libnsl-done
 download-libtirpc: .libtirpc-obtained
 
 .libtirpc-obtained:
-	cd $(SRC_PATH) && wget -O libtirpc-$(LIBTIRPC_VER).tar.bz2 $(LIBTIRPC_URL) && tar xf libtirpc-$(LIBTIRPC_VER).tar.bz2
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libtirpc-$(LIBTIRPC_VER).tar.bz2 $(LIBTIRPC_URL) && tar xf libtirpc-$(LIBTIRPC_VER).tar.bz2
 	touch .libtirpc-obtained
 
 # Compile libtirpc
@@ -1085,7 +1085,7 @@ libtirpc: download-libtirpc .libtirpc-done
 download-keyutils: .keyutils-obtained
 
 .keyutils-obtained:
-	cd $(SRC_PATH) && wget -O keyutils-$(KEYUTILS_VER).tar.gz $(KEYUTILS_URL) && tar xf keyutils-$(KEYUTILS_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O keyutils-$(KEYUTILS_VER).tar.gz $(KEYUTILS_URL) && tar xf keyutils-$(KEYUTILS_VER).tar.gz
 	touch .keyutils-obtained
 
 # Compile keyutils
@@ -1093,7 +1093,7 @@ download-keyutils: .keyutils-obtained
 keyutils: download-keyutils .keyutils-done
 
 .keyutils-done:
-	cd $(KEYUTILS_PATH) && $(MAKE) -j$(THREADS) && $(MAKE) NO_ARLIB=1 DESTDIR=$(STAGING_PATH) install
+	cd $(KEYUTILS_PATH) && $(MAKE) CFLAGS="-std=gnu17" -j$(THREADS) && $(MAKE) CFLAGS="-std=gnu17" NO_ARLIB=1 DESTDIR=$(STAGING_PATH) install
 	touch .keyutils-done
 
 # Download lmdb
@@ -1101,7 +1101,7 @@ keyutils: download-keyutils .keyutils-done
 download-lmdb: .lmdb-obtained
 
 .lmdb-obtained:
-	cd $(SRC_PATH) && wget -O lmdb-$(LMDB_VER).tar.gz $(LMDB_URL) && tar xf lmdb-$(LMDB_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O lmdb-$(LMDB_VER).tar.gz $(LMDB_URL) && tar xf lmdb-$(LMDB_VER).tar.gz
 	touch .lmdb-obtained
 
 # Compile lmdb
@@ -1109,7 +1109,7 @@ download-lmdb: .lmdb-obtained
 lmdb: download-lmdb .lmdb-done
 
 .lmdb-done:
-	cd $(LMDB_PATH)/libraries/liblmdb && $(MAKE) -j$(THREADS) && $(MAKE) prefix=$(STAGING_PATH)/usr install
+	cd $(LMDB_PATH)/libraries/liblmdb && $(MAKE) CFLAGS="-std=gnu17" -j$(THREADS) && $(MAKE) CFLAGS="-std=gnu17" prefix=$(STAGING_PATH)/usr install
 	touch .lmdb-done
 
 # Download libfuse
@@ -1117,7 +1117,7 @@ lmdb: download-lmdb .lmdb-done
 download-libfuse: .libfuse-obtained
 
 .libfuse-obtained:
-	cd $(SRC_PATH) && wget -O fuse-$(LIBFUSE_VER).tar.gz $(LIBFUSE_URL) && tar xf fuse-$(LIBFUSE_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O fuse-$(LIBFUSE_VER).tar.gz $(LIBFUSE_URL) && tar xf fuse-$(LIBFUSE_VER).tar.gz
 	touch .libfuse-obtained
 
 # Compile libfuse
@@ -1135,7 +1135,7 @@ libfuse: download-libfuse .libfuse-done
 download-dbus: .dbus-obtained
 
 .dbus-obtained:
-	cd $(SRC_PATH) && wget -O dbus-$(DBUS_VER).tar.xz $(DBUS_URL) && tar xf dbus-$(DBUS_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O dbus-$(DBUS_VER).tar.xz $(DBUS_URL) && tar xf dbus-$(DBUS_VER).tar.xz
 	touch .dbus-obtained
 
 # Compile D-Bus
@@ -1152,7 +1152,7 @@ dbus: download-dbus .dbus-done
 download-dbus-broker: .dbus-broker-obtained
 
 .dbus-broker-obtained:
-	cd $(SRC_PATH) && wget -O dbus-broker-$(DBUS_BROKER_VER).tar.xz $(DBUS_BROKER_URL) && tar xf dbus-broker-$(DBUS_BROKER_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O dbus-broker-$(DBUS_BROKER_VER).tar.xz $(DBUS_BROKER_URL) && tar xf dbus-broker-$(DBUS_BROKER_VER).tar.xz
 	touch .dbus-broker-obtained
 
 # Compile dbus-broker
@@ -1167,12 +1167,12 @@ dbus-broker: download-dbus-broker .dbus-broker-done
 download-kbd: .kbd-obtained
 
 .kbd-obtained:
-	cd $(SRC_PATH) && wget -O kbd-$(KBD_VER).tar.gz $(KBD_URL) && tar xf kbd-$(KBD_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O kbd-$(KBD_VER).tar.gz $(KBD_URL) && tar xf kbd-$(KBD_VER).tar.gz
 	touch .kbd-obtained
 
 # Compile Kbd
 kbd: download-kbd .kbd-done
 .kbd-done:
 	cd $(KBD_PATH) && sed -i '/RESIZECONS_PROGS=/s/yes/no/' configure && sed -i 's/resizecons.8 //' docs/man/man8/Makefile.in && \
-	./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	CFLAGS="-std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .kbd-done

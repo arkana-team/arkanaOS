@@ -17,7 +17,7 @@ all: arkpkg
 download-arkpkg: .arkpkg-obtained
 
 .arkpkg-obtained:
-	cd $(SRC_PATH) && wget -O arkpkg-$(ARKPKG_VER).tar.gz $(ARKPKG_URL) && tar xf arkpkg-$(ARKPKG_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O arkpkg-$(ARKPKG_VER).tar.gz $(ARKPKG_URL) && tar xf arkpkg-$(ARKPKG_VER).tar.gz
 	touch .arkpkg-obtained
 
 .PHONY: arkpkg
