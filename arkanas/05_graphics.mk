@@ -236,7 +236,7 @@ download-xtrans: .xtrans-obtained
 
 xtrans: download-xtrans .xtrans-done
 .xtrans-done:
-	cd $(XTRANS_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(XTRANS_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .xtrans-done
 
 PIXMAN_URL = https://www.cairographics.org/releases/pixman-0.46.4.tar.gz
@@ -267,7 +267,7 @@ freetype: download-freetype .freetype-done
 .freetype-done:
 	cd $(FREETYPE_PATH) && sed -ri "s:.*(AUX_MODULES.*valid):\1:" modules.cfg && \
 	sed -r "s:.*(#.*SUBPIXEL_RENDERING) .*:\1:" -i include/freetype/config/ftoption.h && \
-	./configure --prefix=/usr --enable-freetype-config --disable-static --without-harfbuzz --without-png --without-brotli --without-zlib && $(MAKE) -j$(THREADS) && \
+	CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --enable-freetype-config --disable-static --without-harfbuzz --without-png --without-brotli --without-zlib && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .freetype-done
 
@@ -342,7 +342,7 @@ xorg-libs: download-xorg-libs .xorg-libs-done
 	    LIBDIR=$(SRC_PATH)/lib$$lib-$$ver; [ -d "$$LIBDIR" ] || LIBDIR=$(SRC_PATH)/$$lib-$$ver; mkdir -p "$$LIBDIR/build" && cd "$$LIBDIR/build" && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release && \
 	    ninja && DESTDIR=$(STAGING_PATH) ninja install || exit 1; \
 	  else \
-	    LIBDIR=$(SRC_PATH)/lib$$lib-$$ver; [ -d "$$LIBDIR" ] || LIBDIR=$(SRC_PATH)/$$lib-$$ver; cd "$$LIBDIR" && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install || exit 1; \
+	    LIBDIR=$(SRC_PATH)/lib$$lib-$$ver; [ -d "$$LIBDIR" ] || LIBDIR=$(SRC_PATH)/$$lib-$$ver; cd "$$LIBDIR" && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install || exit 1; \
 	  fi; \
 	done
 	touch .xorg-libs-done
@@ -358,13 +358,13 @@ download-xorg-apps: .xorg-apps-obtained
 	done
 	touch .xorg-apps-obtained
 
-# Download Xorg applications
+# Compile Xorg applications
 xorg-apps: download-xorg-apps .xorg-apps-done
 .xorg-apps-done:
 	for pair in $(X11_PARSED_APPS); do \
 	  app=$${pair%%/*}; \
 	  ver=$${pair##*/}; \
-	  cd $(SRC_PATH)/$$app-$$ver/ && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install; \
+	  cd $(SRC_PATH)/$$app-$$ver/ && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install || exit 1; \
 	done
 	touch .xorg-apps-done
 
@@ -389,7 +389,7 @@ xorg-fonts: download-xorg-fonts xorg-apps .xorg-fonts-done
 	for pair in $(X11_PARSED_FONTS); do \
 	  font=$${pair%%/*}; \
 	  ver=$${pair##*/}; \
-	  cd $(SRC_PATH)/$$font-$$ver/ && PATH="$(STAGING_PATH)/usr/bin:$$PATH" BDFTOPCF="$(STAGING_PATH)/usr/bin/bdftopcf" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install; \
+	  cd $(SRC_PATH)/$$font-$$ver/ && PATH="$(STAGING_PATH)/usr/bin:$$PATH" BDFTOPCF="$(STAGING_PATH)/usr/bin/bdftopcf" CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install || exit 1; \
 	done
 	touch .xorg-fonts-done
 
@@ -402,7 +402,7 @@ download-libbsd: .libbsd-obtained
 # Compile libbsd
 libbsd: download-libbsd .libbsd-done
 .libbsd-done:
-	cd $(LIBBSD_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBBSD_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libbsd-done
 
 # Download libmd
@@ -414,7 +414,7 @@ download-libmd: .libmd-obtained
 # Compile libmd
 libmd: download-libmd .libmd-done
 .libmd-done:
-	cd $(LIBMD_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBMD_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libmd-done
 
 # Download libdrm
@@ -483,7 +483,7 @@ download-libedit: .libedit-obtained
 # Compile libedit
 libedit: download-libedit .libedit-done
 .libedit-done:
-	cd $(LIBEDIT_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBEDIT_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libedit-done
 
 # Download SPIRV-Tools
@@ -511,7 +511,7 @@ download-xinit: .xinit-obtained
 # Compile xinit
 xinit: download-xinit .xinit-done
 .xinit-done:
-	cd $(XORG_XINIT_PATH) && ./configure --prefix=/usr --with-xinitdir=/etc/X11/app-defaults && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(XORG_XINIT_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --with-xinitdir=/etc/X11/app-defaults && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .xinit-done
 
 # Download xorg-xkeyboard-config
@@ -535,7 +535,7 @@ download-xf86-input-evdev: .xf86-input-evdev-obtained
 # Compile xf86-input-evdev
 xf86-input-evdev: download-xf86-input-evdev .xf86-input-evdev-done
 .xf86-input-evdev-done:
-	cd $(XF86_INPUT_EVDEV_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(XF86_INPUT_EVDEV_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .xf86-input-evdev-done
 
 # Download openbox
@@ -621,7 +621,7 @@ download-mtdev: .mtdev-obtained
 # Compile mtdev
 mtdev: download-mtdev .mtdev-done
 .mtdev-done:
-	cd $(MTDEV_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(MTDEV_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .mtdev-done
 
 # Download libwacom
@@ -697,7 +697,7 @@ download-libthai: .libthai-obtained
 # Compile libthai
 libthai: download-libthai .libthai-done
 .libthai-done:
-	cd $(LIBTHAI_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBTHAI_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libthai-done
 
 # Download libdatrie
@@ -709,7 +709,7 @@ download-libdatrie: .libdatrie-obtained
 # Compile libdatrie
 libdatrie: download-libdatrie .libdatrie-done
 .libdatrie-done:
-	cd $(LIBDATRIE_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBDATRIE_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libdatrie-done
 
 # Download librsvg

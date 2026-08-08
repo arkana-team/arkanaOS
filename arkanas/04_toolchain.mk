@@ -139,7 +139,7 @@ download-binutils: .binutils-obtained
 # Compile binutils
 binutils: download-binutils .binutils-done
 .binutils-done:
-	cd $(BINUTILS_PATH) && ./configure --prefix=/usr --enable-gold --enable-ld=default --enable-plugins --enable-shared --disable-werror --enable-64bit-bfd --with-system-zlib --disable-gprofng && $(MAKE) tooldir=/usr -j$(THREADS) && $(MAKE) tooldir=/usr DESTDIR=$(STAGING_PATH) install
+	cd $(BINUTILS_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --enable-gold --enable-ld=default --enable-plugins --enable-shared --disable-werror --enable-64bit-bfd --with-system-zlib --disable-gprofng && $(MAKE) tooldir=/usr -j$(THREADS) && $(MAKE) tooldir=/usr DESTDIR=$(STAGING_PATH) install
 	touch .binutils-done
 
 # Download meson
@@ -270,7 +270,7 @@ download-libxml2: .libxml2-obtained
 # Compile libxml2
 libxml2: download-libxml2 .libxml2-done
 .libxml2-done:
-	cd $(LIBXML2_PATH) && ./configure --prefix=/usr --sysconfdir=/etc --with-history PYTHON=/usr/bin/python3 --docdir=/usr/share/doc/libxml2-$(LIBXML2_VER) && \
+	cd $(LIBXML2_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --with-history PYTHON=/usr/bin/python3 --docdir=/usr/share/doc/libxml2-$(LIBXML2_VER) && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && sed '/libs=/s/xml2.*/xml2"/' -i $(STAGING_PATH)/usr/bin/xml2-config
 	touch .libxml2-done
 
@@ -297,7 +297,7 @@ download-expat: .expat-obtained
 expat: download-expat .expat-done
 
 .expat-done:
-	cd $(EXPAT_PATH) && ./configure --prefix=/usr --disable-static --docdir=/usr/share/doc/expat-$(EXPAT_VER) && $(MAKE) -j$(THREADS) && \
+	cd $(EXPAT_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --disable-static --docdir=/usr/share/doc/expat-$(EXPAT_VER) && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .expat-done
 
@@ -310,7 +310,7 @@ download-python3: .python3-obtained
 # Compile python3
 python3: download-python3 .python3-done
 .python3-done:
-	cd $(PYTHON3_PATH) && CXX="/usr/bin/g++" CFLAGS="-I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib" ./configure --prefix=/usr --enable-shared --with-system-expat --with-system-ffi --with-openssl=$(STAGING_PATH)/usr --enable-optimizations --with-ensurepip=no && \
+	cd $(PYTHON3_PATH) && CXX="/usr/bin/g++" CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib" ./configure --prefix=/usr --enable-shared --with-system-expat --with-system-ffi --with-openssl=$(STAGING_PATH)/usr --enable-optimizations --with-ensurepip=no && \
 	$(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install && \
 	ln -sf python3 $(STAGING_PATH)/usr/bin/python && \
