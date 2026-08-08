@@ -171,13 +171,13 @@ FIREFOX_VER = 135.0
 
 download-firefox: .firefox-obtained
 .firefox-obtained:
-	cd $(SRC_PATH) && wget -O firefox-$(FIREFOX_VER).tar.xz $(FIREFOX_URL) && tar xf firefox-$(FIREFOX_VER).tar.xz -C $(SRC_PATH)
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O firefox-$(FIREFOX_VER).tar.xz $(FIREFOX_URL) && tar xf firefox-$(FIREFOX_VER).tar.xz -C $(SRC_PATH)
 	touch .firefox-obtained
 
 firefox: download-firefox .firefox-done
 .firefox-done:
 	mkdir -p $(STAGING_PATH)/opt/firefox
-	cp -a $(SRC_PATH)/firefox/* $(STAGING_PATH)/opt/firefox/
+	cp -a $(SRC_PATH)/firefox/. $(STAGING_PATH)/opt/firefox/
 	mkdir -p $(STAGING_PATH)/usr/bin
 	ln -sf /opt/firefox/firefox $(STAGING_PATH)/usr/bin/firefox
 	mkdir -p $(STAGING_PATH)/usr/share/applications
@@ -193,7 +193,7 @@ build: cpio busybox linux grub freetype harfbuzz glib libffi elfutils brotli pcr
 download-cpio: .cpio-obtained
 
 .cpio-obtained:
-	cd $(SRC_PATH) && ( wget -O cpio-$(CPIO_VER).tar.gz $(CPIO_URL) || wget -O cpio-$(CPIO_VER).tar.gz $(CPIO_FALLBACK_URL) ) && tar xf cpio-$(CPIO_VER).tar.gz
+	cd $(SRC_PATH) && ( wget --tries=5 --timeout=30 -O cpio-$(CPIO_VER).tar.gz $(CPIO_URL) || wget --tries=5 --timeout=30 -O cpio-$(CPIO_VER).tar.gz $(CPIO_FALLBACK_URL) ) && tar xf cpio-$(CPIO_VER).tar.gz
 	touch .cpio-obtained
 
 # Compile cpio
@@ -215,7 +215,7 @@ cpio: download-cpio .cpio-done
 download-libisoburn: .libisoburn-obtained
 
 .libisoburn-obtained:
-	cd $(SRC_PATH) && wget -O libisoburn-$(LIBISOBURN_VER).tar.gz $(LIBISOBURN_URL) && tar xf libisoburn-$(LIBISOBURN_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libisoburn-$(LIBISOBURN_VER).tar.gz $(LIBISOBURN_URL) && tar xf libisoburn-$(LIBISOBURN_VER).tar.gz
 	touch .libisoburn-obtained
 
 # Compile libisoburn
@@ -230,7 +230,7 @@ libisoburn: download-libisoburn .libisoburn-done
 download-libburn: .libburn-obtained
 
 .libburn-obtained:
-	cd $(SRC_PATH) && wget -O libburn-$(LIBBURN_VER).tar.gz $(LIBBURN_URL) && tar xf libburn-$(LIBBURN_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libburn-$(LIBBURN_VER).tar.gz $(LIBBURN_URL) && tar xf libburn-$(LIBBURN_VER).tar.gz
 	touch .libburn-obtained
 
 # Compile libburn
@@ -244,7 +244,7 @@ libburn: download-libburn .libburn-done
 download-libisofs: .libisofs-obtained
 
 .libisofs-obtained:
-	cd $(SRC_PATH) && wget -O libisofs-$(LIBISOFS_VER).tar.gz $(LIBISOFS_URL) && tar xf libisofs-$(LIBISOFS_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libisofs-$(LIBISOFS_VER).tar.gz $(LIBISOFS_URL) && tar xf libisofs-$(LIBISOFS_VER).tar.gz
 	touch .libisofs-obtained
 
 # Compile libisofs
@@ -258,7 +258,7 @@ libisofs: download-libisofs .libisofs-done
 download-mtools: .mtools-obtained
 
 .mtools-obtained:
-	cd $(SRC_PATH) && ( wget -O mtools-$(MTOOLS_VER).tar.gz $(MTOOLS_URL) || wget -O mtools-$(MTOOLS_VER).tar.gz $(MTOOLS_FALLBACK_URL) ) && tar xf mtools-$(MTOOLS_VER).tar.gz
+	cd $(SRC_PATH) && ( wget --tries=5 --timeout=30 -O mtools-$(MTOOLS_VER).tar.gz $(MTOOLS_URL) || wget --tries=5 --timeout=30 -O mtools-$(MTOOLS_VER).tar.gz $(MTOOLS_FALLBACK_URL) ) && tar xf mtools-$(MTOOLS_VER).tar.gz
 	touch .mtools-obtained
 
 # Compile mtools
@@ -272,7 +272,7 @@ mtools: download-mtools .mtools-done
 download-busybox: .busybox-obtained
 
 .busybox-obtained:
-	cd $(SRC_PATH) && wget -O busybox-$(BUSYBOX_VER).tar.bz2 $(BUSYBOX_URL) && tar xf busybox-$(BUSYBOX_VER).tar.bz2
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O busybox-$(BUSYBOX_VER).tar.bz2 $(BUSYBOX_URL) && tar xf busybox-$(BUSYBOX_VER).tar.bz2
 	touch .busybox-obtained
 
 # Compile BusyBox
@@ -288,7 +288,7 @@ busybox: download-busybox .busybox-done
 download-linux: .linux-obtained
 
 .linux-obtained:
-	cd $(SRC_PATH) && wget -O linux-$(LINUX_VER).tar.gz $(LINUX_URL) && tar xf linux-$(LINUX_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O linux-$(LINUX_VER).tar.gz $(LINUX_URL) && tar xf linux-$(LINUX_VER).tar.gz
 	touch .linux-obtained
 
 # Compile Linux kernel
@@ -296,7 +296,7 @@ linux: download-linux .linux-done
 
 .linux-done:
 	# Linus, you've fucked with the SBAT file config and my builder broke!
-	$(MAKE) -C $(LINUX_PATH) mrproper && cp linux.config $(LINUX_PATH)/.config && cd $(LINUX_PATH) && $(MAKE) olddefconfig && \
+	$(MAKE) -C $(LINUX_PATH) mrproper && cp $(CURDIR)/linux.config $(LINUX_PATH)/.config && cd $(LINUX_PATH) && $(MAKE) olddefconfig && \
 	$(MAKE) -j$(THREADS) KBUILD_BUILD_HOST="arkana" KBUILD_BUILD_USER="arkana" all && cp arch/x86/boot/bzImage $(STAGING_PATH)/boot/vmlinuz && \
 	$(MAKE) -C $(LINUX_PATH) headers_install INSTALL_HDR_PATH=$(STAGING_PATH)/usr
 	touch .linux-done
@@ -305,8 +305,8 @@ linux: download-linux .linux-done
 download-grub: .grub-obtained
 
 .grub-obtained:
-	cd $(SRC_PATH) && ( wget -O grub-$(GRUB_VER).tar.gz $(GRUB_URL) || wget -O grub-$(GRUB_VER).tar.gz $(GRUB_FALLBACK_URL) ) && tar xf grub-$(GRUB_VER).tar.gz && \
-	wget -O unifont-16.0.01.pcf.gz $(GRUB_FONT_URL)
+	cd $(SRC_PATH) && ( wget --tries=5 --timeout=30 -O grub-$(GRUB_VER).tar.gz $(GRUB_URL) || wget --tries=5 --timeout=30 -O grub-$(GRUB_VER).tar.gz $(GRUB_FALLBACK_URL) ) && tar xf grub-$(GRUB_VER).tar.gz && \
+	wget --tries=5 --timeout=30 -O unifont-16.0.01.pcf.gz $(GRUB_FONT_URL)
 	touch .grub-obtained
 
 # Compile GRUB
@@ -316,10 +316,10 @@ grub: download-grub .grub-done
 	cd $(GRUB_PATH) && (make distclean || true) && rm -rf build-efi build-pc && \
 	cd $(GRUB_PATH) && echo depends bli part_gpt > grub-core/extra_deps.lst && \
 	mkdir -p build-efi && cd build-efi && \
-	CFLAGS="" CPPFLAGS="" LDFLAGS="" ../configure --prefix=/usr --sysconfdir=/etc --disable-efiemu --with-platform=efi \
+	CFLAGS="" CPPFLAGS="" LDFLAGS="" PKG_CONFIG_PATH=$(STAGING_PATH)/usr/lib/pkgconfig ../configure --prefix=/usr --sysconfdir=/etc --disable-efiemu --with-platform=efi \
 	--target=x86_64 --disable-werror && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
 	cd $(GRUB_PATH) && mkdir -p build-pc && cd build-pc && \
-	CFLAGS="" CPPFLAGS="" LDFLAGS="" ../configure --prefix=/usr --sysconfdir=/etc --disable-efiemu --with-platform=pc \
+	CFLAGS="" CPPFLAGS="" LDFLAGS="" PKG_CONFIG_PATH=$(STAGING_PATH)/usr/lib/pkgconfig ../configure --prefix=/usr --sysconfdir=/etc --disable-efiemu --with-platform=pc \
 	--target=i386 --disable-werror && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
 	mkdir -p $(STAGING_PATH)/usr/share/bash-completion/completions && \
 	mv $(STAGING_PATH)/etc/bash_completion.d/grub $(STAGING_PATH)/usr/share/bash-completion/completions
@@ -333,7 +333,7 @@ grub: download-grub .grub-done
 download-freetype: .freetype-obtained
 
 .freetype-obtained:
-	cd $(SRC_PATH) && wget -O freetype-$(FREETYPE_VER).tar.xz $(FREETYPE_URL) && tar xf freetype-$(FREETYPE_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O freetype-$(FREETYPE_VER).tar.xz $(FREETYPE_URL) && tar xf freetype-$(FREETYPE_VER).tar.xz
 	touch .freetype-obtained
 
 # Compile freetype
@@ -350,7 +350,7 @@ freetype: download-freetype .freetype-done
 download-harfbuzz: .harfbuzz-obtained
 
 .harfbuzz-obtained:
-	cd $(SRC_PATH) && wget -O harfbuzz-$(HARFBUZZ_VER).tar.xz $(HARFBUZZ_URL) && tar xf harfbuzz-$(HARFBUZZ_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O harfbuzz-$(HARFBUZZ_VER).tar.xz $(HARFBUZZ_URL) && tar xf harfbuzz-$(HARFBUZZ_VER).tar.xz
 	touch .harfbuzz-obtained
 
 # Compile harfbuzz
@@ -365,7 +365,7 @@ harfbuzz: download-harfbuzz .harfbuzz-done
 download-glib: .glib-obtained
 
 .glib-obtained:
-	cd $(SRC_PATH) && wget -O glib-$(GLIB_VER).tar.xz $(GLIB_URL) && tar xf glib-$(GLIB_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O glib-$(GLIB_VER).tar.xz $(GLIB_URL) && tar xf glib-$(GLIB_VER).tar.xz
 	touch .glib-obtained
 
 # Compile glib
@@ -383,7 +383,7 @@ glib: download-glib .glib-done
 download-libffi: .libffi-obtained
 
 .libffi-obtained:
-	cd $(SRC_PATH) && wget -O libffi-$(LIBFFI_VER).tar.gz $(LIBFFI_URL) && tar xf libffi-$(LIBFFI_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libffi-$(LIBFFI_VER).tar.gz $(LIBFFI_URL) && tar xf libffi-$(LIBFFI_VER).tar.gz
 	touch .libffi-obtained
 
 # Compile libffi
@@ -397,14 +397,15 @@ libffi: download-libffi .libffi-done
 download-elfutils: .elfutils-obtained
 
 .elfutils-obtained:
-	cd $(SRC_PATH) && wget -O elfutils-$(ELFUTILS_VER).tar.bz2 $(ELFUTILS_URL) && tar xf elfutils-$(ELFUTILS_VER).tar.bz2
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O elfutils-$(ELFUTILS_VER).tar.bz2 $(ELFUTILS_URL) && tar xf elfutils-$(ELFUTILS_VER).tar.bz2
 	touch .elfutils-obtained
 
 # Compile elfutils
 elfutils: download-elfutils .elfutils-done
 
 .elfutils-done:
-	cd $(ELFUTILS_PATH) && ./configure --prefix=/usr --disable-werror CFLAGS="-Wno-error=discarded-qualifiers" && $(MAKE) -j$(THREADS) && install -m644 config/libelf.pc $(STAGING_PATH)/usr/lib/pkgconfig
+	mkdir -p $(STAGING_PATH)/usr/lib/pkgconfig
+	cd $(ELFUTILS_PATH) && ./configure --prefix=/usr --disable-werror CFLAGS="-Wno-error=discarded-qualifiers" && $(MAKE) -j$(THREADS) && install -D -m644 config/libelf.pc $(STAGING_PATH)/usr/lib/pkgconfig/libelf.pc
 	for lib in libelf debuginfod libdw; do \
 		$(MAKE) -C $(SRC_PATH)/elfutils-$(ELFUTILS_VER)/$$lib DESTDIR=$(STAGING_PATH) install || exit 1; \
 	done
@@ -414,7 +415,7 @@ elfutils: download-elfutils .elfutils-done
 download-brotli: .brotli-obtained
 
 .brotli-obtained:
-	cd $(SRC_PATH) && wget -O brotli-$(BROTLI_VER).tar.gz $(BROTLI_URL) && tar xf brotli-$(BROTLI_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O brotli-$(BROTLI_VER).tar.gz $(BROTLI_URL) && tar xf brotli-$(BROTLI_VER).tar.gz
 	touch .brotli-obtained
 
 # Compile brotli
@@ -429,7 +430,7 @@ brotli: download-brotli .brotli-done
 download-pcre2: .pcre2-obtained
 
 .pcre2-obtained:
-	cd $(SRC_PATH) && wget -O pcre2-$(PCRE2_VER).tar.bz2 $(PCRE2_URL) && tar xf pcre2-$(PCRE2_VER).tar.bz2
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O pcre2-$(PCRE2_VER).tar.bz2 $(PCRE2_URL) && tar xf pcre2-$(PCRE2_VER).tar.bz2
 	touch .pcre2-obtained
 
 # Compile PCRE2
@@ -437,7 +438,7 @@ pcre2: download-pcre2 .pcre2-done
 
 .pcre2-done:
 	cd $(PCRE2_PATH) && ./configure --prefix=/usr --docdir=/usr/share/doc/pcre2-$(PCRE2_VER) --enable-unicode --enable-jit --enable-pcre2-16 \
-	--enable-pcre2-32 --enable-pcre2grep-libz --enable-pcre2grep-libbz2 --enable-pcre2test-libreadline --disable-static && $(MAKE) &&&& $(MAKE) && $(MAKE) -j$(THREADS) && $(MAKE) &&&& $(MAKE) && \
+	--enable-pcre2-32 --enable-pcre2grep-libz --enable-pcre2grep-libbz2 --enable-pcre2test-libreadline --disable-static && $(MAKE) && $(MAKE) && $(MAKE) -j$(THREADS) && $(MAKE) && $(MAKE) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .pcre2-done
 
@@ -445,7 +446,7 @@ pcre2: download-pcre2 .pcre2-done
 download-cairo: .cairo-obtained
 
 .cairo-obtained:
-	cd $(SRC_PATH) && wget -O cairo-$(CAIRO_VER).tar.xz $(CAIRO_URL) && tar xf cairo-$(CAIRO_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O cairo-$(CAIRO_VER).tar.xz $(CAIRO_URL) && tar xf cairo-$(CAIRO_VER).tar.xz
 	touch .cairo-obtained
 
 # Compile cairo
@@ -460,7 +461,7 @@ cairo: download-cairo .cairo-done
 download-fontconfig: .fontconfig-obtained
 
 .fontconfig-obtained:
-	cd $(SRC_PATH) && wget -O fontconfig-$(FONTCONFIG_VER).tar.xz $(FONTCONFIG_URL) && tar xf fontconfig-$(FONTCONFIG_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O fontconfig-$(FONTCONFIG_VER).tar.xz $(FONTCONFIG_URL) && tar xf fontconfig-$(FONTCONFIG_VER).tar.xz
 	touch .fontconfig-obtained
 
 # Compile fontconfig
@@ -475,14 +476,14 @@ fontconfig: download-fontconfig .fontconfig-done
 download-expat: .expat-obtained
 
 .expat-obtained:
-	cd $(SRC_PATH) && wget -O expat-$(EXPAT_VER).tar.gz $(EXPAT_URL) && tar xf expat-$(EXPAT_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O expat-$(EXPAT_VER).tar.gz $(EXPAT_URL) && tar xf expat-$(EXPAT_VER).tar.gz
 	touch .expat-obtained
 
 # Compile expat
 expat: download-expat .expat-done
 
 .expat-done:
-	cd $(EXPAT_PATH) && ./configure --prefix=/usr --disable-static --docdir=/usr/share/doc/expat-$(EXPAT_VER) && $(MAKE) &&&& $(MAKE) && $(MAKE) -j$(THREADS) && $(MAKE) &&&& $(MAKE) && \
+	cd $(EXPAT_PATH) && ./configure --prefix=/usr --disable-static --docdir=/usr/share/doc/expat-$(EXPAT_VER) && $(MAKE) && $(MAKE) && $(MAKE) -j$(THREADS) && $(MAKE) && $(MAKE) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .expat-done
 
@@ -490,7 +491,7 @@ expat: download-expat .expat-done
 download-graphite2: .graphite2-obtained
 
 .graphite2-obtained:
-	cd $(SRC_PATH) && wget -O graphite2-$(GRAPHITE2_VER).tgz $(GRAPHITE2_URL) && tar xf graphite2-$(GRAPHITE2_VER).tgz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O graphite2-$(GRAPHITE2_VER).tgz $(GRAPHITE2_URL) && tar xf graphite2-$(GRAPHITE2_VER).tgz
 	touch .graphite2-obtained
 
 # Compile graphite2
@@ -499,14 +500,14 @@ graphite2: download-graphite2 .graphite2-done
 .graphite2-done:
     # Outdated build system, cool.
 	mkdir -p $(GRAPHITE2_PATH)/build && cd $(GRAPHITE2_PATH)/build && sed -i '/Font.h/i #include <cstdint>' ../tests/featuremap/featuremaptest.cpp && \
-	cmake -D CMAKE_POLICY_VERSION_MINIMUM=3.5 -D CMAKE_INSTALL_PREFIX=/usr .. && $(MAKE) &&&& $(MAKE) && $(MAKE) -j$(THREADS) && $(MAKE) &&&& $(MAKE) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cmake -D CMAKE_POLICY_VERSION_MINIMUM=3.5 -D CMAKE_INSTALL_PREFIX=/usr .. && $(MAKE) && $(MAKE) && $(MAKE) -j$(THREADS) && $(MAKE) && $(MAKE) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .graphite2-done
 
 # Download pixman
 download-pixman: .pixman-obtained
 
 .pixman-obtained:
-	cd $(SRC_PATH) && wget -O pixman-$(PIXMAN_VER).tar.gz $(PIXMAN_URL) && tar xf pixman-$(PIXMAN_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O pixman-$(PIXMAN_VER).tar.gz $(PIXMAN_URL) && tar xf pixman-$(PIXMAN_VER).tar.gz
 	touch .pixman-obtained
 
 # Compile pixman
@@ -521,7 +522,7 @@ pixman: download-pixman .pixman-done
 download-libpng: .libpng-obtained
 
 .libpng-obtained:
-	cd $(SRC_PATH) && wget -O libpng-$(LIBPNG_VER).tar.xz $(LIBPNG_URL) && tar xf libpng-$(LIBPNG_VER).tar.xz && \
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libpng-$(LIBPNG_VER).tar.xz $(LIBPNG_URL) && tar xf libpng-$(LIBPNG_VER).tar.xz && \
 	cd $(LIBPNG_PATH) && curl -s -L $(LIBPNG_PATCH_URL) | gzip -d | patch -p1
 	touch .libpng-obtained
 
@@ -529,14 +530,14 @@ download-libpng: .libpng-obtained
 libpng: download-libpng .libpng-done
 
 .libpng-done:
-	cd $(LIBPNG_PATH) && ./configure --prefix=/usr --disable-static && $(MAKE) &&&& $(MAKE) && $(MAKE) -j$(THREADS) && $(MAKE) &&&& $(MAKE) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
+	cd $(LIBPNG_PATH) && ./configure --prefix=/usr --disable-static && $(MAKE) && $(MAKE) && $(MAKE) -j$(THREADS) && $(MAKE) && $(MAKE) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
 	mkdir -p $(STAGING_PATH)/usr/share/doc/libpng-$(LIBPNG_VER) && cp README libpng-manual.txt $(STAGING_PATH)/usr/share/doc/libpng-$(LIBPNG_VER)
 	touch .libpng-done
 
 # Download squashfs-tools
 download-squashfs-tools: .squashfs-tools-obtained
 .squashfs-tools-obtained:
-	cd $(SRC_PATH) && wget -O squashfs-tools-$(SQUASHFS_TOOLS_VER).tar.gz $(SQUASHFS_TOOLS_URL) && tar xf squashfs-tools-$(SQUASHFS_TOOLS_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O squashfs-tools-$(SQUASHFS_TOOLS_VER).tar.gz $(SQUASHFS_TOOLS_URL) && tar xf squashfs-tools-$(SQUASHFS_TOOLS_VER).tar.gz
 	touch .squashfs-tools-obtained
 
 # Compile squashfs-tools
@@ -548,7 +549,7 @@ squashfs-tools: download-squashfs-tools .squashfs-tools-done
 # Download LZO
 download-lzo: .lzo-obtained
 .lzo-obtained:
-	cd $(SRC_PATH) && wget -O lzo-$(LZO_VER).tar.gz $(LZO_URL) && tar xf lzo-$(LZO_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O lzo-$(LZO_VER).tar.gz $(LZO_URL) && tar xf lzo-$(LZO_VER).tar.gz
 	touch .lzo-obtained
 
 # Compile LZO
@@ -560,7 +561,7 @@ lzo: download-lzo .lzo-done
 # Download efibootmgr
 download-efibootmgr: .efibootmgr-obtained
 .efibootmgr-obtained:
-	cd $(SRC_PATH) && wget -O efibootmgr-$(EFIBOOTMGR_VER).tar.gz $(EFIBOOTMGR_URL) && tar xf efibootmgr-$(EFIBOOTMGR_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O efibootmgr-$(EFIBOOTMGR_VER).tar.gz $(EFIBOOTMGR_URL) && tar xf efibootmgr-$(EFIBOOTMGR_VER).tar.gz
 	touch .efibootmgr-obtained
 
 # Compile efibootmgr
@@ -572,7 +573,7 @@ efibootmgr: download-efibootmgr .efibootmgr-done
 # Download efivar
 download-efivar: .efivar-obtained
 .efivar-obtained:
-	cd $(SRC_PATH) && wget -O efivar-$(EFIVAR_VER).tar.gz $(EFIVAR_URL) && tar xf efivar-$(EFIVAR_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O efivar-$(EFIVAR_VER).tar.gz $(EFIVAR_URL) && tar xf efivar-$(EFIVAR_VER).tar.gz
 	touch .efivar-obtained
 
 # Compile efivar
@@ -630,7 +631,7 @@ iso:
 	ln -sf /dev/null $(STAGING_PATH)/etc/ld.so.cache || true
 	ldconfig || true
 
-	mksquashfs $(STAGING_PATH) $(ISO_STAGING_PATH)/boot/rootfs.sfs -comp zstd -Xcompression-level 15 -b 1M -noappend || true
+	mksquashfs $(STAGING_PATH) $(ISO_STAGING_PATH)/boot/rootfs.sfs -comp zstd -Xcompression-level 15 -b 1M -noappend -e boot || true
 	cp $(LINUX_PATH)/arch/x86/boot/bzImage $(ISO_STAGING_PATH)/boot/vmlinuz
 
 	echo 'set timeout=5' > $(ISO_STAGING_PATH)/boot/grub/grub.cfg

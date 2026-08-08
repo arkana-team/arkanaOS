@@ -133,7 +133,7 @@ gcc-compilers: .gcc-compilers-done
 # Download binutils
 download-binutils: .binutils-obtained
 .binutils-obtained:
-	cd $(SRC_PATH) && wget -O binutils-$(BINUTILS_VER).tar.gz $(BINUTILS_URL) && tar xf binutils-$(BINUTILS_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O binutils-$(BINUTILS_VER).tar.gz $(BINUTILS_URL) && tar xf binutils-$(BINUTILS_VER).tar.gz
 	touch .binutils-obtained
 
 # Compile binutils
@@ -145,7 +145,7 @@ binutils: download-binutils .binutils-done
 # Download meson
 download-meson: .meson-obtained
 .meson-obtained:
-	cd $(SRC_PATH) && wget -O meson-$(MESON_VER).tar.gz $(MESON_URL) && tar xf meson-$(MESON_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O meson-$(MESON_VER).tar.gz $(MESON_URL) && tar xf meson-$(MESON_VER).tar.gz
 	touch .meson-obtained
 
 # Compile meson
@@ -159,7 +159,7 @@ meson: download-meson .meson-done
 # Download ninja
 download-ninja: .ninja-obtained
 .ninja-obtained:
-	cd $(SRC_PATH) && wget -O ninja-$(NINJA_VER).tar.gz $(NINJA_URL) && tar xf ninja-$(NINJA_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O ninja-$(NINJA_VER).tar.gz $(NINJA_URL) && tar xf ninja-$(NINJA_VER).tar.gz
 	touch .ninja-obtained
 
 # Compile ninja
@@ -175,7 +175,7 @@ ninja: download-ninja .ninja-done
 # Download make
 download-make: .make-obtained
 .make-obtained:
-	cd $(SRC_PATH) && wget -O make-$(MAKE_VER).tar.gz $(MAKE_URL) && tar xf make-$(MAKE_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O make-$(MAKE_VER).tar.gz $(MAKE_URL) && tar xf make-$(MAKE_VER).tar.gz
 	touch .make-obtained
 
 # Does this shadow any internal names?
@@ -183,68 +183,68 @@ download-make: .make-obtained
 make: download-make .make-done
 .make-done:
 	# You DO NEED make to build make. Make is compiling itself, funny, I know.
-	cd $(MAKE_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(MAKE_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .make-done
 
 # Download automake
 download-autoconf: .autoconf-obtained
 .autoconf-obtained:
-	cd $(SRC_PATH) && wget -O autoconf-$(AUTOCONF_VER).tar.gz $(AUTOCONF_URL) && tar xf autoconf-$(AUTOCONF_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O autoconf-$(AUTOCONF_VER).tar.gz $(AUTOCONF_URL) && tar xf autoconf-$(AUTOCONF_VER).tar.gz
 	touch .autoconf-obtained
 
 # Compile automake
 autoconf: download-autoconf .autoconf-done
 .autoconf-done:
-	cd $(AUTOCONF_PATH) && sed '361 s/{/\\{/' -i bin/autoscan.in && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(AUTOCONF_PATH) && sed '361 s/{/\\{/' -i bin/autoscan.in && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .autoconf-done
 
 # Download cmake
 download-cmake: .cmake-obtained
 .cmake-obtained:
-	cd $(SRC_PATH) && wget -O cmake-$(CMAKE_VER).tar.gz $(CMAKE_URL) && tar xf cmake-$(CMAKE_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O cmake-$(CMAKE_VER).tar.gz $(CMAKE_URL) && tar xf cmake-$(CMAKE_VER).tar.gz
 	touch .cmake-obtained
 
 # Compile cmake
 cmake: download-cmake .cmake-done
 .cmake-done:
-	cd $(CMAKE_PATH) && sed -i '/"lib64"/s/64//' Modules/GNUInstallDirs.cmake && ./bootstrap --prefix=/usr --system-libs --mandir=/share/man --no-system-jsoncpp \
+	cd $(CMAKE_PATH) && sed -i '/"lib64"/s/64//' Modules/GNUInstallDirs.cmake && CFLAGS="-O2 -std=gnu17" CXXFLAGS="-O2 -std=gnu++17" ./bootstrap --prefix=/usr --system-libs --mandir=/share/man --no-system-jsoncpp \
 	--no-system-cppdap --no-system-librhash --docdir=/share/doc/cmake-$(CMAKE_VER).tar.gz && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .cmake-done
 
 # Download gc
 download-gc: .gc-obtained
 .gc-obtained:
-	cd $(SRC_PATH) && wget -O gc-$(GC_VER).tar.gz $(GC_URL) && tar xf gc-$(GC_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O gc-$(GC_VER).tar.gz $(GC_URL) && tar xf gc-$(GC_VER).tar.gz
 	touch .gc-obtained
 
 # Compile gc
 gc: download-gc .gc-done
 .gc-done:
-	cd $(GC_PATH) && ./configure --prefix=/usr --enable-cplusplus --docdir=/usr/share/doc/gc-$(GC_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(GC_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --enable-cplusplus --docdir=/usr/share/doc/gc-$(GC_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .gc-done
 
 # Download libarchive
 download-libarchive: .libarchive-obtained
 .libarchive-obtained:
-	cd $(SRC_PATH) && wget -O libarchive-$(LIBARCHIVE_VER).tar.gz $(LIBARCHIVE_URL) && tar xf libarchive-$(LIBARCHIVE_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libarchive-$(LIBARCHIVE_VER).tar.gz $(LIBARCHIVE_URL) && tar xf libarchive-$(LIBARCHIVE_VER).tar.gz
 	touch .libarchive-obtained
 
 # Compile libarchive
 libarchive: download-libarchive .libarchive-done
 .libarchive-done:
-	cd $(LIBARCHIVE_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBARCHIVE_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libarchive-done
 
 # Download guile
 download-guile: .guile-obtained
 .guile-obtained:
-	cd $(SRC_PATH) && wget -O guile-$(GUILE_VER).tar.gz $(GUILE_URL) && tar xf guile-$(GUILE_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O guile-$(GUILE_VER).tar.gz $(GUILE_URL) && tar xf guile-$(GUILE_VER).tar.gz
 	touch .guile-obtained
 
 # Compile guile (this takes a LONG time!)
 guile: download-guile .guile-done
 .guile-done:
-	cd $(GUILE_PATH) && ./configure --prefix=/usr --docdir=/usr/share/doc/guile-$(GUILE_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
+	cd $(GUILE_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --docdir=/usr/share/doc/guile-$(GUILE_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
 	mkdir -p $(STAGING_PATH)/usr/share/gdb/auto-load/usr/lib && mv $(STAGING_PATH)/usr/lib/libguile-*-gdb.scm \
 	$(STAGING_PATH)/usr/share/gdb/auto-load/usr/lib
 	touch .guile-done
@@ -252,19 +252,19 @@ guile: download-guile .guile-done
 # Download libuv
 download-libuv: .libuv-obtained
 .libuv-obtained:
-	cd $(SRC_PATH) && wget -O libuv-$(LIBUV_VER).tar.gz $(LIBUV_URL) && tar xf libuv-$(LIBUV_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libuv-$(LIBUV_VER).tar.gz $(LIBUV_URL) && tar xf libuv-$(LIBUV_VER).tar.gz
 	touch .libuv-obtained
 
 # Compile libuv
 libuv: download-libuv .libuv-done
 .libuv-done:
-	cd $(LIBUV_PATH) && sh autogen.sh && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBUV_PATH) && sh autogen.sh && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libuv-done
 
 # Download libxml2
 download-libxml2: .libxml2-obtained
 .libxml2-obtained:
-	cd $(SRC_PATH) && wget -O libxml2-$(LIBXML2_VER).tar.xz $(LIBXML2_URL) && tar xf libxml2-$(LIBXML2_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libxml2-$(LIBXML2_VER).tar.xz $(LIBXML2_URL) && tar xf libxml2-$(LIBXML2_VER).tar.xz
 	touch .libxml2-obtained
 
 # Compile libxml2
@@ -277,40 +277,40 @@ libxml2: download-libxml2 .libxml2-done
 # Download libtool
 download-libtool: .libtool-obtained
 .libtool-obtained:
-	cd $(SRC_PATH) && wget -O libtool-$(LIBTOOL_VER).tar.gz $(LIBTOOL_URL) && tar xf libtool-$(LIBTOOL_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libtool-$(LIBTOOL_VER).tar.gz $(LIBTOOL_URL) && tar xf libtool-$(LIBTOOL_VER).tar.gz
 	touch .libtool-obtained
 
 # Compile libtool
 libtool: download-libtool .libtool-done
 .libtool-done:
-	cd $(LIBTOOL_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBTOOL_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libtool-done
 
 # Download expat
 download-expat: .expat-obtained
 
 .expat-obtained:
-	cd $(SRC_PATH) && wget -O expat-$(EXPAT_VER).tar.gz $(EXPAT_URL) && tar xf expat-$(EXPAT_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O expat-$(EXPAT_VER).tar.gz $(EXPAT_URL) && tar xf expat-$(EXPAT_VER).tar.gz
 	touch .expat-obtained
 
 # Compile expat
 expat: download-expat .expat-done
 
 .expat-done:
-	cd $(EXPAT_PATH) && ./configure --prefix=/usr --disable-static --docdir=/usr/share/doc/expat-$(EXPAT_VER) && $(MAKE) &&&& $(MAKE) && $(MAKE) -j$(THREADS) && $(MAKE) &&&& $(MAKE) && \
+	cd $(EXPAT_PATH) && ./configure --prefix=/usr --disable-static --docdir=/usr/share/doc/expat-$(EXPAT_VER) && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .expat-done
 
 # Download python3
 download-python3: .python3-obtained
 .python3-obtained:
-	cd $(SRC_PATH) && wget -O python-$(PYTHON3_VER).tar.xz $(PYTHON3_URL) && tar xf python-$(PYTHON3_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O python-$(PYTHON3_VER).tar.xz $(PYTHON3_URL) && tar xf python-$(PYTHON3_VER).tar.xz
 	touch .python3-obtained
 
 # Compile python3
 python3: download-python3 .python3-done
 .python3-done:
-	cd $(PYTHON3_PATH) && CXX="/usr/bin/g++" ./configure --prefix=/usr --enable-shared --with-system-expat --enable-optimizations --with-ensurepip=no && \
+	cd $(PYTHON3_PATH) && CXX="/usr/bin/g++" CFLAGS="-I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib" ./configure --prefix=/usr --enable-shared --with-system-expat --with-system-ffi --with-openssl=$(STAGING_PATH)/usr --enable-optimizations --with-ensurepip=no && \
 	$(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install && \
 	ln -sf python3 $(STAGING_PATH)/usr/bin/python && \
@@ -320,7 +320,7 @@ python3: download-python3 .python3-done
 # Download perl
 download-perl: .perl-obtained
 .perl-obtained:
-	cd $(SRC_PATH) && wget -O perl-$(PERL_VER).tar.gz $(PERL_URL) && tar xf perl-$(PERL_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O perl-$(PERL_VER).tar.gz $(PERL_URL) && tar xf perl-$(PERL_VER).tar.gz
 	touch .perl-obtained
 
 # Compile perl
@@ -336,11 +336,11 @@ perl: download-perl .perl-done
 # Download automake
 download-automake: .automake-obtained
 .automake-obtained:
-	cd $(SRC_PATH) && wget -O automake-$(AUTOMAKE_VER).tar.gz $(AUTOMAKE_URL) && tar xf automake-$(AUTOMAKE_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O automake-$(AUTOMAKE_VER).tar.gz $(AUTOMAKE_URL) && tar xf automake-$(AUTOMAKE_VER).tar.gz
 	touch .automake-obtained
 
 # Compile automake
 automake: download-automake .automake-done
 .automake-done:
-	cd $(AUTOMAKE_PATH) && ./configure --prefix=/usr --docdir=/usr/share/doc/automake-$(AUTOMAKE_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(AUTOMAKE_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --docdir=/usr/share/doc/automake-$(AUTOMAKE_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .automake-done

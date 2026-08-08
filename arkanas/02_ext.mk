@@ -1,6 +1,7 @@
 # Enable multi-threaded Bash operation
 SHELL = bash
 THREADS = $(shell nproc)
+export CFLAGS ?= -O2 -std=gnu17
 .NOTPARALLEL:
 
 # Paths used in the build
@@ -346,7 +347,7 @@ all: less procps-ng iproute2 iputils iptables libbpf libmnl libidn2 libunistring
 # Download less
 download-less: .less-obtained
 .less-obtained:
-	cd $(SRC_PATH) && wget -O less-$(LESS_VER).tar.gz $(LESS_URL) && tar xf less-$(LESS_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O less-$(LESS_VER).tar.gz $(LESS_URL) && tar xf less-$(LESS_VER).tar.gz
 	touch .less-obtained
 
 # Compile less
@@ -358,33 +359,33 @@ less: download-less .less-done
 # Download procps-ng
 download-procps-ng: .procps-ng-obtained
 .procps-ng-obtained:
-	cd $(SRC_PATH) && wget -O procps-ng-$(PROCPS_NG_VER).tar.gz $(PROCPS_NG_URL) && tar xf procps-ng-$(PROCPS_NG_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O procps-ng-$(PROCPS_NG_VER).tar.gz $(PROCPS_NG_URL) && tar xf procps-ng-$(PROCPS_NG_VER).tar.gz
 	touch .procps-ng-obtained
 
 # Compile procps-ng
 procps-ng: download-procps-ng .procps-ng-done
 .procps-ng-done:
-	cd $(PROCPS_NG_PATH) && ./autogen.sh && ./configure --prefix=/usr --docdir=/usr/share/doc/procps-ng-$(PROCPS_NG_VER) --disable-kill \
+	cd $(PROCPS_NG_PATH) && ./autogen.sh && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --docdir=/usr/share/doc/procps-ng-$(PROCPS_NG_VER) --disable-kill \
 	--enable-watch8bit && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .procps-ng-done
 
 # Download iproute2
 download-iproute2: .iproute2-obtained
 .iproute2-obtained:
-	cd $(SRC_PATH) && wget -O iproute2-$(IPROUTE2_VER).tar.gz $(IPROUTE2_URL) && tar xf iproute2-$(IPROUTE2_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O iproute2-$(IPROUTE2_VER).tar.gz $(IPROUTE2_URL) && tar xf iproute2-$(IPROUTE2_VER).tar.gz
 	touch .iproute2-obtained
 
 # Compile iproute2
 iproute2: download-iproute2 .iproute2-done
 .iproute2-done:
-	cd $(IPROUTE2_PATH) && sed -i /ARPD/d Makefile && rm -f man/man8/arpd.8 && $(MAKE) -j$(THREADS) NETNS_RUN_DIR=/run/netns && \
+	cd $(IPROUTE2_PATH) && sed -i /ARPD/d Makefile && rm -f man/man8/arpd.8 && $(MAKE) -j$(THREADS) NETNS_RUN_DIR=/run/netns CFLAGS="-O2 -std=gnu17" && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .iproute2-done
 
 # Download iputils
 download-iputils: .iputils-obtained
 .iputils-obtained:
-	cd $(SRC_PATH) && wget -O iputils-$(IPUTILS_VER).tar.gz $(IPUTILS_URL) && tar xf iputils-$(IPUTILS_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O iputils-$(IPUTILS_VER).tar.gz $(IPUTILS_URL) && tar xf iputils-$(IPUTILS_VER).tar.gz
 	touch .iputils-obtained
 
 # Compile iputils
@@ -397,7 +398,7 @@ iputils: download-iputils .iputils-done
 # Download NetworkManager
 download-networkmanager: .networkmanager-obtained
 .networkmanager-obtained:
-	cd $(SRC_PATH) && wget -O networkmanager-$(NETWORKMANAGER_VER).tar.xz $(NETWORKMANAGER_URL) && tar xf networkmanager-$(NETWORKMANAGER_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O networkmanager-$(NETWORKMANAGER_VER).tar.xz $(NETWORKMANAGER_URL) && tar xf networkmanager-$(NETWORKMANAGER_VER).tar.xz
 	touch .networkmanager-obtained
 
 # Compile NetworkManager
@@ -413,19 +414,19 @@ networkmanager: download-networkmanager .networkmanager-done
 # Download libbpf
 download-libbpf: .libbpf-obtained
 .libbpf-obtained:
-	cd $(SRC_PATH) && wget -O libbpf-$(LIBBPF_VER).tar.gz $(LIBBPF_URL) && tar xf libbpf-$(LIBBPF_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libbpf-$(LIBBPF_VER).tar.gz $(LIBBPF_URL) && tar xf libbpf-$(LIBBPF_VER).tar.gz
 	touch .libbpf-obtained
 
 # Compile libbpf
 libbpf: download-libbpf .libbpf-done
 .libbpf-done:
-	cd $(LIBBPF_PATH)/src && $(MAKE) -j$(THREADS) && $(MAKE) PREFIX=$(STAGING_PATH)/usr install
+	cd $(LIBBPF_PATH)/src && $(MAKE) -j$(THREADS) CFLAGS="-g -O2 -Wno-error=discarded-qualifiers" && $(MAKE) PREFIX=$(STAGING_PATH)/usr install
 	touch .libbpf-done
 
 # Download libmnl
 download-libmnl: .libmnl-obtained
 .libmnl-obtained:
-	cd $(SRC_PATH) && wget -O libmnl-$(LIBMNL_VER).tar.gz $(LIBMNL_URL) && tar xf libmnl-$(LIBMNL_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libmnl-$(LIBMNL_VER).tar.gz $(LIBMNL_URL) && tar xf libmnl-$(LIBMNL_VER).tar.gz
 	touch .libmnl-obtained
 
 # Compile libmnl
@@ -437,7 +438,7 @@ libmnl: download-libmnl .libmnl-done
 # Download libidn2
 download-libidn2: .libidn2-obtained
 .libidn2-obtained:
-	cd $(SRC_PATH) && wget -O libidn2-$(LIBIDN2_VER).tar.gz $(LIBIDN2_URL) && tar xf libidn2-$(LIBIDN2_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libidn2-$(LIBIDN2_VER).tar.gz $(LIBIDN2_URL) && tar xf libidn2-$(LIBIDN2_VER).tar.gz
 	touch .libidn2-obtained
 
 # Compile libidn2
@@ -450,7 +451,7 @@ libidn2: download-libidn2 .libidn2-done
 # Download libunistring
 download-libunistring: .libunistring-obtained
 .libunistring-obtained:
-	cd $(SRC_PATH) && wget -O libunistring-$(LIBUNISTRING_VER).tar.gz $(LIBUNISTRING_URL) && tar xf libunistring-$(LIBUNISTRING_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libunistring-$(LIBUNISTRING_VER).tar.gz $(LIBUNISTRING_URL) && tar xf libunistring-$(LIBUNISTRING_VER).tar.gz
 	touch .libunistring-obtained
 
 # Compile libunistring
@@ -463,7 +464,7 @@ libunistring: download-libunistring .libunistring-done
 # Download libnfnetlink
 download-libnfnetlink: .libnfnetlink-obtained
 .libnfnetlink-obtained:
-	cd $(SRC_PATH) && wget -O libnfnetlink-$(LIBNFNETLINK_VER).tar.bz2 $(LIBNFNETLINK_URL) && tar xf libnfnetlink-$(LIBNFNETLINK_VER).tar.bz2
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libnfnetlink-$(LIBNFNETLINK_VER).tar.bz2 $(LIBNFNETLINK_URL) && tar xf libnfnetlink-$(LIBNFNETLINK_VER).tar.bz2
 	touch .libnfnetlink-obtained
 
 # Compile libnfnetlink
@@ -475,7 +476,7 @@ libnfnetlink: download-libnfnetlink .libnfnetlink-done
 # Download libpsl
 download-libpsl: .libpsl-obtained
 .libpsl-obtained:
-	cd $(SRC_PATH) && wget -O libpsl-$(LIBPSL_VER).tar.gz $(LIBPSL_URL) && tar xf libpsl-$(LIBPSL_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libpsl-$(LIBPSL_VER).tar.gz $(LIBPSL_URL) && tar xf libpsl-$(LIBPSL_VER).tar.gz
 	touch .libpsl-obtained
 
 # Compile libpsl
@@ -487,19 +488,19 @@ libpsl: download-libpsl .libpsl-done
 # Download newt
 download-newt: .newt-obtained
 .newt-obtained:
-	cd $(SRC_PATH) && wget -O newt-$(NEWT_VER).tar.gz $(NEWT_URL) && tar xf newt-$(NEWT_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O newt-$(NEWT_VER).tar.gz $(NEWT_URL) && tar xf newt-$(NEWT_VER).tar.gz
 	touch .newt-obtained
 
 # Compile newt
 newt: download-newt .newt-done
 .newt-done:
-	cd $(NEWT_PATH) && ./configure --prefix=/usr --with-gpm-support --with-python=python3.13 && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(NEWT_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --with-gpm-support --with-python=python3.13 && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .newt-done
 
 # Download libndp
 download-libndp: .libndp-obtained
 .libndp-obtained:
-	cd $(SRC_PATH) && wget -O libndp-$(LIBNDP_VER).tar.gz $(LIBNDP_URL) && tar xf libndp-$(LIBNDP_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libndp-$(LIBNDP_VER).tar.gz $(LIBNDP_URL) && tar xf libndp-$(LIBNDP_VER).tar.gz
 	touch .libndp-obtained
 
 # Compile libndp
@@ -511,7 +512,7 @@ libndp: download-libndp .libndp-done
 # Download libffi
 download-libffi: .libffi-obtained
 .libffi-obtained:
-	cd $(SRC_PATH) && wget -O libffi-$(LIBFFI_VER).tar.gz $(LIBFFI_URL) && tar xf libffi-$(LIBFFI_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libffi-$(LIBFFI_VER).tar.gz $(LIBFFI_URL) && tar xf libffi-$(LIBFFI_VER).tar.gz
 	touch .libffi-obtained
 
 # Compile libffi
@@ -523,7 +524,7 @@ libffi: download-libffi .libffi-done
 # Download glib
 download-glib: .glib-obtained
 .glib-obtained:
-	cd $(SRC_PATH) && wget -O glib-$(GLIB_VER).tar.xz $(GLIB_URL) && tar xf glib-$(GLIB_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O glib-$(GLIB_VER).tar.xz $(GLIB_URL) && tar xf glib-$(GLIB_VER).tar.xz
 	touch .glib-obtained
 
 # Compile glib
@@ -539,7 +540,7 @@ glib: download-glib .glib-done
 # Download GnuTLS
 download-gnutls: .gnutls-obtained
 .gnutls-obtained:
-	cd $(SRC_PATH) && wget -O gnutls-$(GNUTLS_VER).tar.xz $(GNUTLS_URL) && tar xf gnutls-$(GNUTLS_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O gnutls-$(GNUTLS_VER).tar.xz $(GNUTLS_URL) && tar xf gnutls-$(GNUTLS_VER).tar.xz
 	touch .gnutls-obtained
 
 # Compile GnuTLS
@@ -553,7 +554,7 @@ gnutls: download-gnutls nettle libtasn1 .gnutls-done
 # Download nettle
 download-nettle: .nettle-obtained
 .nettle-obtained:
-	cd $(SRC_PATH) && wget -O nettle-$(NETTLE_VER).tar.gz $(NETTLE_URL) && tar xf nettle-$(NETTLE_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O nettle-$(NETTLE_VER).tar.gz $(NETTLE_URL) && tar xf nettle-$(NETTLE_VER).tar.gz
 	touch .nettle-obtained
 
 # Compile nettle
@@ -565,7 +566,7 @@ nettle: download-nettle .nettle-done
 # Download libtasn1
 download-libtasn1: .libtasn1-obtained
 .libtasn1-obtained:
-	cd $(SRC_PATH) && wget -O libtasn1-$(LIBTASN1_VER).tar.gz $(LIBTASN1_URL) && tar xf libtasn1-$(LIBTASN1_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libtasn1-$(LIBTASN1_VER).tar.gz $(LIBTASN1_URL) && tar xf libtasn1-$(LIBTASN1_VER).tar.gz
 	touch .libtasn1-obtained
 
 # Compile libtasn1
@@ -577,7 +578,7 @@ libtasn1: download-libtasn1 .libtasn1-done
 # Download P11-kit
 download-p11-kit: .p11-kit-obtained
 .p11-kit-obtained:
-	cd $(SRC_PATH) && wget -O p11-kit-$(P11_KIT_VER).tar.xz $(P11_KIT_URL) && tar xf p11-kit-$(P11_KIT_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O p11-kit-$(P11_KIT_VER).tar.xz $(P11_KIT_URL) && tar xf p11-kit-$(P11_KIT_VER).tar.xz
 	touch .p11-kit-obtained
 
 # Compile P11-kit
@@ -592,19 +593,19 @@ p11-kit: download-p11-kit .p11-kit-done
 # Download slang
 download-slang: .slang-obtained
 .slang-obtained:
-	cd $(SRC_PATH) && wget -O slang-$(SLANG_VER).tar.bz2 $(SLANG_URL) && tar xf slang-$(SLANG_VER).tar.bz2
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O slang-$(SLANG_VER).tar.bz2 $(SLANG_URL) && tar xf slang-$(SLANG_VER).tar.bz2
 	touch .slang-obtained
 
 # Compile slang
 slang: download-slang .slang-done
 .slang-done:
-	cd $(SLANG_PATH) && ./configure --prefix=/usr --sysconfdir=/etc --with-readline=gnu && $(MAKE) RPATH= && $(MAKE) DESTDIR=$(STAGING_PATH) RPATH= install
+	cd $(SLANG_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --with-readline=gnu && $(MAKE) RPATH= && $(MAKE) DESTDIR=$(STAGING_PATH) RPATH= install
 	touch .slang-done
 
 # Download curl
 download-curl: .curl-obtained
 .curl-obtained:
-	cd $(SRC_PATH) && wget -O curl-$(CURL_VER).tar.xz $(CURL_URL) && tar xf curl-$(CURL_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O curl-$(CURL_VER).tar.xz $(CURL_URL) && tar xf curl-$(CURL_VER).tar.xz
 	touch .curl-obtained
 
 # Compile curl
@@ -616,7 +617,7 @@ curl: download-curl .curl-done
 # Download wget
 download-wget: .wget-obtained
 .wget-obtained:
-	cd $(SRC_PATH) && wget -O wget-$(WGET_VER).tar.gz $(WGET_URL) && tar xf wget-$(WGET_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O wget-$(WGET_VER).tar.gz $(WGET_URL) && tar xf wget-$(WGET_VER).tar.gz
 	touch .wget-obtained
 
 # Compile wget
@@ -629,7 +630,7 @@ wget: download-wget .wget-done
 # Download nghttp2
 download-nghttp2: .nghttp2-obtained
 .nghttp2-obtained:
-	cd $(SRC_PATH) && wget -O nghttp2-$(NGHTTP2_VER).tar.xz $(NGHTTP2_URL) && tar xf nghttp2-$(NGHTTP2_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O nghttp2-$(NGHTTP2_VER).tar.xz $(NGHTTP2_URL) && tar xf nghttp2-$(NGHTTP2_VER).tar.xz
 	touch .nghttp2-obtained
 
 # Compile nghttp2
@@ -641,7 +642,7 @@ nghttp2: download-nghttp2 .nghttp2-done
 # Download jansson
 download-jansson: .jansson-obtained
 .jansson-obtained:
-	cd $(SRC_PATH) && wget -O jansson-$(JANSSON_VER).tar.bz2 $(JANSSON_URL) && tar xf jansson-$(JANSSON_VER).tar.bz2
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O jansson-$(JANSSON_VER).tar.bz2 $(JANSSON_URL) && tar xf jansson-$(JANSSON_VER).tar.bz2
 	touch .jansson-obtained
 
 # Compile jansson
@@ -653,20 +654,20 @@ jansson: download-jansson .jansson-done
 # Download iptables
 download-iptables: .iptables-obtained
 .iptables-obtained:
-	cd $(SRC_PATH) && wget -O iptables-$(IPTABLES_VER).tar.xz $(IPTABLES_URL) && tar xf iptables-$(IPTABLES_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O iptables-$(IPTABLES_VER).tar.xz $(IPTABLES_URL) && tar xf iptables-$(IPTABLES_VER).tar.xz
 	touch .iptables-obtained
 
 # Compile iptables
 iptables: download-iptables .iptables-done
 .iptables-done:
-	cd $(IPTABLES_PATH) && ./configure --prefix=/usr --disable-nftables --enable-libipq && $(MAKE) -j$(THREADS) && \
+	cd $(IPTABLES_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --disable-nftables --enable-libipq && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .iptables-done
 
 # Download flex
 download-flex: .flex-obtained
 .flex-obtained:
-	cd $(SRC_PATH) && wget -O flex-$(FLEX_VER).tar.gz $(FLEX_URL) && tar xf flex-$(FLEX_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O flex-$(FLEX_VER).tar.gz $(FLEX_URL) && tar xf flex-$(FLEX_VER).tar.gz
 	touch .flex-obtained
 
 # Compile flex
@@ -680,7 +681,7 @@ flex: download-flex .flex-done
 # Download the Arch user tool
 download-fastfetch: .fastfetch-obtained
 .fastfetch-obtained:
-	cd $(SRC_PATH) && wget -O fastfetch-$(FASTFETCH_VER).tar.gz $(FASTFETCH_URL) && tar xf fastfetch-$(FASTFETCH_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O fastfetch-$(FASTFETCH_VER).tar.gz $(FASTFETCH_URL) && tar xf fastfetch-$(FASTFETCH_VER).tar.gz
 	touch .fastfetch-obtained
 
 # Compile the Arch user tool
@@ -692,7 +693,7 @@ fastfetch: download-fastfetch .fastfetch-done
 # Download libnvme
 download-libnvme: .libnvme-obtained
 .libnvme-obtained:
-	cd $(SRC_PATH) && wget -O libnvme-$(LIBNVME_VER).tar.gz $(LIBNVME_URL) && tar xf libnvme-$(LIBNVME_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libnvme-$(LIBNVME_VER).tar.gz $(LIBNVME_URL) && tar xf libnvme-$(LIBNVME_VER).tar.gz
 	touch .libnvme-obtained
 
 # Compile libnvme
@@ -705,7 +706,7 @@ libnvme: download-libnvme .libnvme-done
 # Download findutils
 download-findutils: .findutils-obtained
 .findutils-obtained:
-	cd $(SRC_PATH) && wget -O findutils-$(FINDUTILS_VER).tar.xz $(FINDUTILS_URL) && tar xf findutils-$(FINDUTILS_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O findutils-$(FINDUTILS_VER).tar.xz $(FINDUTILS_URL) && tar xf findutils-$(FINDUTILS_VER).tar.xz
 	touch .findutils-obtained
 
 # Compile findutils
@@ -717,7 +718,7 @@ findutils: download-findutils .findutils-done
 # Download diffutils
 download-diffutils: .diffutils-obtained
 .diffutils-obtained:
-	cd $(SRC_PATH) && wget -O diffutils-$(DIFFUTILS_VER).tar.gz $(DIFFUTILS_URL) && tar xf diffutils-$(DIFFUTILS_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O diffutils-$(DIFFUTILS_VER).tar.gz $(DIFFUTILS_URL) && tar xf diffutils-$(DIFFUTILS_VER).tar.gz
 	touch .diffutils-obtained
 
 # Compile diffutils
@@ -729,7 +730,7 @@ diffutils: download-diffutils .diffutils-done
 # Download sed
 download-sed: .sed-obtained
 .sed-obtained:
-	cd $(SRC_PATH) && wget -O sed-$(SED_VER).tar.gz $(SED_URL) && tar xf sed-$(SED_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O sed-$(SED_VER).tar.gz $(SED_URL) && tar xf sed-$(SED_VER).tar.gz
 	touch .sed-obtained
 
 # Compile sed
@@ -741,7 +742,7 @@ sed: download-sed .sed-done
 # Download grep
 download-grep: .grep-obtained
 .grep-obtained:
-	cd $(SRC_PATH) && wget -O grep-$(GREP_VER).tar.gz $(GREP_URL) && tar xf grep-$(GREP_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O grep-$(GREP_VER).tar.gz $(GREP_URL) && tar xf grep-$(GREP_VER).tar.gz
 	touch .grep-obtained
 
 # Compile grep
@@ -753,7 +754,7 @@ grep: download-grep .grep-done
 # Download gawk
 download-gawk: .gawk-obtained
 .gawk-obtained:
-	cd $(SRC_PATH) && wget -O gawk-$(GAWK_VER).tar.gz $(GAWK_URL) && tar xf gawk-$(GAWK_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O gawk-$(GAWK_VER).tar.gz $(GAWK_URL) && tar xf gawk-$(GAWK_VER).tar.gz
 	touch .gawk-obtained
 
 # Compile gawk
@@ -765,7 +766,7 @@ gawk: download-gawk .gawk-done
 # Download mpfr
 download-mpfr: .mpfr-obtained
 .mpfr-obtained:
-	cd $(SRC_PATH) && wget -O mpfr-$(MPFR_VER).tar.gz $(MPFR_URL) && tar xf mpfr-$(MPFR_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O mpfr-$(MPFR_VER).tar.gz $(MPFR_URL) && tar xf mpfr-$(MPFR_VER).tar.gz
 	touch .mpfr-obtained
 
 # Compile mpfr
@@ -778,7 +779,7 @@ mpfr: download-mpfr .mpfr-done
 # Download nano
 download-nano: .nano-obtained
 .nano-obtained:
-	cd $(SRC_PATH) && wget -O nano-$(NANO_VER).tar.xz $(NANO_URL) && tar xf nano-$(NANO_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O nano-$(NANO_VER).tar.xz $(NANO_URL) && tar xf nano-$(NANO_VER).tar.xz
 	touch .nano-obtained
 
 # Compile nano
@@ -795,7 +796,7 @@ nano: download-nano .nano-done
 download-tar: .tar-obtained
 .tar-obtained:
 	# Ironic, untarring tar using tar.
-	cd $(SRC_PATH) && wget -O tar-$(TAR_VER).tar.gz $(TAR_URL) && tar xf tar-$(TAR_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O tar-$(TAR_VER).tar.gz $(TAR_URL) && tar xf tar-$(TAR_VER).tar.gz
 	touch .tar-obtained
 
 # Compile the ironic tool
@@ -811,45 +812,45 @@ tar: download-tar .tar-done
 # Download sudo
 download-sudo: .sudo-obtained
 .sudo-obtained:
-	cd $(SRC_PATH) && wget -O sudo-$(SUDO_VER).tar.gz $(SUDO_URL) && tar xf sudo-$(SUDO_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O sudo-$(SUDO_VER).tar.gz $(SUDO_URL) && tar xf sudo-$(SUDO_VER).tar.gz
 	touch .sudo-obtained
 
 # Compile sudo
 sudo: download-sudo .sudo-done
 .sudo-done:
-	cd $(SUDO_PATH) && ./configure --prefix=/usr --libexecdir=/usr/lib --with-secure-path --with-env-editor --docdir=/usr/share/doc/sudo-$(SUDO_VER) \
+	cd $(SUDO_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --libexecdir=/usr/lib --with-secure-path --with-env-editor --docdir=/usr/share/doc/sudo-$(SUDO_VER) \
 	--with-all-insults --with-passprompt="[sudo] password for %p: " && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .sudo-done
 
 # Download vim
 download-vim: .vim-obtained
 .vim-obtained:
-	cd $(SRC_PATH) && wget -O vim-$(VIM_VER).tar.gz $(VIM_URL) && tar xf vim-$(VIM_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O vim-$(VIM_VER).tar.gz $(VIM_URL) && tar xf vim-$(VIM_VER).tar.gz
 	touch .vim-obtained
 
 # Compile vim
 vim: download-vim .vim-done
 .vim-done:
-	cd $(VIM_PATH) && rm -f src/auto/config.cache && echo '#define SYS_VIMRC_FILE  "/etc/vimrc"' >> src/feature.h && ./configure --prefix=/usr --with-features=huge --enable-gui=no --without-x --without-wayland --disable-libsodium --disable-gpm --with-tlib=ncursesw && \
+	cd $(VIM_PATH) && rm -f src/auto/config.cache && echo '#define SYS_VIMRC_FILE  "/etc/vimrc"' >> src/feature.h && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --with-features=huge --enable-gui=no --without-x --without-wayland --disable-libsodium --disable-gpm --with-tlib=ncursesw && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && ln -snf ../vim/vim91/doc $(STAGING_PATH)/usr/share/doc/vim-$(VIM_VER)
 	touch .vim-done
 
 # Download rsync
 download-rsync: .rsync-obtained
 .rsync-obtained:
-	cd $(SRC_PATH) && wget -O rsync-$(RSYNC_VER).tar.gz $(RSYNC_URL) && tar xf rsync-$(RSYNC_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O rsync-$(RSYNC_VER).tar.gz $(RSYNC_URL) && tar xf rsync-$(RSYNC_VER).tar.gz
 	touch .rsync-obtained
 
 # Compile rsync
 rsync: download-rsync .rsync-done
 .rsync-done:
-	cd $(RSYNC_PATH) && ./configure --prefix=/usr --disable-xxhash --without-included-zlib && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(RSYNC_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --disable-xxhash --without-included-zlib && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .rsync-done
 
 # Download dosfstools
 download-dosfstools: .dosfstools-obtained
 .dosfstools-obtained:
-	cd $(SRC_PATH) && wget -O dosfstools-$(DOSFSTOOLS_VER).tar.gz $(DOSFSTOOLS_URL) && tar xf dosfstools-$(DOSFSTOOLS_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O dosfstools-$(DOSFSTOOLS_VER).tar.gz $(DOSFSTOOLS_URL) && tar xf dosfstools-$(DOSFSTOOLS_VER).tar.gz
 	touch .dosfstools-obtained
 
 # Compile dosfstools
@@ -861,7 +862,7 @@ dosfstools: download-dosfstools .dosfstools-done
 # Download tzdb
 download-tzdb: .tzdb-obtained
 .tzdb-obtained:
-	cd $(SRC_PATH) && wget -O tzdb-$(TZDB_VER).tar.lz $(TZDB_URL) && tar xf tzdb-$(TZDB_VER).tar.lz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O tzdb-$(TZDB_VER).tar.lz $(TZDB_URL) && tar xf tzdb-$(TZDB_VER).tar.lz
 	touch .tzdb-obtained
 
 # Compile tzdb
@@ -873,7 +874,7 @@ tzdb: download-tzdb .tzdb-done
 # Download parted
 download-parted: .parted-obtained
 .parted-obtained:
-	cd $(SRC_PATH) && wget -O parted-$(PARTED_VER).tar.xz $(PARTED_URL) && tar xf parted-$(PARTED_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O parted-$(PARTED_VER).tar.xz $(PARTED_URL) && tar xf parted-$(PARTED_VER).tar.xz
 	touch .parted-obtained
 
 # Compile parted
@@ -885,7 +886,7 @@ parted: download-parted .parted-done
 # Download make-ca
 download-make-ca: .make-ca-obtained
 .make-ca-obtained:
-	cd $(SRC_PATH) && wget -O make-ca-$(MAKE_CA_VER).tar.gz $(MAKE_CA_URL) && tar xf make-ca-$(MAKE_CA_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O make-ca-$(MAKE_CA_VER).tar.gz $(MAKE_CA_URL) && tar xf make-ca-$(MAKE_CA_VER).tar.gz
 	touch .make-ca-obtained
 
 make-ca: download-make-ca .make-ca-done
@@ -905,7 +906,7 @@ make-ca: download-make-ca .make-ca-done
 # Download gettext
 download-gettext: .gettext-obtained
 .gettext-obtained:
-	cd $(SRC_PATH) && wget -O gettext-$(GETTEXT_VER).tar.xz $(GETTEXT_URL) && tar xf gettext-$(GETTEXT_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O gettext-$(GETTEXT_VER).tar.xz $(GETTEXT_URL) && tar xf gettext-$(GETTEXT_VER).tar.xz
 	touch .gettext-obtained
 
 # Compile gettext
@@ -932,7 +933,7 @@ gettext: download-gettext .gettext-done
 # Download which
 download-which: .which-obtained
 .which-obtained:
-	cd $(SRC_PATH) && wget -O which-$(WHICH_VER).tar.gz $(WHICH_URL) && tar xf which-$(WHICH_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O which-$(WHICH_VER).tar.gz $(WHICH_URL) && tar xf which-$(WHICH_VER).tar.gz
 	touch .which-obtained
 
 # Compile which
@@ -944,7 +945,7 @@ which: download-which .which-done
 # Download unzip
 download-unzip: .unzip-obtained
 .unzip-obtained:
-	cd $(SRC_PATH) && wget -O unzip60.tar.gz $(UNZIP_URL) && tar xf unzip60.tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O unzip60.tar.gz $(UNZIP_URL) && tar xf unzip60.tar.gz
 	touch .unzip-obtained
 
 # Compile unzip
@@ -976,7 +977,7 @@ unzip: download-unzip .unzip-done
 # Download kmod
 download-kmod: .kmod-obtained
 .kmod-obtained:
-	cd $(SRC_PATH) && wget -O kmod-$(KMOD_VER).tar.xz $(KMOD_URL) && tar xf kmod-$(KMOD_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O kmod-$(KMOD_VER).tar.xz $(KMOD_URL) && tar xf kmod-$(KMOD_VER).tar.xz
 	touch .kmod-obtained
 
 # Compile kmod (meson build; -Dmanpages=false skips the scdoc dependency)
@@ -989,7 +990,7 @@ kmod: download-kmod .kmod-done
 # Download pciutils
 download-pciutils: .pciutils-obtained
 .pciutils-obtained:
-	cd $(SRC_PATH) && wget -O pciutils-$(PCIUTILS_VER).tar.gz $(PCIUTILS_URL) && tar xf pciutils-$(PCIUTILS_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O pciutils-$(PCIUTILS_VER).tar.gz $(PCIUTILS_URL) && tar xf pciutils-$(PCIUTILS_VER).tar.gz
 	touch .pciutils-obtained
 
 # Compile pciutils
@@ -1001,17 +1002,17 @@ download-pciutils: .pciutils-obtained
 pciutils: download-pciutils kmod .pciutils-done
 .pciutils-done:
 	cd $(PCIUTILS_PATH) && \
-	$(MAKE) -j$(THREADS) OPT="-O2" ZLIB=no SHARED=no all && \
+	$(MAKE) -j$(THREADS) OPT="-O2 -std=gnu17" ZLIB=no SHARED=no all && \
 	$(MAKE) clean && \
-	$(MAKE) -j$(THREADS) OPT="-O2" ZLIB=no SHARED=yes all && \
-	$(MAKE) DESTDIR=$(STAGING_PATH) OPT="-O2" ZLIB=no SHARED=yes install install-lib PREFIX=/usr SBINDIR=/usr/bin SHAREDIR=/usr/share/hwdata MANDIR=/usr/share/man
+	$(MAKE) -j$(THREADS) OPT="-O2 -std=gnu17" ZLIB=no SHARED=yes all && \
+	$(MAKE) DESTDIR=$(STAGING_PATH) OPT="-O2 -std=gnu17" ZLIB=no SHARED=yes install install-lib PREFIX=/usr SBINDIR=/usr/bin SHAREDIR=/usr/share/hwdata MANDIR=/usr/share/man
 	rm -f $(STAGING_PATH)/usr/bin/update-pciids $(STAGING_PATH)/usr/share/man/man8/update-pciids.8
 	touch .pciutils-done
 
 # Download psmisc
 download-psmisc: .psmisc-obtained
 .psmisc-obtained:
-	cd $(SRC_PATH) && wget -O psmisc-$(PSMISC_VER).tar.gz $(PSMISC_URL) && tar xf psmisc-$(PSMISC_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O psmisc-$(PSMISC_VER).tar.gz $(PSMISC_URL) && tar xf psmisc-$(PSMISC_VER).tar.gz
 	touch .psmisc-obtained
 
 # Compile psmisc
@@ -1023,7 +1024,7 @@ psmisc: download-psmisc .psmisc-done
 # Download licenses (SPDX license-list-data)
 download-licenses: .licenses-obtained
 .licenses-obtained:
-	cd $(SRC_PATH) && wget -O license-list-data-$(LICENSES_VER).tar.gz $(LICENSES_URL) && tar xf license-list-data-$(LICENSES_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O license-list-data-$(LICENSES_VER).tar.gz $(LICENSES_URL) && tar xf license-list-data-$(LICENSES_VER).tar.gz
 	touch .licenses-obtained
 
 # Compile licenses

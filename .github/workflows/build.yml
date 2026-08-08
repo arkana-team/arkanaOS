@@ -13,6 +13,7 @@ jobs:
   base:
     name: 1. Build Base System (Glibc, GCC, Systemd)
     runs-on: ubuntu-latest
+    timeout-minutes: 360
 
     steps:
       - name: Checkout Repository
@@ -78,6 +79,9 @@ jobs:
           name: base-error-logs
           path: |
             src/*/build/meson-logs/
+            src/*/config.log
+            src/*/build/CMakeOutput.log
+            src/*/build/CMakeError.log
           retention-days: 7
 
   # Stage 2: Extensions & Toolchain
@@ -85,6 +89,7 @@ jobs:
     name: 2. Build Extensions & Toolchain
     needs: base
     runs-on: ubuntu-latest
+    timeout-minutes: 360
 
     steps:
       - name: Checkout Repository
@@ -94,6 +99,7 @@ jobs:
         run: |
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /opt/hostedtoolcache
           sudo docker image prune --all --force || true
+          df -h
 
       - name: Setup & Persist Ccache Across Runs
         uses: hendrikmuhs/ccache-action@v1.2
@@ -148,6 +154,9 @@ jobs:
           name: toolchain-error-logs
           path: |
             src/*/build/meson-logs/
+            src/*/config.log
+            src/*/build/CMakeOutput.log
+            src/*/build/CMakeError.log
           retention-days: 7
 
   # Stage 3: Graphics & Window Maker Desktop
@@ -155,6 +164,7 @@ jobs:
     name: 3. Build Graphics Stack & Window Maker
     needs: toolchain
     runs-on: ubuntu-latest
+    timeout-minutes: 360
 
     steps:
       - name: Checkout Repository
@@ -164,6 +174,7 @@ jobs:
         run: |
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /opt/hostedtoolcache
           sudo docker image prune --all --force || true
+          df -h
 
       - name: Setup & Persist Ccache Across Runs
         uses: hendrikmuhs/ccache-action@v1.2
@@ -218,6 +229,9 @@ jobs:
           name: graphics-error-logs
           path: |
             src/*/build/meson-logs/
+            src/*/config.log
+            src/*/build/CMakeOutput.log
+            src/*/build/CMakeError.log
           retention-days: 7
 
   # Stage 4: Firefox Placement, Initramfs & Final ISO Creation (ALWAYS LAST!)
@@ -225,6 +239,7 @@ jobs:
     name: 4. Assemble Bootable ISO (Firefox & GRUB)
     needs: graphics
     runs-on: ubuntu-latest
+    timeout-minutes: 360
 
     steps:
       - name: Checkout Repository
@@ -234,6 +249,7 @@ jobs:
         run: |
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /opt/hostedtoolcache
           sudo docker image prune --all --force || true
+          df -h
 
       - name: Setup & Persist Ccache Across Runs
         uses: hendrikmuhs/ccache-action@v1.2

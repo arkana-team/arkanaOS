@@ -10,3 +10,15 @@ iso-staging
 staging
 src
 output
+
+# Scratch / debug scripts
+*.py
+check_*.sh
+audit_*.sh
+*.log
+*.tar
+*.tar.gz
+*.tar.zst
+arkana-*.tar
+arkana-*.tar.zst
+
