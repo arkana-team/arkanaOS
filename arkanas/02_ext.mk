@@ -376,6 +376,7 @@ download-iproute2: .iproute2-obtained
 
 # Compile iproute2
 iproute2: download-iproute2 .iproute2-done
+.iproute2-done:
 	cd $(IPROUTE2_PATH) && sed -i /ARPD/d Makefile && rm -f man/man8/arpd.8 && $(MAKE) -j$(THREADS) NETNS_RUN_DIR=/run/netns && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .iproute2-done
