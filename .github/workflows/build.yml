@@ -62,7 +62,7 @@ jobs:
             arkana-builder bash -c "sudo make -f arkanas/01_base.mk"
 
       - name: Archive Base Staging
-        run: tar -cf arkana-base-staging.tar staging src
+        run: sudo tar -cf arkana-base-staging.tar staging src && sudo chown $USER:$USER arkana-base-staging.tar
 
       - name: Upload Base Staging Artifact
         uses: actions/upload-artifact@v4
@@ -108,7 +108,7 @@ jobs:
           name: arkana-base-staging
 
       - name: Unarchive Base Staging
-        run: tar -xf arkana-base-staging.tar && rm arkana-base-staging.tar
+        run: sudo tar -xf arkana-base-staging.tar && rm arkana-base-staging.tar
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -132,7 +132,7 @@ jobs:
             arkana-builder bash -c "sudo make -f arkanas/02_ext.mk && sudo make -f arkanas/03_arkpkg.mk && sudo make -f arkanas/04_toolchain.mk"
 
       - name: Archive Toolchain Staging
-        run: tar -cf arkana-toolchain-staging.tar staging src
+        run: sudo tar -cf arkana-toolchain-staging.tar staging src && sudo chown $USER:$USER arkana-toolchain-staging.tar
 
       - name: Upload Toolchain Staging Artifact
         uses: actions/upload-artifact@v4
@@ -178,7 +178,7 @@ jobs:
           name: arkana-toolchain-staging
 
       - name: Unarchive Toolchain Staging
-        run: tar -xf arkana-toolchain-staging.tar && rm arkana-toolchain-staging.tar
+        run: sudo tar -xf arkana-toolchain-staging.tar && rm arkana-toolchain-staging.tar
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -202,7 +202,7 @@ jobs:
             arkana-builder bash -c "sudo make -f arkanas/05_graphics.mk && sudo make -f arkanas/06_graphics_ext.mk"
 
       - name: Archive Graphics Staging
-        run: tar -cf arkana-graphics-staging.tar staging src
+        run: sudo tar -cf arkana-graphics-staging.tar staging src && sudo chown $USER:$USER arkana-graphics-staging.tar
 
       - name: Upload Graphics Staging Artifact
         uses: actions/upload-artifact@v4
@@ -248,7 +248,7 @@ jobs:
           name: arkana-graphics-staging
 
       - name: Unarchive Graphics Staging
-        run: tar -xf arkana-graphics-staging.tar && rm arkana-graphics-staging.tar
+        run: sudo tar -xf arkana-graphics-staging.tar && rm arkana-graphics-staging.tar
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
