@@ -342,7 +342,7 @@ LICENSES_EXCEPTIONS = \
 	LLGPL Linux-syscall-note MPL-2.0-no-copyleft-exception
 
 # Targets
-all: less procps-ng iproute2 iputils iptables libbpf libmnl libidn2 libunistring libnfnetlink libpsl slang newt libndp libffi glib nettle libtasn1 p11-kit gnutls nghttp2 curl jansson networkmanager wget flex libnvme fastfetch findutils sed grep diffutils gawk mpfr nano tar sudo vim rsync dosfstools tzdb parted make-ca gettext which unzip kmod pciutils psmisc licenses
+all: less procps-ng iproute2 iputils iptables libbpf libmnl libidn2 libunistring libnfnetlink libpsl slang newt libndp libffi glib nettle libtasn1 p11-kit gnutls nghttp2 curl jansson networkmanager wget --tries=5 --timeout=30 flex libnvme fastfetch findutils sed grep diffutils gawk mpfr nano tar sudo vim rsync dosfstools tzdb parted make-ca gettext which unzip kmod pciutils psmisc licenses
 
 # Download less
 download-less: .less-obtained
@@ -353,7 +353,7 @@ download-less: .less-obtained
 # Compile less
 less: download-less .less-done
 .less-done:
-	cd $(LESS_PATH) && ./configure --prefix=/usr --sysconfdir=/etc && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LESS_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .less-done
 
 # Download procps-ng
@@ -432,7 +432,7 @@ download-libmnl: .libmnl-obtained
 # Compile libmnl
 libmnl: download-libmnl .libmnl-done
 .libmnl-done:
-	cd $(LIBMNL_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBMNL_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libmnl-done
 
 # Download libidn2
@@ -445,7 +445,7 @@ download-libidn2: .libidn2-obtained
 libidn2: download-libidn2 .libidn2-done
 
 .libidn2-done:
-	cd $(LIBIDN2_PATH) && ./configure --prefix=/usr && mkdir -p unistring/.libs gl/.libs && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBIDN2_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && mkdir -p unistring/.libs gl/.libs && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libidn2-done
 
 # Download libunistring
@@ -457,7 +457,7 @@ download-libunistring: .libunistring-obtained
 # Compile libunistring
 libunistring: download-libunistring .libunistring-done
 .libunistring-done:
-	cd $(LIBUNISTRING_PATH) && ./configure --prefix=/usr --docdir=/usr/share/doc/libunistring-$(LIBUNISTRING_VER) && \
+	cd $(LIBUNISTRING_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --docdir=/usr/share/doc/libunistring-$(LIBUNISTRING_VER) && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libunistring-done
 
@@ -470,7 +470,7 @@ download-libnfnetlink: .libnfnetlink-obtained
 # Compile libnfnetlink
 libnfnetlink: download-libnfnetlink .libnfnetlink-done
 .libnfnetlink-done:
-	cd $(LIBNFNETLINK_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBNFNETLINK_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libnfnetlink-done
 
 # Download libpsl
@@ -506,7 +506,7 @@ download-libndp: .libndp-obtained
 # Compile libndp
 libndp: download-libndp .libndp-done
 .libndp-done:
-	cd $(LIBNDP_PATH) && ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBNDP_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libndp-done
 
 # Download libffi
@@ -518,7 +518,7 @@ download-libffi: .libffi-obtained
 # Compile libffi
 libffi: download-libffi .libffi-done
 .libffi-done:
-	cd $(LIBFFI_PATH) && ./configure --prefix=/usr --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBFFI_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libffi-done
 
 # Download glib
@@ -546,7 +546,7 @@ download-gnutls: .gnutls-obtained
 # Compile GnuTLS
 gnutls: download-gnutls nettle libtasn1 .gnutls-done
 .gnutls-done:
-	cd $(GNUTLS_PATH) && PKG_CONFIG_PATH=$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig CPPFLAGS="-I$(STAGING_PATH)/usr/include -D_GNU_SOURCE" LDFLAGS="-L$(STAGING_PATH)/usr/lib" ./configure --prefix=/usr --docdir=/usr/share/doc/gnutls-$(GNUTLS_VER) --with-default-trust-store-pkcs11="pkcs11:" ac_cv_func_memset_explicit=no gl_cv_func_memset_explicit=no --disable-doc && \
+	cd $(GNUTLS_PATH) && PKG_CONFIG_PATH=$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig CPPFLAGS="-I$(STAGING_PATH)/usr/include -D_GNU_SOURCE" LDFLAGS="-L$(STAGING_PATH)/usr/lib" CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --docdir=/usr/share/doc/gnutls-$(GNUTLS_VER) --with-default-trust-store-pkcs11="pkcs11:" ac_cv_func_memset_explicit=no gl_cv_func_memset_explicit=no --disable-doc && \
 	find . -name "read-file.c" -exec sed -i 's/memset_explicit/memset/g' {} + && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .gnutls-done
@@ -560,7 +560,7 @@ download-nettle: .nettle-obtained
 # Compile nettle
 nettle: download-nettle .nettle-done
 .nettle-done:
-	cd $(NETTLE_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && chmod -v 755 $(STAGING_PATH)/usr/lib/lib{hogweed,nettle}.so
+	cd $(NETTLE_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && chmod -v 755 $(STAGING_PATH)/usr/lib/lib{hogweed,nettle}.so
 	touch .nettle-done
 
 # Download libtasn1
@@ -572,7 +572,7 @@ download-libtasn1: .libtasn1-obtained
 # Compile libtasn1
 libtasn1: download-libtasn1 .libtasn1-done
 .libtasn1-done:
-	cd $(LIBTASN1_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBTASN1_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libtasn1-done
 
 # Download P11-kit
@@ -611,7 +611,7 @@ download-curl: .curl-obtained
 # Compile curl
 curl: download-curl .curl-done
 .curl-done:
-	cd $(CURL_PATH) && ./configure --prefix=/usr --enable-versioned-symbols --with-gssapi --with-openssl --with-ca-path=/etc/ssl/certs --without-brotli --without-zstd && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(CURL_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --enable-versioned-symbols --with-gssapi --with-openssl --with-ca-path=/etc/ssl/certs --without-brotli --without-zstd && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .curl-done
 
 # Download wget
@@ -621,9 +621,9 @@ download-wget: .wget-obtained
 	touch .wget-obtained
 
 # Compile wget
-wget: download-wget .wget-done
+wget: download-wget --tries=5 --timeout=30 .wget-done
 .wget-done:
-	cd $(WGET_PATH) && ./configure --prefix=/usr --sysconfdir=/etc --with-ssl=openssl && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(WGET_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --with-ssl=openssl && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	printf 'ca_certificate = /etc/ssl/ca-bundle.crt\n' > $(STAGING_PATH)/etc/wgetrc
 	touch .wget-done
 
@@ -636,7 +636,7 @@ download-nghttp2: .nghttp2-obtained
 # Compile nghttp2
 nghttp2: download-nghttp2 .nghttp2-done
 .nghttp2-done:
-	cd $(NGHTTP2_PATH) && ./configure --prefix=/usr --enable-lib-only --docdir=/usr/share/doc/nghttp2-$(NGHTTP2_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(NGHTTP2_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --enable-lib-only --docdir=/usr/share/doc/nghttp2-$(NGHTTP2_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .nghttp2-done
 
 # Download jansson
@@ -648,7 +648,7 @@ download-jansson: .jansson-obtained
 # Compile jansson
 jansson: download-jansson .jansson-done
 .jansson-done:
-	cd $(JANSSON_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(JANSSON_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .jansson-done
 
 # Download iptables
@@ -673,7 +673,7 @@ download-flex: .flex-obtained
 # Compile flex
 flex: download-flex .flex-done
 .flex-done:
-	cd $(FLEX_PATH) && ./configure --prefix=/usr --docdir=/usr/share/doc/flex-$(FLEX_VER) && $(MAKE) -j$(THREADS) && \
+	cd $(FLEX_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --docdir=/usr/share/doc/flex-$(FLEX_VER) && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install && ln -sf flex $(STAGING_PATH)/usr/bin/lex && \
 	ln -sf flex.1 $(STAGING_PATH)/usr/share/man/man1/lex.1
 	touch .flex-done
@@ -712,7 +712,7 @@ download-findutils: .findutils-obtained
 # Compile findutils
 findutils: download-findutils .findutils-done
 .findutils-done:
-	cd $(FINDUTILS_PATH) && ./configure --prefix=/usr --localstatedir=/var/lib/locate && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(FINDUTILS_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --localstatedir=/var/lib/locate && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .findutils-done
 
 # Download diffutils
@@ -724,7 +724,7 @@ download-diffutils: .diffutils-obtained
 # Compile diffutils
 diffutils: download-diffutils .diffutils-done
 .diffutils-done:
-	cd $(DIFFUTILS_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(DIFFUTILS_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .diffutils-done
 
 # Download sed
@@ -736,7 +736,7 @@ download-sed: .sed-obtained
 # Compile sed
 sed: download-sed .sed-done
 .sed-done:
-	cd $(SED_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(SED_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .sed-done
 
 # Download grep
@@ -748,7 +748,7 @@ download-grep: .grep-obtained
 # Compile grep
 grep: download-grep .grep-done
 .grep-done:
-	cd $(GREP_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(GREP_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .grep-done
 
 # Download gawk
@@ -760,7 +760,7 @@ download-gawk: .gawk-obtained
 # Compile gawk
 gawk: download-gawk .gawk-done
 .gawk-done:
-	cd $(GAWK_PATH) && sed -i 's/extras//' Makefile.in && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(GAWK_PATH) && sed -i 's/extras//' Makefile.in && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .gawk-done
 
 # Download mpfr
@@ -772,7 +772,7 @@ download-mpfr: .mpfr-obtained
 # Compile mpfr
 mpfr: download-mpfr .mpfr-done
 .mpfr-done:
-	cd $(MPFR_PATH) && ./configure --prefix=/usr --enable-thread-safe --docdir=/usr/share/doc/mpfr-$(MPFR_VER) && $(MAKE) -j$(THREADS) && \
+	cd $(MPFR_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --enable-thread-safe --docdir=/usr/share/doc/mpfr-$(MPFR_VER) && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .mpfr-done
 
@@ -802,7 +802,7 @@ download-tar: .tar-obtained
 # Compile the ironic tool
 tar: download-tar .tar-done
 .tar-done:
-	cd $(TAR_PATH) && FORCE_UNSAFE_CONFIGURE=1 ./configure --prefix=/usr && \
+	cd $(TAR_PATH) && FORCE_UNSAFE_CONFIGURE=1 CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && \
 	sed -i 's/acl_get_file_at/tar_acl_get_file_at/g' src/xattrs.c && \
 	sed -i 's/acl_set_file_at/tar_acl_set_file_at/g' src/xattrs.c && \
 	sed -i 's/acl_delete_def_file_at/tar_acl_delete_def_file_at/g' src/xattrs.c && \
@@ -856,7 +856,7 @@ download-dosfstools: .dosfstools-obtained
 # Compile dosfstools
 dosfstools: download-dosfstools .dosfstools-done
 .dosfstools-done:
-	cd $(DOSFSTOOLS_PATH) && ./configure --prefix=/usr --enable-compat-symlinks --mandir=/usr/share/man --docdir=/usr/share/doc/dosfstools-$(DOSFSTOOLS_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(DOSFSTOOLS_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --enable-compat-symlinks --mandir=/usr/share/man --docdir=/usr/share/doc/dosfstools-$(DOSFSTOOLS_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .dosfstools-done
 
 # Download tzdb
@@ -868,7 +868,7 @@ download-tzdb: .tzdb-obtained
 # Compile tzdb
 tzdb: download-tzdb .tzdb-done
 .tzdb-done:
-	cd $(TZDB_PATH) && $(MAKE) CFLAGS="-std=c99" -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(TZDB_PATH) && sed -i '/^CFLAGS/ s/$$/ -std=c99/' Makefile && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .tzdb-done
 
 # Download parted
@@ -919,7 +919,7 @@ download-gettext: .gettext-obtained
 gettext: download-gettext .gettext-done
 .gettext-done:
 	cd $(GETTEXT_PATH) && \
-	./configure --prefix=/usr \
+	CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr \
 		--disable-java \
 		--disable-native-java \
 		--disable-csharp \
@@ -939,7 +939,7 @@ download-which: .which-obtained
 # Compile which
 which: download-which .which-done
 .which-done:
-	cd $(WHICH_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(WHICH_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .which-done
 
 # Download unzip
@@ -1018,7 +1018,7 @@ download-psmisc: .psmisc-obtained
 # Compile psmisc
 psmisc: download-psmisc .psmisc-done
 .psmisc-done:
-	cd $(PSMISC_PATH) && ./autogen.sh && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(PSMISC_PATH) && ./autogen.sh && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .psmisc-done
 
 # Download licenses (SPDX license-list-data)

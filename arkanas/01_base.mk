@@ -365,8 +365,8 @@ glibc: download-glibc .glibc-done
 
 .glibc-done:
 	mkdir -p $(GLIBC_PATH)/build
-	cd $(GLIBC_PATH)/build && ../configure --prefix=/usr --disable-werror --enable-kernel=5.4 \
-	--enable-stack-protector=strong --disable-nscd --enable-shared libc_cv_slibdir=/usr/lib && $(MAKE) CFLAGS="-O2" -j$(THREADS) && \
+	cd $(GLIBC_PATH)/build && CFLAGS="-O2 -std=gnu17" ../configure --prefix=/usr --disable-werror --enable-kernel=5.4 \
+	--enable-stack-protector=strong --disable-nscd --enable-shared libc_cv_slibdir=/usr/lib && sed -i '/^CFLAGS/ s/$$/ -O2/' Makefile && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	grep -q 'IPPROTO_AGGFRAG' $(STAGING_PATH)/usr/include/netinet/in.h || \
 	  sed -i '/IPPROTO_RAW = 255/a\\    IPPROTO_AGGFRAG = 147,' $(STAGING_PATH)/usr/include/netinet/in.h
@@ -433,7 +433,7 @@ coreutils: download-coreutils .coreutils-done
 
 .coreutils-done:
 	cd $(COREUTILS_PATH) && autoreconf -fv && automake -af && FORCE_UNSAFE_CONFIGURE=1 \
-	./configure --prefix=/usr --enable-no-install-program=kill,uptime && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --enable-no-install-program=kill,uptime && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .coreutils-done
 
 # Download util-linux
@@ -450,7 +450,7 @@ util-linux: download-util-linux .util-linux-done
 
 .util-linux-done:
 	cd $(UTIL_LINUX_PATH) && \
-	./configure --bindir=/usr/bin --libdir=/usr/lib --sbindir=/usr/sbin \
+	CFLAGS="-O2 -std=gnu17" ./configure --bindir=/usr/bin --libdir=/usr/lib --sbindir=/usr/sbin \
 	--runstatedir=/run --disable-chfn-chsh --disable-login --disable-nologin --disable-su --disable-setpriv \
 	--disable-runuser --disable-pylibmount --disable-liblastlog2 --disable-lsfd --without-python \
 	ADJTIME_PATH=/var/lib/hwclock/adjtime --docdir=/usr/share/doc/util-linux-$(UTIL_LINUX_VER) && $(MAKE) -j$(THREADS) && \
@@ -470,7 +470,7 @@ download-bash: .bash-obtained
 bash: download-bash .bash-done
 
 .bash-done:
-	cd $(BASH_PATH) && ./configure --prefix=/usr --without-bash-malloc && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
+	cd $(BASH_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --without-bash-malloc && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
 	ln -sf bash $(STAGING_PATH)/usr/bin/sh && cp -a /etc/profile $(STAGING_PATH)/etc/profile && cp -a /etc/bash.bashrc $(STAGING_PATH)/etc/bash.bashrc
 	touch .bash-done
 
@@ -485,7 +485,7 @@ download-file: .file-obtained
 file: download-file .file-done
 
 .file-done:
-	cd $(FILE_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(FILE_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .file-done
 
 # Download LVM2
@@ -501,7 +501,7 @@ download-lvm2: .lvm2-obtained
 lvm2: download-lvm2 .lvm2-done
 
 .lvm2-done:
-	cd $(LVM2_PATH) && ./configure --prefix=/usr --enable-cmdlib --enable-pkgconfig --enable-udev_sync && $(MAKE) -j$(THREADS) && \
+	cd $(LVM2_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --enable-cmdlib --enable-pkgconfig --enable-udev_sync && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) -C tools install_tools_dynamic && $(MAKE) DESTDIR=$(STAGING_PATH) -C udev install && $(MAKE) DESTDIR=$(STAGING_PATH) -C libdm install
 	touch .lvm2-done
 
@@ -518,7 +518,7 @@ download-e2fsprogs: .e2fsprogs-obtained
 e2fsprogs: download-e2fsprogs .e2fsprogs-done
 
 .e2fsprogs-done:
-	mkdir -p $(E2FSPROGS_PATH)/build && cd $(E2FSPROGS_PATH)/build && ../configure --prefix=/usr --sysconfdir=/etc --enable-elf-shlibs --disable-libblkid --disable-libuuid \
+	mkdir -p $(E2FSPROGS_PATH)/build && cd $(E2FSPROGS_PATH)/build && CFLAGS="-O2 -std=gnu17" ../configure --prefix=/usr --sysconfdir=/etc --enable-elf-shlibs --disable-libblkid --disable-libuuid \
 	--disable-uuidd --disable-fsck && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .e2fsprogs-done
 
@@ -545,7 +545,7 @@ gcc: download-gcc .gcc-done
 	./contrib/download_prerequisites --no-force && \
 	find libcody -type f \( -name "*.cc" -o -name "*.hh" \) -exec sed -i 's/u8"/\"/g' {} +
 	rm -rf $(GCC_PATH)/build
-	mkdir -p $(GCC_PATH)/build && cd $(GCC_PATH)/build && ../configure --prefix=/usr --disable-multilib \
+	mkdir -p $(GCC_PATH)/build && cd $(GCC_PATH)/build && CFLAGS="-O2 -std=gnu17" ../configure --prefix=/usr --disable-multilib \
 	--enable-languages=c,c++ --disable-bootstrap --disable-libsanitizer --disable-libvtv --disable-libitm --disable-libquadmath && $(MAKE) -j$(THREADS) all-target-libstdc++-v3 all-target-libgcc && $(MAKE) DESTDIR=$(STAGING_PATH) install-target-libstdc++-v3 install-target-libgcc
 	touch .gcc-done
 
@@ -562,7 +562,7 @@ download-ncurses: .ncurses-obtained
 ncurses: download-ncurses .ncurses-done
 
 .ncurses-done:
-	cd $(NCURSES_PATH) && ./configure --prefix=/usr --mandir=/usr/share/man --with-shared --without-debug \
+	cd $(NCURSES_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --mandir=/usr/share/man --with-shared --without-debug \
 	--without-normal --without-cxx --without-cxx-binding --enable-pc-files --with-pkg-config-libdir=/usr/lib/pkgconfig \
 	--with-versioned-syms && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	ln -sf libncursesw.so $(STAGING_PATH)/usr/lib/libcurses.so
@@ -581,7 +581,7 @@ download-acl: .acl-obtained
 acl: download-acl .acl-done
 
 .acl-done:
-	cd $(ACL_PATH) && ./configure --prefix=/usr --docdir=/usr/share/doc/acl-$(ACL_VER) && \
+	cd $(ACL_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --docdir=/usr/share/doc/acl-$(ACL_VER) && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .acl-done
 
@@ -616,7 +616,7 @@ download-libseccomp: .libseccomp-obtained
 libseccomp: download-libseccomp .libseccomp-done
 
 .libseccomp-done:
-	cd $(LIBSECCOMP_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBSECCOMP_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libseccomp-done
 
 # Download GMP
@@ -649,7 +649,7 @@ download-libxcrypt: .libxcrypt-obtained
 libxcrypt: download-libxcrypt .libxcrypt-done
 
 .libxcrypt-done:
-	cd $(LIBXCRYPT_PATH) && ./configure --prefix=/usr --enable-hashes=strong,glibc --enable-obsolete-api=no \
+	cd $(LIBXCRYPT_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --enable-hashes=strong,glibc --enable-obsolete-api=no \
 	--disable-failure-tokens --disable-werror && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libxcrypt-done
 
@@ -712,7 +712,7 @@ shadow: download-shadow .shadow-done
 	sed -e 's@#ENCRYPT_METHOD DES@ENCRYPT_METHOD YESCRYPT@' -e 's@/var/spool/mail@/var/mail@' -e '/PATH=/{s@/sbin:@@;s@/bin:@@}' -i etc/login.defs && \
 	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
 	CPPFLAGS="-I$(STAGING_PATH)/usr/include" CFLAGS="-I$(STAGING_PATH)/usr/include -std=gnu17" LDFLAGS="-L$(STAGING_PATH)/usr/lib" \
-	ac_cv_func_memset_explicit=no ./configure --sysconfdir=/etc --without-libbsd --with-{b,yes}crypt && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	ac_cv_func_memset_explicit=no CFLAGS="-O2 -std=gnu17" ./configure --sysconfdir=/etc --without-libbsd --with-{b,yes}crypt && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .shadow-done
 
 # Download attr
@@ -728,7 +728,7 @@ download-attr: .attr-obtained
 attr: download-attr .attr-done
 
 .attr-done:
-	cd $(ATTR_PATH) && ./configure --prefix=/usr --sysconfdir=/etc --docdir=/usr/share/doc/attr-$(ATTR_VER) && $(MAKE) -j$(THREADS) && \
+	cd $(ATTR_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --docdir=/usr/share/doc/attr-$(ATTR_VER) && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .attr-done
 
@@ -745,7 +745,7 @@ download-linux-audit: .linux-audit-obtained
 linux-audit: download-linux-audit .linux-audit-done
 
 .linux-audit-done:
-	cd $(LINUX_AUDIT_PATH) && autoreconf -fi && ./configure --prefix=/usr --without-python3 --with-libcap-ng=yes --without-golang --with-io_uring --disable-werror && \
+	cd $(LINUX_AUDIT_PATH) && autoreconf -fi && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --without-python3 --with-libcap-ng=yes --without-golang --with-io_uring --disable-werror && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && mkdir -p $(STAGING_PATH)/etc/systemd/system && ln -sf /dev/null $(STAGING_PATH)/etc/systemd/system/auditd.service && \
 	ln -sf /dev/null $(STAGING_PATH)/etc/systemd/system/audit-rules.service
 	touch .linux-audit-done
@@ -763,7 +763,7 @@ download-libcap-ng: .libcap-ng-obtained
 libcap-ng: download-libcap-ng .libcap-ng-done
 
 .libcap-ng-done:
-	cd $(LIBCAP_NG_PATH) && ./autogen.sh && ./configure --prefix=/usr --disable-werror && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBCAP_NG_PATH) && ./autogen.sh && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --disable-werror && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libcap-ng-done
 
 # Download zlib
@@ -779,7 +779,7 @@ download-zlib: .zlib-obtained
 zlib: download-zlib .zlib-done
 
 .zlib-done:
-	cd $(ZLIB_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(ZLIB_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .zlib-done
 
 # Download OpenLDAP
@@ -813,7 +813,7 @@ download-libgcrypt: .libgcrypt-obtained
 libgcrypt: download-libgcrypt .libgcrypt-done
 
 .libgcrypt-done:
-	cd $(LIBGCRYPT_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) -j$(THREADS) -C doc html && \
+	cd $(LIBGCRYPT_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) -j$(THREADS) -C doc html && \
 	makeinfo --html --no-split -o doc/gcrypt_nochunks.html doc/gcrypt.texi && makeinfo --plaintext -o doc/gcrypt.txt doc/gcrypt.texi && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install && install -dm755 $(STAGING_PATH)/usr/share/doc/libgcrypt-$(LIBGCRYPT_VER) && \
 	install -m644 README doc/{README.apichanges,fips*,libgcrypt*} $(STAGING_PATH)/usr/share/doc/libgcrypt-$(LIBGCRYPT_VER) && \
@@ -835,7 +835,7 @@ download-libgpg-error: .libgpg-error-obtained
 libgpg-error: download-libgpg-error .libgpg-error-done
 
 .libgpg-error-done:
-	cd $(LIBGPG_ERROR_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
+	cd $(LIBGPG_ERROR_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
 	install -m644 -D README $(STAGING_PATH)/usr/share/doc/libgpg-error-$(LIBGPG_ERROR_VER)/README
 	touch .libgpg-error-done
 
@@ -852,7 +852,7 @@ download-readline: .readline-obtained
 readline: download-readline .readline-done
 
 .readline-done:
-	cd $(READLINE_PATH) && ./configure --prefix=/usr --with-curses --docdir=/usr/share/doc/readline-$(READLINE_VER) && $(MAKE) SHLIB_LIBS="-lncursesw" -j$(THREADS) && \
+	cd $(READLINE_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --with-curses --docdir=/usr/share/doc/readline-$(READLINE_VER) && $(MAKE) SHLIB_LIBS="-lncursesw" -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) SHLIB_LIBS="-lncursesw" install && install -m644 doc/*.{ps,pdf,html,dvi} $(STAGING_PATH)/usr/share/doc/readline-$(READLINE_VER)
 	touch .readline-done
 
@@ -869,7 +869,7 @@ download-cryptsetup: .cryptsetup-obtained
 cryptsetup: download-cryptsetup .cryptsetup-done
 
 .cryptsetup-done:
-	cd $(CRYPTSETUP_PATH) && ./configure --prefix=/usr --disable-ssh-token --disable-asciidoc && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(CRYPTSETUP_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --disable-ssh-token --disable-asciidoc && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .cryptsetup-done
 
 # Download Cyrus-SASL
@@ -886,7 +886,7 @@ cyrus-sasl: download-cyrus-sasl .cyrus-sasl-done
 
 .cyrus-sasl-done:
 	cd $(CYRUS_SASL_PATH) && sed '/saslint/a #include <time.h>' -i lib/saslutil.c && sed '/plugin_common/a #include <time.h>' -i plugins/cram.c && \
-	./configure --prefix=/usr --sysconfdir=/etc --enable-auth-sasldb --with-dblib=lmdb --with-dbpath=/var/lib/sasl/sasldb2 --with-sphinx-build=no \
+	CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --enable-auth-sasldb --with-dblib=lmdb --with-dbpath=/var/lib/sasl/sasldb2 --with-sphinx-build=no \
 	--with-saslauthd=/var/run/saslauthd CFLAGS="-O2 -std=gnu17" && $(MAKE) && $(MAKE) DESTDIR=$(STAGING_PATH) install && install -dm755 $(STAGING_PATH)/usr/share/doc/cyrus-sasl-$(CYRUS_SASL_VER)/html && \
 	install -m644 saslauthd/LDAP_SASLAUTHD $(STAGING_PATH)/usr/share/doc/cyrus-sasl-$(CYRUS_SASL_VER) && install -m644 doc/legacy/*.html \
 	$(STAGING_PATH)/usr/share/doc/cyrus-sasl-$(CYRUS_SASL_VER)/html && install -dm700 $(STAGING_PATH)/var/lib/sasl
@@ -905,7 +905,7 @@ download-popt: .popt-obtained
 popt: download-popt .popt-done
 
 .popt-done:
-	cd $(POPT_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(POPT_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .popt-done
 
 # Download JSON-C
@@ -977,7 +977,7 @@ download-xz-utils: .xz-utils-obtained
 xz-utils: download-xz-utils .xz-utils-done
 
 .xz-utils-done:
-	cd $(XZ_UTILS_PATH) && ./configure --prefix=/usr --docdir=/usr/share/doc/xz-$(XZ_UTILS_VER) && \
+	cd $(XZ_UTILS_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --docdir=/usr/share/doc/xz-$(XZ_UTILS_VER) && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .xz-utils-done
 
@@ -1010,7 +1010,7 @@ download-gzip: .gzip-obtained
 gzip: download-gzip .gzip-done
 
 .gzip-done:
-	cd $(GZIP_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(GZIP_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .gzip-done
 
 # Download libaio
@@ -1042,7 +1042,7 @@ download-krb5: .krb5-obtained
 krb5: download-krb5 .krb5-done
 
 .krb5-done:
-	cd $(KRB5_PATH)/src && ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var/lib --runstatedir=/run --with-system-et \
+	cd $(KRB5_PATH)/src && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var/lib --runstatedir=/run --with-system-et \
 	--with-system-ss --with-system-verto=no --enable-dns-for-realm --disable-rpath && $(MAKE) WARN_CFLAGS="" -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install && cp -fr ../doc $(STAGING_PATH)/usr/share/doc/krb5-$(KRB5_VER)
 	touch .krb5-done
@@ -1060,7 +1060,7 @@ download-libnsl: .libnsl-obtained
 libnsl: download-libnsl .libnsl-done
 
 .libnsl-done:
-	cd $(LIBNSL_PATH) && ./configure --sysconfdir=/etc && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBNSL_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --sysconfdir=/etc && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libnsl-done
 
 # Download libtirpc
@@ -1076,7 +1076,7 @@ download-libtirpc: .libtirpc-obtained
 libtirpc: download-libtirpc .libtirpc-done
 
 .libtirpc-done:
-	cd $(LIBTIRPC_PATH) && ./configure --prefix=/usr --sysconfdir=/etc && $(MAKE) -j$(THREADS) && \
+	cd $(LIBTIRPC_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libtirpc-done
 

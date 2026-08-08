@@ -161,7 +161,7 @@ download-libunwind: .libunwind-obtained
 
 libunwind: download-libunwind .libunwind-done
 .libunwind-done:
-	cd $(LIBUNWIND_PATH) && sed -i '/func.s/s/s//' tests/Gtest-nomalloc.c && ./configure --prefix=/usr --disable-static && $(MAKE) -j$(THREADS) && \
+	cd $(LIBUNWIND_PATH) && sed -i '/func.s/s/s//' tests/Gtest-nomalloc.c && ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --disable-static && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libunwind-done
 
@@ -172,7 +172,7 @@ download-libwebp: .libwebp-obtained
 
 libwebp: download-libwebp .libwebp-done
 .libwebp-done:
-	cd $(LIBWEBP_PATH) && ./configure --prefix=/usr --enable-libwebpmux --enable-libwebpdemux --enable-libwebpdecoder \
+	cd $(LIBWEBP_PATH) && ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --enable-libwebpmux --enable-libwebpdemux --enable-libwebpdecoder \
 	--enable-libwebpextras --enable-swap-16bit-csp --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libwebp-done
 
@@ -219,7 +219,7 @@ download-libjbig: .libjbig-obtained
 # Hey Mr. Cambridge guy, care to update your build system? It's so UNIX.
 libjbig: download-libjbig .libjbig-done
 .libjbig-done:
-	cd $(JBIG_KIT_PATH) && (curl -s -f $(JBIG_KIT_PATCH_URL) | patch -N -p1 || true) && $(MAKE) -j$(THREADS) CFLAGS="-g -O2 -std=gnu17" && cp -a libjbig/libjbig.so.2.1 $(STAGING_PATH)/usr/lib && \
+	cd $(JBIG_KIT_PATH) && (curl -s -f $(JBIG_KIT_PATCH_URL) | patch -N -p1 || true) && find . -name Makefile -exec sed -i 's/^CFLAGS\s*=/CFLAGS += -g -O2 -std=gnu17 /' {} + && $(MAKE) -j$(THREADS) && cp -a libjbig/libjbig.so.2.1 $(STAGING_PATH)/usr/lib && \
 	ln -sf libjbig.so.2.1 $(STAGING_PATH)/usr/lib/libjbig.so
 	touch .libjbig-done
 
@@ -265,7 +265,7 @@ download-hwdata: .hwdata-obtained
 
 hwdata: download-hwdata .hwdata-done
 .hwdata-done:
-	cd $(HWDATA_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(HWDATA_PATH) && ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .hwdata-done
 
 download-wlroots: .wlroots-obtained
@@ -290,7 +290,7 @@ download-xcb-util-wm: .xcb-util-wm-obtained
 
 xcb-util-wm: download-xcb-util-wm .xcb-util-wm-done
 .xcb-util-wm-done:
-	cd $(XCB_UTIL_WM_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
+	cd $(XCB_UTIL_WM_PATH) && ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
 	sed -i 's|prefix=/usr|prefix=$(STAGING_PATH)/usr|g' $(STAGING_PATH)/usr/lib/pkgconfig/xcb-*.pc
 	touch .xcb-util-wm-done
 
@@ -321,7 +321,7 @@ download-libxml2: .libxml2-obtained
 
 libxml2: download-libxml2 .libxml2-done
 .libxml2-done:
-	cd $(LIBXML2_PATH) && ./configure --prefix=/usr --sysconfdir=/etc --without-python && \
+	cd $(LIBXML2_PATH) && ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --sysconfdir=/etc --without-python && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libxml2-done
 
@@ -388,8 +388,8 @@ fltk: download-fltk .fltk-done
 .fltk-done:
 	cd $(FLTK_PATH) && rm -f config.cache && \
 	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
-	CFLAGS="--sysroot=$(STAGING_PATH) -I$(STAGING_PATH)/usr/include" \
-	CXXFLAGS="--sysroot=$(STAGING_PATH) -I$(STAGING_PATH)/usr/include" \
+	CFLAGS="--sysroot=$(STAGING_PATH) -I$(STAGING_PATH)/usr/include -O2 -std=gnu17" \
+	CXXFLAGS="--sysroot=$(STAGING_PATH) -I$(STAGING_PATH)/usr/include -O2 -std=gnu17" \
 	LDFLAGS="--sysroot=$(STAGING_PATH) -L$(STAGING_PATH)/usr/lib -Wl,-rpath-link,$(STAGING_PATH)/usr/lib" \
 	./configure --prefix=/usr --enable-shared --disable-gl && \
 	sed -i '/^DSOFLAGS/s|=|= --sysroot=$(STAGING_PATH) -L$(STAGING_PATH)/usr/lib -Wl,-rpath-link,$(STAGING_PATH)/usr/lib|' makeinclude && \
@@ -417,8 +417,8 @@ dillo: download-dillo fltk .dillo-done
 	PATH="$(STAGING_PATH)/usr/bin:$$PATH" \
 	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
 	CC="gcc" CXX="g++" \
-	CFLAGS="--sysroot=$(STAGING_PATH) -I$(STAGING_PATH)/usr/include -fpermissive -Wno-error=incompatible-pointer-types" \
-	CXXFLAGS="--sysroot=$(STAGING_PATH) -I$(STAGING_PATH)/usr/include -fpermissive -Wno-error=incompatible-pointer-types" \
+	CFLAGS="--sysroot=$(STAGING_PATH) -I$(STAGING_PATH)/usr/include -fpermissive -Wno-error=incompatible-pointer-types -O2 -std=gnu17" \
+	CXXFLAGS="--sysroot=$(STAGING_PATH) -I$(STAGING_PATH)/usr/include -fpermissive -Wno-error=incompatible-pointer-types -O2 -std=gnu17" \
 	LDFLAGS="--sysroot=$(STAGING_PATH) -L$(STAGING_PATH)/usr/lib -Wl,-rpath-link,$(STAGING_PATH)/usr/lib" \
 	./configure --prefix=/usr --sysconfdir=/etc --disable-tls && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install

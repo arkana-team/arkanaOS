@@ -202,7 +202,7 @@ cpio: download-cpio .cpio-done
 .cpio-done:
 	cd $(CPIO_PATH) && sed -e "/^extern int (\*xstat)/s/()/(const char * restrict,  struct stat * restrict)/" -i src/extern.h && \
 	sed -e "/^int (\*xstat)/s/()/(const char * restrict,  struct stat * restrict)/" -i src/global.c && \
-	./configure --prefix=/usr --enable-mt --with-rmt=/usr/lib/rmt && $(MAKE) -j$(THREADS) && \
+	./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --enable-mt --with-rmt=/usr/lib/rmt && $(MAKE) -j$(THREADS) && \
 	makeinfo --html -o doc/html doc/cpio.texi && \
 	makeinfo --html --no-split -o doc/cpio.html doc/cpio.texi && \
 	makeinfo --plaintext -o doc/cpio.txt doc/cpio.texi && \
@@ -222,7 +222,7 @@ download-libisoburn: .libisoburn-obtained
 libisoburn: download-libisoburn .libisoburn-done
 
 .libisoburn-done:
-	cd $(LIBISOBURN_PATH) && ./configure --prefix=/usr --enable-pkg-check-modules && $(MAKE) -j$(THREADS) && \
+	cd $(LIBISOBURN_PATH) && ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --enable-pkg-check-modules && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libisoburn-done
 
@@ -237,7 +237,7 @@ download-libburn: .libburn-obtained
 libburn: download-libburn .libburn-done
 
 .libburn-done:
-	cd $(LIBBURN_PATH) && sed -i 's/catch_int ()/catch_int (int signum)/' test/poll.c && ./configure --prefix=/usr --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBBURN_PATH) && sed -i 's/catch_int ()/catch_int (int signum)/' test/poll.c && ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libburn-done
 
 # Download libisofs
@@ -251,7 +251,7 @@ download-libisofs: .libisofs-obtained
 libisofs: download-libisofs .libisofs-done
 
 .libisofs-done:
-	cd $(LIBISOFS_PATH) && ./configure --prefix=/usr --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBISOFS_PATH) && ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libisofs-done
 
 # Download mtools
@@ -265,7 +265,7 @@ download-mtools: .mtools-obtained
 mtools: download-mtools .mtools-done
 
 .mtools-done:
-	cd $(MTOOLS_PATH) && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(MTOOLS_PATH) && ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .mtools-done
 
 # Download Busybox
@@ -316,10 +316,10 @@ grub: download-grub .grub-done
 	cd $(GRUB_PATH) && (make distclean || true) && rm -rf build-efi build-pc && \
 	cd $(GRUB_PATH) && echo depends bli part_gpt > grub-core/extra_deps.lst && \
 	mkdir -p build-efi && cd build-efi && \
-	CFLAGS="" CPPFLAGS="" LDFLAGS="" PKG_CONFIG_PATH=$(STAGING_PATH)/usr/lib/pkgconfig ../configure --prefix=/usr --sysconfdir=/etc --disable-efiemu --with-platform=efi \
+	CFLAGS="-O2 -std=gnu17" CPPFLAGS="" LDFLAGS="" PKG_CONFIG_PATH=$(STAGING_PATH)/usr/lib/pkgconfig ../configure --prefix=/usr --sysconfdir=/etc --disable-efiemu --with-platform=efi \
 	--target=x86_64 --disable-werror && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
 	cd $(GRUB_PATH) && mkdir -p build-pc && cd build-pc && \
-	CFLAGS="" CPPFLAGS="" LDFLAGS="" PKG_CONFIG_PATH=$(STAGING_PATH)/usr/lib/pkgconfig ../configure --prefix=/usr --sysconfdir=/etc --disable-efiemu --with-platform=pc \
+	CFLAGS="-O2 -std=gnu17" CPPFLAGS="" LDFLAGS="" PKG_CONFIG_PATH=$(STAGING_PATH)/usr/lib/pkgconfig ../configure --prefix=/usr --sysconfdir=/etc --disable-efiemu --with-platform=pc \
 	--target=i386 --disable-werror && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
 	mkdir -p $(STAGING_PATH)/usr/share/bash-completion/completions && \
 	mv $(STAGING_PATH)/etc/bash_completion.d/grub $(STAGING_PATH)/usr/share/bash-completion/completions
@@ -342,7 +342,7 @@ freetype: download-freetype .freetype-done
 .freetype-done:
 	cd $(FREETYPE_PATH) && sed -ri "s:.*(AUX_MODULES.*valid):\1:" modules.cfg && \
 	sed -r "s:.*(#.*SUBPIXEL_RENDERING) .*:\1:" -i include/freetype/config/ftoption.h && \
-	./configure --prefix=/usr --enable-freetype-config --disable-static && $(MAKE) -j$(THREADS) && \
+	./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --enable-freetype-config --disable-static && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .freetype-done
 
@@ -390,7 +390,7 @@ download-libffi: .libffi-obtained
 libffi: download-libffi .libffi-done
 
 .libffi-done:
-	cd $(LIBFFI_PATH) && ./configure --prefix=/usr --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBFFI_PATH) && ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libffi-done
 
 # Download elfutils
@@ -405,7 +405,7 @@ elfutils: download-elfutils .elfutils-done
 
 .elfutils-done:
 	mkdir -p $(STAGING_PATH)/usr/lib/pkgconfig
-	cd $(ELFUTILS_PATH) && ./configure --prefix=/usr --disable-werror CFLAGS="-Wno-error=discarded-qualifiers" && $(MAKE) -j$(THREADS) && install -D -m644 config/libelf.pc $(STAGING_PATH)/usr/lib/pkgconfig/libelf.pc
+	cd $(ELFUTILS_PATH) && ./configure --prefix=/usr --disable-werror CFLAGS="-O2 -std=gnu17 -Wno-error=discarded-qualifiers" && $(MAKE) -j$(THREADS) && install -D -m644 config/libelf.pc $(STAGING_PATH)/usr/lib/pkgconfig/libelf.pc
 	for lib in libelf debuginfod libdw; do \
 		$(MAKE) -C $(SRC_PATH)/elfutils-$(ELFUTILS_VER)/$$lib DESTDIR=$(STAGING_PATH) install || exit 1; \
 	done
@@ -437,8 +437,8 @@ download-pcre2: .pcre2-obtained
 pcre2: download-pcre2 .pcre2-done
 
 .pcre2-done:
-	cd $(PCRE2_PATH) && ./configure --prefix=/usr --docdir=/usr/share/doc/pcre2-$(PCRE2_VER) --enable-unicode --enable-jit --enable-pcre2-16 \
-	--enable-pcre2-32 --enable-pcre2grep-libz --enable-pcre2grep-libbz2 --enable-pcre2test-libreadline --disable-static && $(MAKE) && $(MAKE) && $(MAKE) -j$(THREADS) && $(MAKE) && $(MAKE) && \
+	cd $(PCRE2_PATH) && ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --docdir=/usr/share/doc/pcre2-$(PCRE2_VER) --enable-unicode --enable-jit --enable-pcre2-16 \
+	--enable-pcre2-32 --enable-pcre2grep-libz --enable-pcre2grep-libbz2 --enable-pcre2test-libreadline --disable-static && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .pcre2-done
 
@@ -468,7 +468,7 @@ download-fontconfig: .fontconfig-obtained
 fontconfig: download-fontconfig .fontconfig-done
 
 .fontconfig-done:
-	cd $(FONTCONFIG_PATH) && ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --disable-docs \
+	cd $(FONTCONFIG_PATH) && ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --sysconfdir=/etc --localstatedir=/var --disable-docs \
 	--docdir=/usr/share/doc/fontconfig-$(FONTCONFIG_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .fontconfig-done
 
@@ -483,7 +483,7 @@ download-expat: .expat-obtained
 expat: download-expat .expat-done
 
 .expat-done:
-	cd $(EXPAT_PATH) && ./configure --prefix=/usr --disable-static --docdir=/usr/share/doc/expat-$(EXPAT_VER) && $(MAKE) && $(MAKE) && $(MAKE) -j$(THREADS) && $(MAKE) && $(MAKE) && \
+	cd $(EXPAT_PATH) && ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --disable-static --docdir=/usr/share/doc/expat-$(EXPAT_VER) && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .expat-done
 
@@ -500,7 +500,7 @@ graphite2: download-graphite2 .graphite2-done
 .graphite2-done:
     # Outdated build system, cool.
 	mkdir -p $(GRAPHITE2_PATH)/build && cd $(GRAPHITE2_PATH)/build && sed -i '/Font.h/i #include <cstdint>' ../tests/featuremap/featuremaptest.cpp && \
-	cmake -D CMAKE_POLICY_VERSION_MINIMUM=3.5 -D CMAKE_INSTALL_PREFIX=/usr .. && $(MAKE) && $(MAKE) && $(MAKE) -j$(THREADS) && $(MAKE) && $(MAKE) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cmake -D CMAKE_POLICY_VERSION_MINIMUM=3.5 -D CMAKE_INSTALL_PREFIX=/usr -D CMAKE_C_FLAGS="-O2 -std=gnu17" -D CMAKE_CXX_FLAGS="-O2 -std=gnu17" .. && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .graphite2-done
 
 # Download pixman
@@ -530,7 +530,7 @@ download-libpng: .libpng-obtained
 libpng: download-libpng .libpng-done
 
 .libpng-done:
-	cd $(LIBPNG_PATH) && ./configure --prefix=/usr --disable-static && $(MAKE) && $(MAKE) && $(MAKE) -j$(THREADS) && $(MAKE) && $(MAKE) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
+	cd $(LIBPNG_PATH) && ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
 	mkdir -p $(STAGING_PATH)/usr/share/doc/libpng-$(LIBPNG_VER) && cp README libpng-manual.txt $(STAGING_PATH)/usr/share/doc/libpng-$(LIBPNG_VER)
 	touch .libpng-done
 
@@ -555,7 +555,7 @@ download-lzo: .lzo-obtained
 # Compile LZO
 lzo: download-lzo .lzo-done
 .lzo-done:
-	cd $(LZO_PATH) && ./configure --prefix=/usr --enable-shared --disable-static --docdir=/usr/share/doc/lzo-$(LZO_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LZO_PATH) && ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --enable-shared --disable-static --docdir=/usr/share/doc/lzo-$(LZO_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .lzo-done
 
 # Download efibootmgr
@@ -628,8 +628,7 @@ iso:
 	chroot $(STAGING_PATH) fc-cache -fv || true
 	chroot $(STAGING_PATH) glib-compile-schemas /usr/share/glib-2.0/schemas || true
 	rm -f $(STAGING_PATH)/etc/ld.so.cache || true
-	ln -sf /dev/null $(STAGING_PATH)/etc/ld.so.cache || true
-	ldconfig || true
+	chroot $(STAGING_PATH) ldconfig || true
 
 	mksquashfs $(STAGING_PATH) $(ISO_STAGING_PATH)/boot/rootfs.sfs -comp zstd -Xcompression-level 15 -b 1M -noappend -e boot || true
 	cp $(LINUX_PATH)/arch/x86/boot/bzImage $(ISO_STAGING_PATH)/boot/vmlinuz
