@@ -1174,5 +1174,5 @@ download-kbd: .kbd-obtained
 kbd: download-kbd .kbd-done
 .kbd-done:
 	cd $(KBD_PATH) && sed -i '/RESIZECONS_PROGS=/s/yes/no/' configure && sed -i 's/resizecons.8 //' docs/man/man8/Makefile.in && \
-	CFLAGS="-std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .kbd-done
