@@ -340,9 +340,9 @@ xorg-libs: download-xorg-libs .xorg-libs-done
 	  ver=$${pair##*/}; \
 	  if [ -f $(SRC_PATH)/lib$$lib-$$ver/meson.build ]; then \
 	    mkdir -p $(SRC_PATH)/lib$$lib-$$ver/build && cd $(SRC_PATH)/lib$$lib-$$ver/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release && \
-	    ninja && DESTDIR=$(STAGING_PATH) ninja install; \
+	    ninja && DESTDIR=$(STAGING_PATH) ninja install || exit 1; \
 	  else \
-	    cd $(SRC_PATH)/lib$$lib-$$ver && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install; \
+	    cd $(SRC_PATH)/lib$$lib-$$ver && ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install || exit 1; \
 	  fi; \
 	done
 	touch .xorg-libs-done
