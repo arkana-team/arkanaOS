@@ -341,7 +341,7 @@ LICENSES_EXCEPTIONS = \
 	LLGPL Linux-syscall-note MPL-2.0-no-copyleft-exception
 
 # Targets
-all: less procps-ng iproute2 iputils iptables libbpf libmnl libidn2 libunistring libnfnetlink libpsl slang newt libndp libffi glib nettle libtasn1 p11-kit gnutls nghttp2 curl jansson networkmanager wget flex libnvme fastfetch findutils sed grep diffutils gawk mpfr nano tar sudo vim rsync dosfstools tzdb parted make-ca gettext which unzip kmod pciutils psmisc licenses firefox
+all: less procps-ng iproute2 iputils iptables libbpf libmnl libidn2 libunistring libnfnetlink libpsl slang newt libndp libffi glib nettle libtasn1 p11-kit gnutls nghttp2 curl jansson networkmanager wget flex libnvme fastfetch findutils sed grep diffutils gawk mpfr nano tar sudo vim rsync dosfstools tzdb parted make-ca gettext which unzip kmod pciutils psmisc licenses
 
 # Download less
 download-less: .less-obtained
@@ -967,10 +967,7 @@ unzip: download-unzip .unzip-done
 		mandir=$(STAGING_PATH)/usr/share/man
 	touch .unzip-done
 
-# Firefox (pre-built binary from Mozilla)
-# URL: https://download.mozilla.org/
-FIREFOX_URL = https://download-installer.cdn.mozilla.net/pub/firefox/releases/153.0.3/linux-x86_64/en-US/firefox-153.0.3.tar.xz
-FIREFOX_VER = 153.0.3
+
 
 # ---------------------------------------------------------------------------
 # Remaining Arch base-group members: kmod, pciutils, psmisc, licenses
@@ -1045,22 +1042,4 @@ licenses: download-licenses .licenses-done
 	python3 -c "import json; ids=[l['licenseId'] for l in json.load(open('$(LICENSES_PATH)/json/licenses.json'))['licenses'] if not l['isDeprecatedLicenseId']]; open('$(STAGING_PATH)/usr/share/licenses/known_spdx_license_identifiers.txt','w').write('\n'.join(ids)+'\n'); ids=[e['licenseExceptionId'] for e in json.load(open('$(LICENSES_PATH)/json/exceptions.json'))['exceptions']]; open('$(STAGING_PATH)/usr/share/licenses/known_spdx_license_exceptions.txt','w').write('\n'.join(ids)+'\n')"
 	touch .licenses-done
 
-# ---------------------------------------------------------------------------
-# Firefox (pre-built binary tarball from Mozilla)
-# ---------------------------------------------------------------------------
 
-# Download Firefox
-download-firefox: .firefox-obtained
-.firefox-obtained:
-	cd $(SRC_PATH) && wget -O firefox-$(FIREFOX_VER).tar.xz $(FIREFOX_URL) && tar xf firefox-$(FIREFOX_VER).tar.xz
-	touch .firefox-obtained
-
-# Install Firefox (pre-built binary, just extract + symlink)
-firefox: download-firefox .firefox-done
-.firefox-done:
-	mkdir -p $(STAGING_PATH)/opt/firefox && cp -a $(SRC_PATH)/firefox/* $(STAGING_PATH)/opt/firefox/
-	chmod 755 $(STAGING_PATH)/opt/firefox/firefox
-	ln -sf /opt/firefox/firefox $(STAGING_PATH)/usr/bin/firefox
-	mkdir -p $(STAGING_PATH)/usr/share/applications
-	printf '[Desktop Entry]\nName=Firefox\nComment=Browse the World Wide Web\nExec=/opt/firefox/firefox %%u\nTerminal=false\nType=Application\nCategories=Network;WebBrowser;\nMimeType=text/html;text/xml;application/xhtml+xml;application/xml;application/rss+xml;application/rdf+xml;x-scheme-handler/http;x-scheme-handler/https;x-scheme-handler/ftp;\n' > $(STAGING_PATH)/usr/share/applications/firefox.desktop
-	touch .firefox-done

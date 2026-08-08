@@ -166,12 +166,12 @@ EFIVAR_VER = 39
 EFIVAR_PATH = $(SRC_PATH)/efivar-$(EFIVAR_VER)
 
 # Firefox
-FIREFOX_URL = https://archive.mozilla.org/pub/firefox/releases/135.0/linux-x86_64/en-US/firefox-135.0.tar.bz2
+FIREFOX_URL = https://archive.mozilla.org/pub/firefox/releases/135.0/linux-x86_64/en-US/firefox-135.0.tar.xz
 FIREFOX_VER = 135.0
 
 download-firefox: .firefox-obtained
 .firefox-obtained:
-	cd $(SRC_PATH) && wget -O firefox-$(FIREFOX_VER).tar.bz2 $(FIREFOX_URL) && tar xf firefox-$(FIREFOX_VER).tar.bz2 -C $(SRC_PATH)
+	cd $(SRC_PATH) && wget -O firefox-$(FIREFOX_VER).tar.xz $(FIREFOX_URL) && tar xf firefox-$(FIREFOX_VER).tar.xz -C $(SRC_PATH)
 	touch .firefox-obtained
 
 firefox: download-firefox .firefox-done
@@ -180,6 +180,8 @@ firefox: download-firefox .firefox-done
 	cp -a $(SRC_PATH)/firefox/* $(STAGING_PATH)/opt/firefox/
 	mkdir -p $(STAGING_PATH)/usr/bin
 	ln -sf /opt/firefox/firefox $(STAGING_PATH)/usr/bin/firefox
+	mkdir -p $(STAGING_PATH)/usr/share/applications
+	printf '[Desktop Entry]\nName=Firefox\nComment=Browse the World Wide Web\nExec=/opt/firefox/firefox %%u\nTerminal=false\nType=Application\nCategories=Network;WebBrowser;\nMimeType=text/html;text/xml;application/xhtml+xml;application/xml;application/rss+xml;application/rdf+xml;x-scheme-handler/http;x-scheme-handler/https;x-scheme-handler/ftp;\n' > $(STAGING_PATH)/usr/share/applications/firefox.desktop
 	touch .firefox-done
 
 # Targets
@@ -404,7 +406,7 @@ elfutils: download-elfutils .elfutils-done
 .elfutils-done:
 	cd $(ELFUTILS_PATH) && ./configure --prefix=/usr --disable-werror CFLAGS="-Wno-error=discarded-qualifiers" && $(MAKE) -j$(THREADS) && install -m644 config/libelf.pc $(STAGING_PATH)/usr/lib/pkgconfig
 	for lib in libelf debuginfod libdw; do \
-		$(MAKE) -C $(SRC_PATH)/elfutils-$(ELFUTILS_VER)/$$lib DESTDIR=$(STAGING_PATH) install; \
+		$(MAKE) -C $(SRC_PATH)/elfutils-$(ELFUTILS_VER)/$$lib DESTDIR=$(STAGING_PATH) install || exit 1; \
 	done
 	touch .elfutils-done
 
