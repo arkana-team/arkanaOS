@@ -1,7 +1,7 @@
 ![Banner](https://raw.githubusercontent.com/arkana-team/branding/refs/heads/main/arkana_banner.png)
 
 <h1 align="center">arkanaOS Source Files</h1>
-<p>This repository contains everything you'll need to compile our project.</p>
+<p>This repository contains everything you'll need to compile arkanaOS.</p>
 
 
 ## Cloning and Building
