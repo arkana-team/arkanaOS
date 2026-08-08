@@ -1026,7 +1026,7 @@ download-libaio: .libaio-obtained
 libaio: download-libaio .libaio-done
 
 .libaio-done:
-	cd $(LIBAIO_PATH) && $(MAKE) CFLAGS="-std=gnu17" && $(MAKE) CFLAGS="-std=gnu17" -j$(THREADS) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBAIO_PATH) && sed -i 's/^CFLAGS.*/& -std=gnu17/' src/Makefile && $(MAKE) && $(MAKE) -j$(THREADS) DESTDIR=$(STAGING_PATH) install
 	touch .libaio-done
 
 # Download krb5
@@ -1093,7 +1093,7 @@ download-keyutils: .keyutils-obtained
 keyutils: download-keyutils .keyutils-done
 
 .keyutils-done:
-	cd $(KEYUTILS_PATH) && $(MAKE) CFLAGS="-std=gnu17" -j$(THREADS) && $(MAKE) CFLAGS="-std=gnu17" NO_ARLIB=1 DESTDIR=$(STAGING_PATH) install
+	cd $(KEYUTILS_PATH) && sed -i 's/^CFLAGS.*/& -std=gnu17/' Makefile && $(MAKE) -j$(THREADS) && $(MAKE) NO_ARLIB=1 DESTDIR=$(STAGING_PATH) install
 	touch .keyutils-done
 
 # Download lmdb
@@ -1109,7 +1109,7 @@ download-lmdb: .lmdb-obtained
 lmdb: download-lmdb .lmdb-done
 
 .lmdb-done:
-	cd $(LMDB_PATH)/libraries/liblmdb && $(MAKE) CFLAGS="-std=gnu17" -j$(THREADS) && $(MAKE) CFLAGS="-std=gnu17" prefix=$(STAGING_PATH)/usr install
+	cd $(LMDB_PATH)/libraries/liblmdb && sed -i 's/^CFLAGS.*/& -std=gnu17/' Makefile && $(MAKE) -j$(THREADS) && $(MAKE) prefix=$(STAGING_PATH)/usr install
 	touch .lmdb-done
 
 # Download libfuse

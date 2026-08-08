@@ -378,7 +378,7 @@ download-iproute2: .iproute2-obtained
 # Compile iproute2
 iproute2: download-iproute2 .iproute2-done
 .iproute2-done:
-	cd $(IPROUTE2_PATH) && sed -i /ARPD/d Makefile && rm -f man/man8/arpd.8 && $(MAKE) -j$(THREADS) NETNS_RUN_DIR=/run/netns CFLAGS="-O2 -std=gnu17" && \
+	cd $(IPROUTE2_PATH) && sed -i /ARPD/d Makefile && rm -f man/man8/arpd.8 && $(MAKE) -j$(THREADS) NETNS_RUN_DIR=/run/netns CCOPTS="-O2 -std=gnu17" && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .iproute2-done
 
@@ -420,7 +420,7 @@ download-libbpf: .libbpf-obtained
 # Compile libbpf
 libbpf: download-libbpf .libbpf-done
 .libbpf-done:
-	cd $(LIBBPF_PATH)/src && $(MAKE) -j$(THREADS) CFLAGS="-g -O2 -Wno-error=discarded-qualifiers" && $(MAKE) PREFIX=$(STAGING_PATH)/usr install
+	cd $(LIBBPF_PATH)/src && $(MAKE) -j$(THREADS) EXTRA_CFLAGS="-g -O2 -Wno-error=discarded-qualifiers" && $(MAKE) PREFIX=$(STAGING_PATH)/usr install
 	touch .libbpf-done
 
 # Download libmnl
