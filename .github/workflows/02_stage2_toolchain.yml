@@ -36,15 +36,40 @@ jobs:
         with:
           name: arkana-stage1
 
-      - name: Download Stage 1 Artifact (Latest Successful)
+      - name: Download Stage 1 Artifact (Latest Across Repo)
         if: github.workflow != 'Run All Pipeline Stages'
-        uses: dawidd6/action-download-artifact@v6
-        with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: 01_stage1_base.yml
-          branch: main
-          name: arkana-stage1
-          search_artifacts: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Fetching artifacts list..."
+          ARTIFACT_JSON=$(gh api repos/${{ github.repository }}/actions/artifacts --per-page 100)
+          
+          # Find latest matching artifact
+          ARTIFACT_ID=$(echo "$ARTIFACT_JSON" | jq -r '.artifacts | map(select((.name == "arkana-stage1" or .name == "arkana-base-staging") and .expired == false)) | sort_by(.created_at) | last | .id')
+          
+          if [ -z "$ARTIFACT_ID" ] || [ "$ARTIFACT_ID" = "null" ]; then
+            echo "Error: No valid stage 1 artifact found in the repository!"
+            exit 1
+          fi
+          
+          echo "Found latest Stage 1 Artifact ID: $ARTIFACT_ID"
+          echo "Downloading..."
+          gh api repos/${{ github.repository }}/actions/artifacts/$ARTIFACT_ID/zip > artifact.zip
+          
+          echo "Unzipping..."
+          unzip -q artifact.zip
+          rm artifact.zip
+          
+          if [ -f arkana-base-staging.tar ]; then
+            mv arkana-base-staging.tar arkana-stage1.tar
+          fi
+          
+          if [ ! -f arkana-stage1.tar ]; then
+            echo "Error: Extracted archive did not contain arkana-stage1.tar or arkana-base-staging.tar!"
+            exit 1
+          fi
+          
+          echo "Successfully prepared Stage 1 artifact!"
 
       - name: Unarchive Stage 1
         run: sudo tar -xf arkana-stage1.tar && rm arkana-stage1.tar
