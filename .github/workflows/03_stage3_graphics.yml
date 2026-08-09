@@ -36,15 +36,42 @@ jobs:
         with:
           name: arkana-stage2
 
-      - name: Download Stage 2 Artifact (Latest Successful)
+      - name: Download Stage 2 Artifact (Latest Successful - New Workflow)
+        id: download_new
         if: github.workflow != 'Run All Pipeline Stages'
         uses: dawidd6/action-download-artifact@v6
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
           workflow: 02_stage2_toolchain.yml
-          branch: main
           name: arkana-stage2
           search_artifacts: true
+          if_no_artifact_found: warn
+
+      - name: Check if new artifact downloaded
+        id: check_new
+        if: github.workflow != 'Run All Pipeline Stages'
+        run: |
+          if [ -f arkana-stage2.tar ]; then
+            echo "found=true" >> $GITHUB_OUTPUT
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download Stage 2 Artifact (Fallback to Old Workflow)
+        if: github.workflow != 'Run All Pipeline Stages' && steps.check_new.outputs.found == 'false'
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          workflow: build.yml
+          name: arkana-toolchain-staging
+          search_artifacts: true
+
+      - name: Rename fallback artifact if needed
+        if: github.workflow != 'Run All Pipeline Stages'
+        run: |
+          if [ -f arkana-toolchain-staging.tar ]; then
+            mv arkana-toolchain-staging.tar arkana-stage2.tar
+          fi
 
       - name: Unarchive Stage 2
         run: sudo tar -xf arkana-stage2.tar && rm arkana-stage2.tar
