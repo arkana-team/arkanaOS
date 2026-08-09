@@ -868,7 +868,7 @@ download-tzdb: .tzdb-obtained
 # Compile tzdb
 tzdb: download-tzdb .tzdb-done
 .tzdb-done:
-	cd $(TZDB_PATH) && sed -i 's/^#CFLAGS= -O 1/CFLAGS=-O2 -std=gnu17/' Makefile && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(TZDB_PATH) && sed -i 's/^#CFLAGS= -O 1/CFLAGS=-O2/' Makefile && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .tzdb-done
 
 # Download parted
