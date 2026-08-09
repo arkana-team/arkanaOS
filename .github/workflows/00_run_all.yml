@@ -1,0 +1,30 @@
+name: Run All Pipeline Stages
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+concurrency:
+  group: run-all-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  stage1:
+    uses: ./.github/workflows/01_stage1_base.yml
+    secrets: inherit
+
+  stage2:
+    needs: stage1
+    uses: ./.github/workflows/02_stage2_toolchain.yml
+    secrets: inherit
+
+  stage3:
+    needs: stage2
+    uses: ./.github/workflows/03_stage3_graphics.yml
+    secrets: inherit
+
+  stage4:
+    needs: stage3
+    uses: ./.github/workflows/04_stage4_iso.yml
+    secrets: inherit
