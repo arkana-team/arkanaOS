@@ -328,7 +328,7 @@ download-xorg-libs: .xorg-libs-obtained
 	  lib=$${pair%%/*}; \
 	  ver=$${pair##*/}; \
 	  cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O "lib$$lib-$$ver.tar.xz" "https://www.x.org/pub/individual/lib/lib$$lib-$$ver.tar.xz" && \
-	  tar xf "lib$$lib-$$ver.tar.xz"; \
+	  tar xf "lib$$lib-$$ver.tar.xz" || exit 1; \
 	done
 	touch .xorg-libs-obtained
 
@@ -354,7 +354,7 @@ download-xorg-apps: .xorg-apps-obtained
 	  app=$${pair%%/*}; \
 	  ver=$${pair##*/}; \
 	  cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O "$$app-$$ver.tar.xz" "http://xorg.freedesktop.org/releases/individual/app/$$app-$$ver.tar.xz" && \
-	  tar xf "$$app-$$ver.tar.xz"; \
+	  tar xf "$$app-$$ver.tar.xz" || exit 1; \
 	done
 	touch .xorg-apps-obtained
 
@@ -375,7 +375,7 @@ download-xorg-fonts: .xorg-fonts-obtained
 	  font=$${pair%%/*}; \
 	  ver=$${pair##*/}; \
 	  cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O "$$font-$$ver.tar.xz" "http://xorg.freedesktop.org/releases/individual/font/$$font-$$ver.tar.xz" && \
-	  tar xf "$$font-$$ver.tar.xz"; \
+	  tar xf "$$font-$$ver.tar.xz" || exit 1; \
 	done
 	touch .xorg-fonts-obtained
 
@@ -547,7 +547,7 @@ download-openbox: .openbox-obtained
 # Compile openbox
 openbox: download-openbox .openbox-done
 .openbox-done:
-	cd $(OPENBOX_PATH) && autoreconf -fi && CFLAGS="-std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --docdir=/usr/share/doc/openbox-$(OPENBOX_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(OPENBOX_PATH) && autoreconf -fi && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --docdir=/usr/share/doc/openbox-$(OPENBOX_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	cp -a xinitrc $(STAGING_PATH)/root/.xinitrc
 	touch .openbox-done
 
@@ -572,7 +572,7 @@ download-xterm: .xterm-obtained
 # Compile xterm
 xterm: download-xterm .xterm-done
 .xterm-done:
-	cd $(XTERM_PATH) && sed -i '/v0/{n;s/new:/new:kb=^?:/}' termcap && printf '\tkbs=\\177,\n' >> terminfo && CFLAGS="-std=gnu17" TERMINFO=/usr/share/terminfo ./configure --prefix=/usr --with-app-defaults=/etc/X11/app-defaults && $(MAKE) -j$(THREADS) && \
+	cd $(XTERM_PATH) && sed -i '/v0/{n;s/new:/new:kb=^?:/}' termcap && printf '\tkbs=\\177,\n' >> terminfo && CFLAGS="-O2 -std=gnu17" TERMINFO=/usr/share/terminfo ./configure --prefix=/usr --with-app-defaults=/etc/X11/app-defaults && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install && mkdir -p $(STAGING_PATH)/usr/share/applications && cp *.desktop $(STAGING_PATH)/usr/share/applications/
 	touch .xterm-done
 
@@ -585,7 +585,7 @@ download-luit: .luit-obtained
 # Compile luit
 luit: download-luit .luit-done
 .luit-done:
-	cd $(LUIT_PATH) && CFLAGS="-std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LUIT_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .luit-done
 
 # Download libinput
@@ -672,7 +672,7 @@ download-imlib2: .imlib2-obtained
 imlib2: download-imlib2 .imlib2-done
 .imlib2-done:
 	rm -f $(STAGING_PATH)/usr/lib/libbz2.a
-	cd $(IMLIB2_PATH) && CFLAGS="-std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(IMLIB2_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .imlib2-done
 
 # Download pango
@@ -798,6 +798,6 @@ download-wmaker: .wmaker-obtained
 wmaker: download-wmaker .wmaker-done
 .wmaker-done:
 	cd $(WMAKER_PATH) && ./autogen.sh && \
-	CFLAGS="-std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --enable-modelock --enable-pango --with-x --disable-imagemagick && \
+	CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --enable-modelock --enable-pango --with-x --disable-imagemagick && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .wmaker-done

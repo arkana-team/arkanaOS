@@ -342,7 +342,7 @@ LICENSES_EXCEPTIONS = \
 	LLGPL Linux-syscall-note MPL-2.0-no-copyleft-exception
 
 # Targets
-all: less procps-ng iproute2 iputils iptables libbpf libmnl libidn2 libunistring libnfnetlink libpsl slang newt libndp libffi glib nettle libtasn1 p11-kit gnutls nghttp2 curl jansson networkmanager wget --tries=5 --timeout=30 flex libnvme fastfetch findutils sed grep diffutils gawk mpfr nano tar sudo vim rsync dosfstools tzdb parted make-ca gettext which unzip kmod pciutils psmisc licenses
+all: less procps-ng iproute2 iputils iptables libbpf libmnl libidn2 libunistring libnfnetlink libpsl slang newt libndp libffi glib nettle libtasn1 p11-kit gnutls nghttp2 curl jansson networkmanager wget flex libnvme fastfetch findutils sed grep diffutils gawk mpfr nano tar sudo vim rsync dosfstools tzdb parted make-ca gettext which unzip kmod pciutils psmisc licenses
 
 # Download less
 download-less: .less-obtained
@@ -405,7 +405,7 @@ download-networkmanager: .networkmanager-obtained
 networkmanager: download-networkmanager .networkmanager-done
 .networkmanager-done:
 	mkdir -p $(NETWORKMANAGER_PATH)/build && cd $(NETWORKMANAGER_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D nmtui=false -D ovs=false -D ppp=false -D selinux=false \
-	-D qt=false -D session_tracking=systemd -D modem_manager=false -D introspection=false -D crypto=gnutls -D polkit=false -D concheck=false -D nbft=false && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	-D qt=false -D session_tracking=no -D modem_manager=false -D introspection=false -D crypto=gnutls -D polkit=false -D concheck=false -D nbft=false && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	echo "[main]" > $(STAGING_PATH)/etc/NetworkManager/NetworkManager.conf
 	echo "plugins=keyfile" >> $(STAGING_PATH)/etc/NetworkManager/NetworkManager.conf && mkdir -p $(STAGING_PATH)/etc/systemd/system/multi-user.target.wants
 	ln -sf /usr/lib/systemd/system/NetworkManager.service $(STAGING_PATH)/etc/systemd/system/multi-user.target.wants/NetworkManager.service
@@ -621,7 +621,7 @@ download-wget: .wget-obtained
 	touch .wget-obtained
 
 # Compile wget
-wget: download-wget --tries=5 --timeout=30 .wget-done
+wget: download-wget .wget-done
 .wget-done:
 	cd $(WGET_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --with-ssl=openssl && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	printf 'ca_certificate = /etc/ssl/ca-bundle.crt\n' > $(STAGING_PATH)/etc/wgetrc
@@ -868,7 +868,7 @@ download-tzdb: .tzdb-obtained
 # Compile tzdb
 tzdb: download-tzdb .tzdb-done
 .tzdb-done:
-	cd $(TZDB_PATH) && sed -i '/^CFLAGS/ s/$$/ -std=c99/' Makefile && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(TZDB_PATH) && sed -i 's/^#CFLAGS= -O 1/CFLAGS=-O2 -std=gnu17/' Makefile && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .tzdb-done
 
 # Download parted
@@ -1001,11 +1001,11 @@ download-pciutils: .pciutils-obtained
 # update-pciids is deliberately not installed (it needs a CA bundle at runtime).
 pciutils: download-pciutils kmod .pciutils-done
 .pciutils-done:
-	cd $(PCIUTILS_PATH) && \
-	$(MAKE) -j$(THREADS) OPT="-O2 -std=gnu17" ZLIB=no SHARED=no all && \
+	cd $(PCIUTILS_PATH) && sed -i 's/^OPT=-O2/OPT=-O2 -std=gnu17/' Makefile && \
+	$(MAKE) -j$(THREADS) ZLIB=no SHARED=no all && \
 	$(MAKE) clean && \
-	$(MAKE) -j$(THREADS) OPT="-O2 -std=gnu17" ZLIB=no SHARED=yes all && \
-	$(MAKE) DESTDIR=$(STAGING_PATH) OPT="-O2 -std=gnu17" ZLIB=no SHARED=yes install install-lib PREFIX=/usr SBINDIR=/usr/bin SHAREDIR=/usr/share/hwdata MANDIR=/usr/share/man
+	$(MAKE) -j$(THREADS) ZLIB=no SHARED=yes all && \
+	$(MAKE) DESTDIR=$(STAGING_PATH) ZLIB=no SHARED=yes install install-lib PREFIX=/usr SBINDIR=/usr/bin SHAREDIR=/usr/share/hwdata MANDIR=/usr/share/man
 	rm -f $(STAGING_PATH)/usr/bin/update-pciids $(STAGING_PATH)/usr/share/man/man8/update-pciids.8
 	touch .pciutils-done
 

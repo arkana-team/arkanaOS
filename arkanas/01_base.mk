@@ -795,7 +795,7 @@ download-openldap: .openldap-obtained
 openldap: download-openldap .openldap-done
 
 .openldap-done:
-	cd $(OPENLDAP_PATH) && autoconf && CFLAGS="-std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --enable-dynamic \
+	cd $(OPENLDAP_PATH) && autoconf && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --enable-dynamic \
 	--disable-debug && $(MAKE) -j$(THREADS) depend && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
 	ln -sf /dev/null $(STAGING_PATH)/etc/systemd/system/slapd.service
 	touch .openldap-done
