@@ -36,42 +36,40 @@ jobs:
         with:
           name: arkana-stage3
 
-      - name: Download Stage 3 Artifact (Latest Successful - New Workflow)
-        id: download_new
+      - name: Download Stage 3 Artifact (Latest Across Repo)
         if: github.workflow != 'Run All Pipeline Stages'
-        uses: dawidd6/action-download-artifact@v6
-        with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: 03_stage3_graphics.yml
-          name: arkana-stage3
-          search_artifacts: true
-          if_no_artifact_found: warn
-
-      - name: Check if new artifact downloaded
-        id: check_new
-        if: github.workflow != 'Run All Pipeline Stages'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ -f arkana-stage3.tar ]; then
-            echo "found=true" >> $GITHUB_OUTPUT
-          else
-            echo "found=false" >> $GITHUB_OUTPUT
+          echo "Fetching artifacts list..."
+          ARTIFACT_JSON=$(gh api repos/${{ github.repository }}/actions/artifacts --per-page 100)
+          
+          # Find latest matching artifact
+          ARTIFACT_ID=$(echo "$ARTIFACT_JSON" | jq -r '.artifacts | map(select((.name == "arkana-stage3" or .name == "arkana-graphics-staging") and .expired == false)) | sort_by(.created_at) | last | .id')
+          
+          if [ -z "$ARTIFACT_ID" ] || [ "$ARTIFACT_ID" = "null" ]; then
+            echo "Error: No valid stage 3 artifact found in the repository!"
+            exit 1
           fi
-
-      - name: Download Stage 3 Artifact (Fallback to Old Workflow)
-        if: github.workflow != 'Run All Pipeline Stages' && steps.check_new.outputs.found == 'false'
-        uses: dawidd6/action-download-artifact@v6
-        with:
-          github_token: ${{secrets.GITHUB_TOKEN}}
-          workflow: build.yml
-          name: arkana-graphics-staging
-          search_artifacts: true
-
-      - name: Rename fallback artifact if needed
-        if: github.workflow != 'Run All Pipeline Stages'
-        run: |
+          
+          echo "Found latest Stage 3 Artifact ID: $ARTIFACT_ID"
+          echo "Downloading..."
+          gh api repos/${{ github.repository }}/actions/artifacts/$ARTIFACT_ID/zip > artifact.zip
+          
+          echo "Unzipping..."
+          unzip -q artifact.zip
+          rm artifact.zip
+          
           if [ -f arkana-graphics-staging.tar ]; then
             mv arkana-graphics-staging.tar arkana-stage3.tar
           fi
+          
+          if [ ! -f arkana-stage3.tar ]; then
+            echo "Error: Extracted archive did not contain arkana-stage3.tar or arkana-graphics-staging.tar!"
+            exit 1
+          fi
+          
+          echo "Successfully prepared Stage 3 artifact!"
 
       - name: Unarchive Stage 3
         run: sudo tar -xf arkana-stage3.tar && rm arkana-stage3.tar
