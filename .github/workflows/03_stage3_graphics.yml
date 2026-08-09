@@ -8,6 +8,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  actions: read
+  contents: read
+
 jobs:
   graphics:
     name: 3. Build Graphics Stack
@@ -42,19 +46,27 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Fetching artifacts list..."
-          ARTIFACT_JSON=$(gh api repos/${{ github.repository }}/actions/artifacts --per-page 100)
+          if ! ARTIFACT_JSON=$(gh api repos/${{ github.repository }}/actions/artifacts --per-page 100); then
+            echo "Error: Failed to fetch artifacts list from GitHub API. Please check token permissions."
+            exit 1
+          fi
           
           # Find latest matching artifact
           ARTIFACT_ID=$(echo "$ARTIFACT_JSON" | jq -r '.artifacts | map(select((.name == "arkana-stage2" or .name == "arkana-toolchain-staging") and .expired == false)) | sort_by(.created_at) | last | .id')
           
           if [ -z "$ARTIFACT_ID" ] || [ "$ARTIFACT_ID" = "null" ]; then
             echo "Error: No valid stage 2 artifact found in the repository!"
+            echo "API Response content:"
+            echo "$ARTIFACT_JSON" | head -n 30
             exit 1
           fi
           
           echo "Found latest Stage 2 Artifact ID: $ARTIFACT_ID"
           echo "Downloading..."
-          gh api repos/${{ github.repository }}/actions/artifacts/$ARTIFACT_ID/zip > artifact.zip
+          if ! gh api repos/${{ github.repository }}/actions/artifacts/$ARTIFACT_ID/zip > artifact.zip; then
+            echo "Error: Failed to download artifact from GitHub API."
+            exit 1
+          fi
           
           echo "Unzipping..."
           unzip -q artifact.zip
