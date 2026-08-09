@@ -628,9 +628,9 @@ iso:
 	chroot $(STAGING_PATH) fc-cache -fv || true
 	chroot $(STAGING_PATH) glib-compile-schemas /usr/share/glib-2.0/schemas || true
 	rm -f $(STAGING_PATH)/etc/ld.so.cache || true
-	chroot $(STAGING_PATH) ldconfig || true
+	/sbin/ldconfig -r $(STAGING_PATH) || true
 
-	mksquashfs $(STAGING_PATH) $(ISO_STAGING_PATH)/boot/rootfs.sfs -comp zstd -Xcompression-level 15 -b 1M -noappend -e boot || true
+	mksquashfs $(STAGING_PATH) $(ISO_STAGING_PATH)/boot/rootfs.sfs -comp zstd -Xcompression-level 15 -b 1M -noappend -e boot/vmlinuz boot/initramfs.img || true
 	cp $(LINUX_PATH)/arch/x86/boot/bzImage $(ISO_STAGING_PATH)/boot/vmlinuz
 
 	echo 'set timeout=5' > $(ISO_STAGING_PATH)/boot/grub/grub.cfg
