@@ -2,6 +2,7 @@ name: 2. Build Extensions & Toolchain
 
 on:
   workflow_dispatch:
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -29,7 +30,14 @@ jobs:
           restore-keys: ${{ runner.os }}-ccache-
           max-size: 10G
 
+      - name: Download Stage 1 Artifact (From chained Run All)
+        if: github.workflow == 'Run All Pipeline Stages'
+        uses: actions/download-artifact@v4
+        with:
+          name: arkana-stage1
+
       - name: Download Stage 1 Artifact (Latest Successful)
+        if: github.workflow != 'Run All Pipeline Stages'
         uses: dawidd6/action-download-artifact@v6
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
