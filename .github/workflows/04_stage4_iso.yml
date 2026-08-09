@@ -1,0 +1,94 @@
+name: 4. Assemble Bootable ISO
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  iso:
+    name: 4. Assemble Bootable ISO
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Free Disk Space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /opt/hostedtoolcache
+          sudo docker image prune --all --force || true
+
+      - name: Setup & Persist Ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ runner.os }}-ccache-stage4
+          restore-keys: ${{ runner.os }}-ccache-
+          max-size: 10G
+
+      - name: Download Stage 3 Artifact (Latest Successful)
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          workflow: 03_stage3_graphics.yml
+          branch: main
+          name: arkana-stage3
+          search_artifacts: true
+
+      - name: Unarchive Stage 3
+        run: sudo tar -xf arkana-stage3.tar && rm arkana-stage3.tar
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          tags: arkana-builder:latest
+          cache-from: type=gha
+
+      - name: Build ISO Stage
+        run: |
+          mkdir -p output
+          docker run --rm \
+            -v "$(pwd)/src:/build/arkana/src" \
+            -v "$(pwd)/staging:/build/arkana/staging" \
+            -v "$(pwd)/output:/build/arkana/output" \
+            -v "$HOME/.cache/ccache:/home/builder/.cache/ccache" \
+            -e CCACHE_DIR=/home/builder/.cache/ccache \
+            arkana-builder bash -c "sudo make -f arkanas/07_iso.mk"
+
+      - name: Upload Final arkanaOS ISO Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: arkanaOS-nightly-iso
+          path: output/arkana.iso
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Generate Release Notes & Tags from Template
+        run: |
+          BUILD_DATE=$(date +%Y%m%d)
+          BUILD_NUM=$(cat .buildnum 2>/dev/null || echo "143")
+          sed -i "s/BUILD_DATE/$BUILD_DATE/g" RELEASE_TEMPLATE.md
+          sed -i "s/BUILD_NUM/$BUILD_NUM/g" RELEASE_TEMPLATE.md
+          echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
+          echo "BUILD_NUM=$BUILD_NUM" >> $GITHUB_ENV
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: success()
+        with:
+          tag_name: nightly-${{ env.BUILD_DATE }}-build-${{ env.BUILD_NUM }}
+          name: arkanaOS Nightly Build (${{ env.BUILD_DATE }})
+          body_path: RELEASE_TEMPLATE.md
+          files: output/arkana.iso
+          prerelease: true
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

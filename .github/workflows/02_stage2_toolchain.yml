@@ -1,0 +1,85 @@
+name: 2. Build Extensions & Toolchain
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  toolchain:
+    name: 2. Build Extensions & Toolchain
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Free Disk Space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /opt/hostedtoolcache
+          sudo docker image prune --all --force || true
+
+      - name: Setup & Persist Ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ runner.os }}-ccache-stage2
+          restore-keys: ${{ runner.os }}-ccache-
+          max-size: 10G
+
+      - name: Download Stage 1 Artifact (Latest Successful)
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          github_token: ${{secrets.GITHUB_TOKEN}}
+          workflow: 01_stage1_base.yml
+          branch: main
+          name: arkana-stage1
+          search_artifacts: true
+
+      - name: Unarchive Stage 1
+        run: sudo tar -xf arkana-stage1.tar && rm arkana-stage1.tar
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          tags: arkana-builder:latest
+          cache-from: type=gha
+
+      - name: Build Extensions & Toolchain Stage
+        run: |
+          docker run --rm \
+            -v "$(pwd)/src:/build/arkana/src" \
+            -v "$(pwd)/staging:/build/arkana/staging" \
+            -v "$(pwd)/output:/build/arkana/output" \
+            -v "$HOME/.cache/ccache:/home/builder/.cache/ccache" \
+            -e CCACHE_DIR=/home/builder/.cache/ccache \
+            arkana-builder bash -c "sudo make -f arkanas/02_ext.mk && sudo make -f arkanas/03_arkpkg.mk && sudo make -f arkanas/04_toolchain.mk"
+
+      - name: Archive Stage 2
+        run: sudo tar -cf arkana-stage2.tar staging src && sudo chown $USER:$USER arkana-stage2.tar
+
+      - name: Upload Stage 2 Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: arkana-stage2
+          path: arkana-stage2.tar
+          retention-days: 7
+
+      - name: Upload Error Logs on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage2-error-logs
+          path: |
+            src/*/build/meson-logs/
+            src/*/config.log
+            src/*/build/CMakeOutput.log
+            src/*/build/CMakeError.log
+          retention-days: 7
