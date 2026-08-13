@@ -726,7 +726,7 @@ download-harfbuzz: .harfbuzz-obtained
 # Compile harfbuzz
 harfbuzz: download-harfbuzz .harfbuzz-done
 .harfbuzz-done:
-	mkdir -p $(HARFBUZZ_PATH)/build && cd $(HARFBUZZ_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D tests=disabled -D docs=disabled -D introspection=disabled -Dc_args="-Wno-error" -Dcpp_args="-Wno-error" && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(HARFBUZZ_PATH)/build && cd $(HARFBUZZ_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D tests=disabled -D docs=disabled -D introspection=disabled -Dc_args="-Wno-error" -Dcpp_args="-Wno-error" -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16" -Dcpp_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16" && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .harfbuzz-done
 
 # Compile cairo
