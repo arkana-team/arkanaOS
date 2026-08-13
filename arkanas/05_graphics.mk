@@ -838,7 +838,7 @@ vulkan: .vulkan-done
 
 # Window Maker (wmaker-crm fork)
 # URL: https://repo.or.cz/w/wmaker-crm.git
-WMAKER_URL = https://repo.or.cz/w/wmaker-crm.git/snapshot/wmaker-crm-0.9.6.tar.gz
+WMAKER_URL = https://www.windowmaker.org/pub/source/release/WindowMaker-0.96.0.tar.gz
 WMAKER_VER = 0.9.6
 WMAKER_PATH = $(SRC_PATH)/wmaker-crm-$(WMAKER_VER)
 
