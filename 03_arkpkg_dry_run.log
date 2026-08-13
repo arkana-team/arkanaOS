@@ -1,6 +1,0 @@
-cd /home/debarkak/Documents/GitHub/arkanaOS/src && wget -O arkpkg-main.tar.gz https://github.com/debarkak/arkpkg/archive/refs/heads/main.tar.gz && tar xf arkpkg-main.tar.gz
-touch .arkpkg-obtained
-cd /home/debarkak/Documents/GitHub/arkanaOS/src/arkpkg-main && cargo build --release
-install -Dm755 /home/debarkak/Documents/GitHub/arkanaOS/src/arkpkg-main/target/release/arkpkg /home/debarkak/Documents/GitHub/arkanaOS/staging/usr/bin/arkpkg
-install -Dm755 /home/debarkak/Documents/GitHub/arkanaOS/src/arkpkg-main/target/release/arkpkg-build /home/debarkak/Documents/GitHub/arkanaOS/staging/usr/bin/arkpkg-build
-touch .arkpkg-done
