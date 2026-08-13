@@ -151,7 +151,7 @@ IMLIB2_PATH = $(SRC_PATH)/imlib2-$(IMLIB2_VER)
 
 # Pango
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/x/pango.html
-PANGO_URL = https://download.gnome.org/sources/pango/1.56/pango-1.56.4.tar.xz
+PANGO_URL = https://download.gnome.org/sources/pango/1.52/pango-1.52.2.tar.xz
 PANGO_VER = 1.56.4
 PANGO_PATH = $(SRC_PATH)/pango-$(PANGO_VER)
 
