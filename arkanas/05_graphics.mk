@@ -715,7 +715,7 @@ download-pango: .pango-obtained
 # Compile cairo
 cairo: download-cairo .cairo-done
 .cairo-done:
-	mkdir -p $(CAIRO_PATH)/build && cd $(CAIRO_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -D tests=disabled -D utils=disabled .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(CAIRO_PATH)/build && cd $(CAIRO_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -D tests=disabled .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .cairo-done
 
 # Compile pango
