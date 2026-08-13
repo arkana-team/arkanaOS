@@ -191,7 +191,7 @@ LIBJPEG_TURBO_VER = 3.0.1
 LIBJPEG_TURBO_PATH = $(SRC_PATH)/libjpeg-turbo-$(LIBJPEG_TURBO_VER)
 
 X11_LIBS = X11 Xau xcvt Xdmcp Xext Xfont2 xshmfence xcb fontenc Xxf86vm pciaccess Xmu xkbfile Xrender Xft Xinerama Xrandr Xaw Xpm Xt ICE SM Xcursor Xfixes Xi Xcomposite Xtst
-X11_LIB_VERS = 1.8.12 1.0.12 0.1.3 1.1.5 1.3.6 2.0.7 1.3.3 1.17.0 1.1.8 1.1.6 0.18.1 1.2.1 1.1.3 2.3.9 1.1.5 1.5.4 0.9.12 1.0.16 3.5.17 1.3.1 1.1.2 1.2.6 1.2.3 6.0.1 1.8.1 0.4.6 1.2.4
+X11_LIB_VERS = 1.8.12 1.0.12 0.1.3 1.1.5 1.3.6 2.0.7 1.3.3 1.17.0 1.1.8 1.1.6 0.18.1 1.2.1 1.1.3 0.9.12 2.3.9 1.1.5 1.5.4 1.0.16 3.5.17 1.3.1 1.1.2 1.2.6 1.2.3 6.0.1 1.8.1 0.4.6 1.2.4
 
 X11_PARSED_LIBS := $(foreach i, $(shell seq 1 $(words $(X11_LIBS))), \
   $(word $(i), $(X11_LIBS))/$(word $(i), $(X11_LIB_VERS)))
