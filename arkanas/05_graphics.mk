@@ -722,7 +722,7 @@ cairo: download-cairo .cairo-done
 pango: download-pango libthai cairo .pango-done
 .pango-done:
 	cd $(PANGO_PATH) && sed -i '/#include <hb-ft.h>/a #include <fontconfig\/fcfreetype.h>' pango/pangofc-fontmap.c && \
-	mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release --wrap-mode=nofallback -D introspection=disabled -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16 -lm" .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release --wrap-mode=nofallback -D introspection=disabled -Dc_args="-Wno-error" -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16 -lm" .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .pango-done
 
 # Download libthai
