@@ -127,7 +127,7 @@ download-wayland-protocols: .wayland-protocols-obtained
 
 wayland-protocols: download-wayland-protocols .wayland-protocols-done
 .wayland-protocols-done:
-	mkdir -p $(WAYLAND_PROTOCOLS_PATH)/build && cd $(WAYLAND_PROTOCOLS_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release && ninja && \
+	mkdir -p $(WAYLAND_PROTOCOLS_PATH)/build && cd $(WAYLAND_PROTOCOLS_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -Dtests=false -Dc_args="-Wno-error" -Dcpp_args="-Wno-error" && ninja && \
 	DESTDIR=$(STAGING_PATH) ninja install
 	touch .wayland-protocols-done
 
