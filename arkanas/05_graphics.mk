@@ -176,6 +176,7 @@ LIBRSVG_PATH = $(SRC_PATH)/librsvg-$(LIBRSVG_VER)
 # Libdav1d
 LIBDAV1D_URL = https://sources.buildroot.net/dav1d/dav1d-1.5.1.tar.xz
 LIBDAV1D_VER = 1.5.1
+LIBDAV1D_PATH = $(SRC_PATH)/dav1d-$(LIBDAV1D_VER)
 
 # Cairo
 CAIRO_URL = https://www.cairographics.org/releases/cairo-1.18.2.tar.xz
