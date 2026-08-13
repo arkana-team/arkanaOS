@@ -290,6 +290,7 @@ download-xbitmaps: .xbitmaps-obtained
 	touch .xbitmaps-obtained
 xbitmaps: download-xbitmaps .xbitmaps-done
 .xbitmaps-done:
+	cd $(XBITMAPS_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 FONT_UTIL_URL = https://gitlab.freedesktop.org/xorg/font/util/-/archive/XORG-STABLE/util-XORG-STABLE.tar.gz
 FONT_UTIL_VER = XORG-STABLE
 FONT_UTIL_PATH = $(SRC_PATH)/util-XORG-STABLE
