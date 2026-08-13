@@ -343,7 +343,7 @@ download-xorg-libs: .xorg-libs-obtained
 	touch .xorg-libs-obtained
 
 # Compile Xorg libraries
-xorg-libs: download-xorg-libs .xorg-libs-done
+xorg-libs: download-xorg-libs fontconfig .xorg-libs-done
 .xorg-libs-done:
 	for pair in $(X11_PARSED_LIBS); do \
 	  lib=$${pair%%/*}; \
