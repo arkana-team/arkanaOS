@@ -139,7 +139,7 @@ download-weston: .weston-obtained
 weston: download-weston libxkbcommon seatd .weston-done
 .weston-done:
     # Why are you using outdated FFmpeg syntax?
-	mkdir -p $(WESTON_PATH)/build && cd $(WESTON_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -Ddemo-clients=false -Dbackend-vnc=false -Dcolor-management-lcms=false -Dimage-webp=false -Dpipewire=false -Dbackend-pipewire=false -Dbackend-rdp=false -Dremoting=false -Dtests=false -Dshell-kiosk=false -Dshell-fullscreen=false -Dbackend-drm-screencast-vaapi=false -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lglib-2.0 -lgobject-2.0" && \
+	mkdir -p $(WESTON_PATH)/build && cd $(WESTON_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -Ddemo-clients=false -Dbackend-vnc=false -Dcolor-management-lcms=false -Dimage-webp=false -Dpipewire=false -Dbackend-pipewire=false -Dbackend-rdp=false -Dremoting=false -Dtests=false -Dshell-kiosk=false -Dshell-fullscreen=false -Dbackend-drm-screencast-vaapi=false -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lglib-2.0 -lgobject-2.0 -lpng16" && \
 	DESTDIR=$(STAGING_PATH) ninja install
 	touch .weston-done
 
