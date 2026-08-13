@@ -274,6 +274,7 @@ FONTCONFIG_URL = https://gitlab.freedesktop.org/api/v4/projects/890/packages/gen
 FONTCONFIG_VER = 2.17.1
 FONTCONFIG_PATH = $(SRC_PATH)/fontconfig-$(FONTCONFIG_VER)
 download-fontconfig: .fontconfig-obtained
+.fontconfig-obtained:
 FONT_UTIL_URL = https://gitlab.freedesktop.org/xorg/font/util/-/archive/XORG-STABLE/util-XORG-STABLE.tar.gz
 FONT_UTIL_VER = XORG-STABLE
 FONT_UTIL_PATH = $(SRC_PATH)/util-XORG-STABLE
