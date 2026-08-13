@@ -333,7 +333,7 @@ labwc: download-labwc wlroots xcb-util-wm libsfdo libxml2 .labwc-done
 	CFLAGS="-I$(STAGING_PATH)/usr/include/wlroots-0.19 -I$(STAGING_PATH)/usr/include -I$(STAGING_PATH)/usr/include/pixman-1" \
 	LDFLAGS="-L$(STAGING_PATH)/usr/lib -lwacom" \
 	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
-	meson setup --prefix=/usr --native-file $(SRC_PATH)/cross_file.txt -Dc_args="-Uunix" --buildtype=release --wrap-mode=nodownload .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	meson setup --prefix=/usr --native-file $(SRC_PATH)/cross_file.txt -Dc_args="-Uunix" -Dc_link_args="-lpng16" --buildtype=release --wrap-mode=nodownload .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	# Why is pam_systemd.so not doing this for us?
 	echo >> $(STAGING_PATH)/etc/profile
 	echo '# Set XDG_RUNTIME_DIR if not already set by the system' >> $(STAGING_PATH)/etc/profile
