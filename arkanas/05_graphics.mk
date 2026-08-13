@@ -270,7 +270,7 @@ freetype: download-freetype .freetype-done
 	CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --enable-freetype-config --disable-static --without-harfbuzz --without-png --without-brotli --without-zlib && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .freetype-done
-
+FONTCONFIG_URL = https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/2.17.1/fontconfig-2.17.1.tar.xz
 FONT_UTIL_URL = https://gitlab.freedesktop.org/xorg/font/util/-/archive/XORG-STABLE/util-XORG-STABLE.tar.gz
 FONT_UTIL_VER = XORG-STABLE
 FONT_UTIL_PATH = $(SRC_PATH)/util-XORG-STABLE
