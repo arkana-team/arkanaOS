@@ -1,5 +1,0 @@
-cd /home/debarkak/Documents/GitHub/arkanaOS/src && wget -O less-679.tar.gz https://mirrors.ocf.berkeley.edu/gnu/less/less-679.tar.gz && tar xf less-679.tar.gz
-touch .less-obtained
-cd /home/debarkak/Documents/GitHub/arkanaOS/src/less-679 && ./configure --prefix=/usr --sysconfdir=/etc && make -j8 && make DESTDIR=/home/debarkak/Documents/GitHub/arkanaOS/staging install
-bash: line 1: cd: /home/debarkak/Documents/GitHub/arkanaOS/src/less-679: No such file or directory
-make: *** [arkanas/02_ext.mk:355: .less-done] Error 1
