@@ -652,7 +652,7 @@ download-libwacom: .libwacom-obtained
 	touch .libwacom-obtained
 
 # Compile libwacom
-libwacom: download-libwacom .libwacom-done
+libwacom: download-libwacom libgudev .libwacom-done
 .libwacom-done:
 	mkdir -p $(LIBWACOM_PATH)/build && cd $(LIBWACOM_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D tests=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install && \
 	sed -i 's|prefix=/usr|prefix=$(STAGING_PATH)/usr|g' $(STAGING_PATH)/usr/lib/pkgconfig/libwacom.pc
