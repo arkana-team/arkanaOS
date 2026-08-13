@@ -782,7 +782,7 @@ download-gdk-pixbuf: .gdk-pixbuf-obtained
 	touch .gdk-pixbuf-obtained
 
 # Compile gdk-pixbuf
-gdk-pixbuf: download-gdk-pixbuf .gdk-pixbuf-done
+gdk-pixbuf: download-gdk-pixbuf libjpeg-turbo .gdk-pixbuf-done
 .gdk-pixbuf-done:
 	mkdir -p $(GDK_PIXBUF_PATH)/build && cd $(GDK_PIXBUF_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D others=enabled -D png=enabled -D gio_sniffing=false --wrap-mode=nofallback && \
 	ninja && DESTDIR=$(STAGING_PATH) ninja install
