@@ -957,7 +957,7 @@ bzip2: download-bzip2 .bzip2-done
 
 .bzip2-done:
 	cd $(BZIP2_PATH) && sed -i 's@\(ln -s -f \)$(PREFIX)/bin/@\1@' Makefile && $(MAKE) clean && \
-	$(MAKE) -f Makefile-libbz2_so && $(MAKE) clean && $(MAKE) -j$(THREADS) && \
+	$(MAKE) -f Makefile-libbz2_so && $(MAKE) clean && $(MAKE) -j$(THREADS) CFLAGS="-O2 -fPIC" && \
 	$(MAKE) PREFIX=$(STAGING_PATH)/usr install && cp -a libbz2.so.* $(STAGING_PATH)/usr/lib && \
 	cd $(STAGING_PATH)/usr/bin && ln -sf bzip2 bzcat && ln -sf bzip2 bunzip2
 	mkdir -p $(STAGING_PATH)/usr/lib/pkgconfig
