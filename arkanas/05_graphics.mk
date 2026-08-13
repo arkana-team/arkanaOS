@@ -717,6 +717,18 @@ download-pango: .pango-obtained
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O pango-$(PANGO_VER).tar.xz $(PANGO_URL) && tar xf pango-$(PANGO_VER).tar.xz
 	touch .pango-obtained
 
+# Download harfbuzz
+download-harfbuzz: .harfbuzz-obtained
+.harfbuzz-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O harfbuzz-$(HARFBUZZ_VER).tar.xz $(HARFBUZZ_URL) && tar xf harfbuzz-$(HARFBUZZ_VER).tar.xz
+	touch .harfbuzz-obtained
+
+# Compile harfbuzz
+harfbuzz: download-harfbuzz .harfbuzz-done
+.harfbuzz-done:
+	mkdir -p $(HARFBUZZ_PATH)/build && cd $(HARFBUZZ_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D tests=disabled -D docs=disabled -D introspection=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	touch .harfbuzz-done
+
 # Compile cairo
 cairo: download-cairo .cairo-done
 .cairo-done:
