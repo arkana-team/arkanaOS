@@ -410,7 +410,7 @@ xorg-fonts: download-xorg-fonts xorg-apps .xorg-fonts-done
 	for pair in $(X11_PARSED_FONTS); do \
 	  font=$${pair%%/*}; \
 	  ver=$${pair##*/}; \
-	  cd $(SRC_PATH)/$$font-$$ver/ && PATH="$(STAGING_PATH)/usr/bin:$$PATH" LD_LIBRARY_PATH="$(STAGING_PATH)/usr/lib:$$LD_LIBRARY_PATH" BDFTOPCF="$(STAGING_PATH)/usr/bin/bdftopcf" CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install || exit 1; \
+	  cd $(SRC_PATH)/$$font-$$ver/ && PATH="$(STAGING_PATH)/usr/bin:$$PATH" BDFTOPCF="$(STAGING_PATH)/usr/bin/bdftopcf" CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install || exit 1; \
 	done
 	touch .xorg-fonts-done
 
