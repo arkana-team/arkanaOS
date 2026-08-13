@@ -703,7 +703,7 @@ download-pango: .pango-obtained
 	touch .pango-obtained
 
 # Compile pango
-pango: download-pango .pango-done
+pango: download-pango libthai .pango-done
 .pango-done:
 	cd $(PANGO_PATH) && sed -i '/#include <hb-ft.h>/a #include <fontconfig\/fcfreetype.h>' pango/pangofc-fontmap.c && \
 	mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release --wrap-mode=nofallback -D introspection=enabled .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
