@@ -765,7 +765,7 @@ librsvg: download-librsvg pango gdk-pixbuf .librsvg-done
 # Download libdav1d
 download-libdav1d: .libdav1d-obtained
 .libdav1d-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libdav1d-$(LIBDAV1D_VER).tar.xz $(LIBDAV1D_URL) && tar xf libdav1d-$(LIBDAV1D_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O dav1d-$(LIBDAV1D_VER).tar.xz $(LIBDAV1D_URL) && tar xf dav1d-$(LIBDAV1D_VER).tar.xz
 	touch .libdav1d-obtained
 
 # Compile libdav1d
