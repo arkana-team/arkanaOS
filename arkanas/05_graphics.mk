@@ -612,7 +612,7 @@ luit: download-luit .luit-done
 # Download libinput
 download-libinput: .libinput-obtained
 .libinput-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libinput-$(LIBINPUT_VER).tar.xz $(LIBINPUT_URL) && tar xf libinput-$(LIBINPUT_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libinput-$(LIBINPUT_VER).tar.gz $(LIBINPUT_URL) && tar xf libinput-$(LIBINPUT_VER).tar.gz
 	touch .libinput-obtained
 
 # Compile libinput
