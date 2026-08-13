@@ -712,6 +712,12 @@ download-pango: .pango-obtained
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O pango-$(PANGO_VER).tar.xz $(PANGO_URL) && tar xf pango-$(PANGO_VER).tar.xz
 	touch .pango-obtained
 
+# Compile cairo
+cairo: download-cairo .cairo-done
+.cairo-done:
+	mkdir -p $(CAIRO_PATH)/build && cd $(CAIRO_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	touch .cairo-done
+
 # Compile pango
 pango: download-pango libthai .pango-done
 .pango-done:
