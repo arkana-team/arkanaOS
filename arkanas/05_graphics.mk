@@ -616,7 +616,7 @@ download-libinput: .libinput-obtained
 	touch .libinput-obtained
 
 # Compile libinput
-libinput: download-libinput libevdev .libinput-done
+libinput: download-libinput libevdev libwacom .libinput-done
 .libinput-done:
 	mkdir -p $(LIBINPUT_PATH)/build && cd $(LIBINPUT_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D documentation=false -D tests=false && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .libinput-done
