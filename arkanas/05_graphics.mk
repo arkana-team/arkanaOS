@@ -784,7 +784,7 @@ download-gdk-pixbuf: .gdk-pixbuf-obtained
 # Compile gdk-pixbuf
 gdk-pixbuf: download-gdk-pixbuf libjpeg-turbo .gdk-pixbuf-done
 .gdk-pixbuf-done:
-	mkdir -p $(GDK_PIXBUF_PATH)/build && cd $(GDK_PIXBUF_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D others=enabled -D png=enabled -D gio_sniffing=false -D introspection=disabled --wrap-mode=nofallback && \
+	mkdir -p $(GDK_PIXBUF_PATH)/build && cd $(GDK_PIXBUF_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D others=enabled -D png=enabled -D gio_sniffing=false -D introspection=disabled --wrap-mode=nofallback -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16" && \
 	ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .gdk-pixbuf-done
 
