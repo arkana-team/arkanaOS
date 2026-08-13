@@ -279,6 +279,7 @@ download-fontconfig: .fontconfig-obtained
 	touch .fontconfig-obtained
 fontconfig: download-fontconfig .fontconfig-done
 .fontconfig-done:
+	cd $(FONTCONFIG_PATH) && ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --sysconfdir=/etc --localstatedir=/var --disable-docs --docdir=/usr/share/doc/fontconfig-$(FONTCONFIG_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 FONT_UTIL_URL = https://gitlab.freedesktop.org/xorg/font/util/-/archive/XORG-STABLE/util-XORG-STABLE.tar.gz
 FONT_UTIL_VER = XORG-STABLE
 FONT_UTIL_PATH = $(SRC_PATH)/util-XORG-STABLE
