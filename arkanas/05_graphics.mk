@@ -179,6 +179,8 @@ LIBDAV1D_VER = 1.5.1
 
 # Cairo
 CAIRO_URL = https://www.cairographics.org/releases/cairo-1.18.2.tar.xz
+CAIRO_VER = 1.18.2
+CAIRO_PATH = $(SRC_PATH)/cairo-$(CAIRO_VER)
 
 # GDK-Pixbuf
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/x/gdk-pixbuf.html
