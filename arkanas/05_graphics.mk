@@ -288,6 +288,7 @@ download-xbitmaps: .xbitmaps-obtained
 .xbitmaps-obtained:
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O xbitmaps-$(XBITMAPS_VER).tar.gz $(XBITMAPS_URL) && tar xf xbitmaps-$(XBITMAPS_VER).tar.gz
 	touch .xbitmaps-obtained
+xbitmaps: download-xbitmaps .xbitmaps-done
 FONT_UTIL_URL = https://gitlab.freedesktop.org/xorg/font/util/-/archive/XORG-STABLE/util-XORG-STABLE.tar.gz
 FONT_UTIL_VER = XORG-STABLE
 FONT_UTIL_PATH = $(SRC_PATH)/util-XORG-STABLE
