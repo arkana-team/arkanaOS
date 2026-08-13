@@ -756,7 +756,7 @@ download-librsvg: .librsvg-obtained
 	touch .librsvg-obtained
 
 # Compile librsvg
-librsvg: download-librsvg .librsvg-done
+librsvg: download-librsvg pango gdk-pixbuf .librsvg-done
 .librsvg-done:
 	mkdir -p $(LIBRSVG_PATH)/build && cd $(LIBRSVG_PATH) && sed -e "/OUTDIR/s|,| / 'librsvg-2.60.0', '--no-namespace-dir',|" -e '/output/s|Rsvg-2.0|librsvg-2.60.0|' -i doc/meson.build && \
 	cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
