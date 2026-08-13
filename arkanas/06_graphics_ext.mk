@@ -107,7 +107,7 @@ SEATD_URL = https://git.sr.ht/~kennylevinsen/seatd/archive/0.9.2.tar.gz
 SEATD_VER = 0.9.2
 SEATD_PATH = $(SRC_PATH)/seatd-$(SEATD_VER)
 
-all: wayland wayland-protocols libxkbcommon weston libunwind libwebp giflib libtiff libdeflate libjbig xwayland libepoxy labwc seatd
+all: wayland wayland-protocols libxkbcommon seatd weston libunwind libwebp giflib libtiff libdeflate libjbig xwayland libepoxy labwc
 
 download-wayland: .wayland-obtained
 .wayland-obtained:
