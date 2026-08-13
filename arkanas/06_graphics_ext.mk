@@ -136,7 +136,7 @@ download-weston: .weston-obtained
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O weston-$(WESTON_VER).tar.xz $(WESTON_URL) && tar xf weston-$(WESTON_VER).tar.xz
 	touch .weston-obtained
 
-weston: download-weston libxkbcommon .weston-done
+weston: download-weston libxkbcommon seatd .weston-done
 .weston-done:
     # Why are you using outdated FFmpeg syntax?
 	mkdir -p $(WESTON_PATH)/build && cd $(WESTON_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -Ddemo-clients=false -Dbackend-vnc=false -Dcolor-management-lcms=false -Dimage-webp=false -Dpipewire=false -Dshell-kiosk=false -Dshell-fullscreen=false && \
