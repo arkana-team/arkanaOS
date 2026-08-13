@@ -700,6 +700,12 @@ imlib2: download-imlib2 .imlib2-done
 	cd $(IMLIB2_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .imlib2-done
 
+# Download cairo
+download-cairo: .cairo-obtained
+.cairo-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O cairo-$(CAIRO_VER).tar.xz $(CAIRO_URL) && tar xf cairo-$(CAIRO_VER).tar.xz
+	touch .cairo-obtained
+
 # Download pango
 download-pango: .pango-obtained
 .pango-obtained:
