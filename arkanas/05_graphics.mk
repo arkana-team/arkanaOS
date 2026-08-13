@@ -845,7 +845,7 @@ WMAKER_PATH = $(SRC_PATH)/WindowMaker-$(WMAKER_VER)
 # Download Window Maker
 download-wmaker: .wmaker-obtained
 .wmaker-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O wmaker-crm-$(WMAKER_VER).tar.gz $(WMAKER_URL) && tar xf wmaker-crm-$(WMAKER_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O WindowMaker-$(WMAKER_VER).tar.gz $(WMAKER_URL) && tar xf WindowMaker-$(WMAKER_VER).tar.gz
 	touch .wmaker-obtained
 
 # Compile Window Maker
