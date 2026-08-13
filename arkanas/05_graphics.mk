@@ -285,6 +285,7 @@ XBITMAPS_URL = https://www.x.org/pub/individual/data/xbitmaps-1.1.3.tar.gz
 XBITMAPS_VER = 1.1.3
 XBITMAPS_PATH = $(SRC_PATH)/xbitmaps-$(XBITMAPS_VER)
 download-xbitmaps: .xbitmaps-obtained
+.xbitmaps-obtained:
 FONT_UTIL_URL = https://gitlab.freedesktop.org/xorg/font/util/-/archive/XORG-STABLE/util-XORG-STABLE.tar.gz
 FONT_UTIL_VER = XORG-STABLE
 FONT_UTIL_PATH = $(SRC_PATH)/util-XORG-STABLE
