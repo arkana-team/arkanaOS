@@ -380,7 +380,7 @@ download-xorg-apps: .xorg-apps-obtained
 	touch .xorg-apps-obtained
 
 # Compile Xorg applications
-xorg-apps: download-xorg-apps .xorg-apps-done
+xorg-apps: download-xorg-apps xbitmaps .xorg-apps-done
 .xorg-apps-done:
 	for pair in $(X11_PARSED_APPS); do \
 	  app=$${pair%%/*}; \
