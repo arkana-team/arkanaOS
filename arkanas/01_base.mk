@@ -321,13 +321,13 @@ dirs: .dirs-done
 		"pkg-config = 'pkg-config'" \
 		'' \
 		'[built-in options]' \
-		"c_args = ['-I/build/arkana/staging/usr/include']" \
-		"cpp_args = ['-I/build/arkana/staging/usr/include']" \
-		"c_link_args = ['-L/build/arkana/staging/usr/lib', '-Wl,-rpath-link=/build/arkana/staging/usr/lib']" \
-		"cpp_link_args = ['-L/build/arkana/staging/usr/lib', '-Wl,-rpath-link=/build/arkana/staging/usr/lib']" \
+		"c_args = ['-I$(STAGING_PATH)/usr/include']" \
+		"cpp_args = ['-I$(STAGING_PATH)/usr/include']" \
+		"c_link_args = ['-L$(STAGING_PATH)/usr/lib', '-Wl,-rpath-link=$(STAGING_PATH)/usr/lib']" \
+		"cpp_link_args = ['-L$(STAGING_PATH)/usr/lib', '-Wl,-rpath-link=$(STAGING_PATH)/usr/lib']" \
 		'' \
 		'[properties]' \
-		"pkg_config_libdir = '/build/arkana/staging/usr/lib/pkgconfig:/build/arkana/staging/usr/share/pkgconfig'" \
+		"pkg_config_libdir = '$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig'" \
 		'' \
 		'[host_machine]' \
 		"system = 'linux'" \
