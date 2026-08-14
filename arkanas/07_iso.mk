@@ -644,3 +644,5 @@ iso:
 	echo '}' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
 
 	grub-mkrescue -o $(OUTPUT_PATH)/arkana.iso $(ISO_STAGING_PATH) -- -volid "ARKANA"
+	chmod -R 777 $(OUTPUT_PATH) 2>/dev/null || true
+
