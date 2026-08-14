@@ -14,7 +14,7 @@ BUILDNUM_FILE := $(shell realpath .buildnum)
 # Package variables
 # Glibc
 # URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter05/glibc.html
-GLIBC_URL = https://mirrors.ocf.berkeley.edu/gnu/glibc/glibc-2.42.tar.gz
+GLIBC_URL = https://mirrors.ocf.berkeley.edu/gnu/glibc/glibc-2.43.tar.gz
 GLIBC_VER = 2.42
 GLIBC_PATH = $(SRC_PATH)/glibc-$(GLIBC_VER)
 
