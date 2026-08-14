@@ -107,7 +107,7 @@ SEATD_URL = https://git.sr.ht/~kennylevinsen/seatd/archive/0.9.2.tar.gz
 SEATD_VER = 0.9.2
 SEATD_PATH = $(SRC_PATH)/seatd-$(SEATD_VER)
 
-all: wayland wayland-protocols weston libxkbcommon libunwind libwebp giflib libtiff libdeflate libjbig xwayland libepoxy labwc seatd
+all: wayland wayland-protocols libxkbcommon seatd weston libunwind libwebp giflib libtiff libdeflate libjbig xwayland libepoxy labwc
 
 download-wayland: .wayland-obtained
 .wayland-obtained:
@@ -127,7 +127,7 @@ download-wayland-protocols: .wayland-protocols-obtained
 
 wayland-protocols: download-wayland-protocols .wayland-protocols-done
 .wayland-protocols-done:
-	mkdir -p $(WAYLAND_PROTOCOLS_PATH)/build && cd $(WAYLAND_PROTOCOLS_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release && ninja && \
+	mkdir -p $(WAYLAND_PROTOCOLS_PATH)/build && cd $(WAYLAND_PROTOCOLS_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -Dtests=false -Dc_args="-Wno-error" -Dcpp_args="-Wno-error" && ninja && \
 	DESTDIR=$(STAGING_PATH) ninja install
 	touch .wayland-protocols-done
 
@@ -136,10 +136,10 @@ download-weston: .weston-obtained
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O weston-$(WESTON_VER).tar.xz $(WESTON_URL) && tar xf weston-$(WESTON_VER).tar.xz
 	touch .weston-obtained
 
-weston: download-weston .weston-done
+weston: download-weston libxkbcommon seatd .weston-done
 .weston-done:
     # Why are you using outdated FFmpeg syntax?
-	mkdir -p $(WESTON_PATH)/build && cd $(WESTON_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -Ddemo-clients=false -Dbackend-vnc=false -Dcolor-management-lcms=false -Dimage-webp=false -Dpipewire=false -Dshell-kiosk=false -Dshell-fullscreen=false && \
+	mkdir -p $(WESTON_PATH)/build && cd $(WESTON_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -Ddemo-clients=false -Dbackend-vnc=false -Dcolor-management-lcms=false -Dimage-webp=false -Dpipewire=false -Dbackend-pipewire=false -Dbackend-rdp=false -Dremoting=false -Dtests=false -Dshell-kiosk=false -Dshell-fullscreen=false -Dbackend-drm-screencast-vaapi=false -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lglib-2.0 -lgobject-2.0 -lpng16" && \
 	DESTDIR=$(STAGING_PATH) ninja install
 	touch .weston-done
 
@@ -333,7 +333,7 @@ labwc: download-labwc wlroots xcb-util-wm libsfdo libxml2 .labwc-done
 	CFLAGS="-I$(STAGING_PATH)/usr/include/wlroots-0.19 -I$(STAGING_PATH)/usr/include -I$(STAGING_PATH)/usr/include/pixman-1" \
 	LDFLAGS="-L$(STAGING_PATH)/usr/lib -lwacom" \
 	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
-	meson setup --prefix=/usr --native-file $(SRC_PATH)/cross_file.txt -Dc_args="-Uunix" --buildtype=release --wrap-mode=nodownload .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	meson setup --prefix=/usr --native-file $(SRC_PATH)/cross_file.txt -Dc_args="-Uunix" -Dc_link_args="-lpng16" --buildtype=release --wrap-mode=nodownload .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	# Why is pam_systemd.so not doing this for us?
 	echo >> $(STAGING_PATH)/etc/profile
 	echo '# Set XDG_RUNTIME_DIR if not already set by the system' >> $(STAGING_PATH)/etc/profile

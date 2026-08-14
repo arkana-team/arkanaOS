@@ -14,8 +14,8 @@ BUILDNUM_FILE := $(shell realpath .buildnum)
 # Package variables
 # Glibc
 # URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter05/glibc.html
-GLIBC_URL = https://mirrors.ocf.berkeley.edu/gnu/glibc/glibc-2.42.tar.gz
-GLIBC_VER = 2.42
+GLIBC_URL = https://mirrors.ocf.berkeley.edu/gnu/glibc/glibc-2.43.tar.gz
+GLIBC_VER = 2.43
 GLIBC_PATH = $(SRC_PATH)/glibc-$(GLIBC_VER)
 
 # Systemd
@@ -321,13 +321,13 @@ dirs: .dirs-done
 		"pkg-config = 'pkg-config'" \
 		'' \
 		'[built-in options]' \
-		"c_args = ['-I/build/arkana/staging/usr/include']" \
-		"cpp_args = ['-I/build/arkana/staging/usr/include']" \
-		"c_link_args = ['-L/build/arkana/staging/usr/lib', '-Wl,-rpath-link=/build/arkana/staging/usr/lib']" \
-		"cpp_link_args = ['-L/build/arkana/staging/usr/lib', '-Wl,-rpath-link=/build/arkana/staging/usr/lib']" \
+		"c_args = ['-I$(STAGING_PATH)/usr/include']" \
+		"cpp_args = ['-I$(STAGING_PATH)/usr/include']" \
+		"c_link_args = ['-L$(STAGING_PATH)/usr/lib', '-Wl,-rpath-link=$(STAGING_PATH)/usr/lib']" \
+		"cpp_link_args = ['-L$(STAGING_PATH)/usr/lib', '-Wl,-rpath-link=$(STAGING_PATH)/usr/lib']" \
 		'' \
 		'[properties]' \
-		"pkg_config_libdir = '/build/arkana/staging/usr/lib/pkgconfig:/build/arkana/staging/usr/share/pkgconfig'" \
+		"pkg_config_libdir = '$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig'" \
 		'' \
 		'[host_machine]' \
 		"system = 'linux'" \
@@ -368,6 +368,7 @@ glibc: download-glibc .glibc-done
 	cd $(GLIBC_PATH)/build && CFLAGS="-O2 -std=gnu17" ../configure --prefix=/usr --disable-werror --enable-kernel=5.4 \
 	--enable-stack-protector=strong --disable-nscd --enable-shared libc_cv_slibdir=/usr/lib && sed -i '/^CFLAGS/ s/$$/ -O2/' Makefile && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
+	chmod -R 777 $(STAGING_PATH) $(OUTPUT_PATH) 2>/dev/null || true
 	grep -q 'IPPROTO_AGGFRAG' $(STAGING_PATH)/usr/include/netinet/in.h || \
 	  sed -i '/IPPROTO_RAW = 255/a\\    IPPROTO_AGGFRAG = 147,' $(STAGING_PATH)/usr/include/netinet/in.h
 	touch .glibc-done
@@ -957,7 +958,7 @@ bzip2: download-bzip2 .bzip2-done
 
 .bzip2-done:
 	cd $(BZIP2_PATH) && sed -i 's@\(ln -s -f \)$(PREFIX)/bin/@\1@' Makefile && $(MAKE) clean && \
-	$(MAKE) -f Makefile-libbz2_so && $(MAKE) clean && $(MAKE) -j$(THREADS) && \
+	$(MAKE) -f Makefile-libbz2_so && $(MAKE) clean && $(MAKE) -j$(THREADS) CFLAGS="-O2 -fPIC" && \
 	$(MAKE) PREFIX=$(STAGING_PATH)/usr install && cp -a libbz2.so.* $(STAGING_PATH)/usr/lib && \
 	cd $(STAGING_PATH)/usr/bin && ln -sf bzip2 bzcat && ln -sf bzip2 bunzip2
 	mkdir -p $(STAGING_PATH)/usr/lib/pkgconfig

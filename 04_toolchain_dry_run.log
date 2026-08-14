@@ -1,6 +1,0 @@
-if [ "true" = "true" ]; then \
-	make -f arkanas/04_toolchain.mk gcc-compilers binutils meson ninja make autoconf cmake gc libarchive guile libuv libxml2 libtool expat python3 perl automake || exit $?; \
-else \
-	echo "note: arkana toolchain is disabled, set BUILD_TOOLCHAIN=true to enable it"; \
-	exit 0; \
-fi

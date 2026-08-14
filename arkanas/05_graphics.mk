@@ -151,8 +151,8 @@ IMLIB2_PATH = $(SRC_PATH)/imlib2-$(IMLIB2_VER)
 
 # Pango
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/x/pango.html
-PANGO_URL = https://download.gnome.org/sources/pango/1.56/pango-1.56.4.tar.xz
-PANGO_VER = 1.56.4
+PANGO_URL = https://download.gnome.org/sources/pango/1.52/pango-1.52.2.tar.xz
+PANGO_VER = 1.52.2
 PANGO_PATH = $(SRC_PATH)/pango-$(PANGO_VER)
 
 # Libthai
@@ -177,6 +177,15 @@ LIBRSVG_PATH = $(SRC_PATH)/librsvg-$(LIBRSVG_VER)
 LIBDAV1D_URL = https://sources.buildroot.net/dav1d/dav1d-1.5.1.tar.xz
 LIBDAV1D_VER = 1.5.1
 LIBDAV1D_PATH = $(SRC_PATH)/dav1d-$(LIBDAV1D_VER)
+# Harfbuzz
+HARFBUZZ_URL = https://github.com/harfbuzz/harfbuzz/releases/download/10.4.0/harfbuzz-10.4.0.tar.xz
+HARFBUZZ_VER = 10.4.0
+HARFBUZZ_PATH = $(SRC_PATH)/harfbuzz-$(HARFBUZZ_VER)
+
+# Cairo
+CAIRO_URL = https://www.cairographics.org/releases/cairo-1.18.2.tar.xz
+CAIRO_VER = 1.18.2
+CAIRO_PATH = $(SRC_PATH)/cairo-$(CAIRO_VER)
 
 # GDK-Pixbuf
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/x/gdk-pixbuf.html
@@ -190,8 +199,8 @@ LIBJPEG_TURBO_URL = https://downloads.sourceforge.net/libjpeg-turbo/libjpeg-turb
 LIBJPEG_TURBO_VER = 3.0.1
 LIBJPEG_TURBO_PATH = $(SRC_PATH)/libjpeg-turbo-$(LIBJPEG_TURBO_VER)
 
-X11_LIBS = X11 Xau xcvt Xdmcp Xext Xfont2 xshmfence xcb fontenc Xxf86vm pciaccess Xmu xkbfile Xft Xinerama Xrandr Xrender Xaw Xpm Xt ICE SM Xcursor Xfixes Xi Xcomposite Xtst
-X11_LIB_VERS = 1.8.12 1.0.12 0.1.3 1.1.5 1.3.6 2.0.7 1.3.3 1.17.0 1.1.8 1.1.6 0.18.1 1.2.1 1.1.3 2.3.9 1.1.5 1.5.4 0.9.12 1.0.16 3.5.17 1.3.1 1.1.2 1.2.6 1.2.3 6.0.1 1.8.1 0.4.6 1.2.4
+X11_LIBS = X11 Xau xcvt Xdmcp Xext Xfont2 xshmfence xcb fontenc Xxf86vm pciaccess Xmu xkbfile Xrender Xft Xinerama Xrandr Xaw Xpm Xt ICE SM Xcursor Xfixes Xi Xcomposite Xtst
+X11_LIB_VERS = 1.8.12 1.0.12 0.1.3 1.1.5 1.3.6 2.0.7 1.3.3 1.17.0 1.1.8 1.1.6 0.18.1 1.2.1 1.1.3 0.9.12 2.3.9 1.1.5 1.5.4 1.0.16 3.5.17 1.3.1 1.1.2 1.2.6 1.2.3 6.0.1 1.8.1 0.4.6 1.2.4
 
 X11_PARSED_LIBS := $(foreach i, $(shell seq 1 $(words $(X11_LIBS))), \
   $(word $(i), $(X11_LIBS))/$(word $(i), $(X11_LIB_VERS)))
@@ -209,7 +218,7 @@ X11_PARSED_FONTS := $(foreach i, $(shell seq 1 $(words $(X11_FONTS))), \
   $(word $(i), $(X11_FONTS))/$(word $(i), $(X11_FONT_VERS)))
 
 # Targets
-all: xorgproto xtrans pixman freetype font-util xorg-libs libdrm mesa xorg-server libbsd libmd lm-sensors llvm libedit spirv-tools xinit xorg-apps xorg-fonts xorg-xkeyboard-config xf86-input-evdev openbox fribidi xterm luit libinput libevdev mtdev libwacom libgudev feh imlib2 pango libthai libdatrie librsvg libdav1d gdk-pixbuf libjpeg-turbo wmaker
+all: xorgproto xtrans pixman freetype font-util fontconfig xbitmaps xorg-libs libdrm mesa xorg-server libbsd libmd lm-sensors llvm libedit spirv-tools xinit xorg-apps xorg-fonts xorg-xkeyboard-config xf86-input-evdev openbox fribidi xterm luit libevdev mtdev libgudev libwacom libinput feh imlib2 libdatrie libthai harfbuzz cairo pango libdav1d libjpeg-turbo gdk-pixbuf librsvg wmaker
 
 XORGPROTO_URL = https://www.x.org/pub/individual/proto/xorgproto-2024.1.tar.xz
 XORGPROTO_VER = 2024.1
@@ -270,7 +279,28 @@ freetype: download-freetype .freetype-done
 	CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --enable-freetype-config --disable-static --without-harfbuzz --without-png --without-brotli --without-zlib && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .freetype-done
-
+FONTCONFIG_URL = https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/2.17.1/fontconfig-2.17.1.tar.xz
+FONTCONFIG_VER = 2.17.1
+FONTCONFIG_PATH = $(SRC_PATH)/fontconfig-$(FONTCONFIG_VER)
+download-fontconfig: .fontconfig-obtained
+.fontconfig-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O fontconfig-$(FONTCONFIG_VER).tar.xz $(FONTCONFIG_URL) && tar xf fontconfig-$(FONTCONFIG_VER).tar.xz
+	touch .fontconfig-obtained
+fontconfig: download-fontconfig .fontconfig-done
+.fontconfig-done:
+	cd $(FONTCONFIG_PATH) && ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --sysconfdir=/etc --localstatedir=/var --disable-docs --docdir=/usr/share/doc/fontconfig-$(FONTCONFIG_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .fontconfig-done
+XBITMAPS_URL = https://www.x.org/pub/individual/data/xbitmaps-1.1.3.tar.gz
+XBITMAPS_VER = 1.1.3
+XBITMAPS_PATH = $(SRC_PATH)/xbitmaps-$(XBITMAPS_VER)
+download-xbitmaps: .xbitmaps-obtained
+.xbitmaps-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O xbitmaps-$(XBITMAPS_VER).tar.gz $(XBITMAPS_URL) && tar xf xbitmaps-$(XBITMAPS_VER).tar.gz
+	touch .xbitmaps-obtained
+xbitmaps: download-xbitmaps .xbitmaps-done
+.xbitmaps-done:
+	cd $(XBITMAPS_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && mkdir -p $(STAGING_PATH)/usr/lib/pkgconfig && cp -a $(STAGING_PATH)/usr/share/pkgconfig/xbitmaps.pc $(STAGING_PATH)/usr/lib/pkgconfig/
+	touch .xbitmaps-done
 FONT_UTIL_URL = https://gitlab.freedesktop.org/xorg/font/util/-/archive/XORG-STABLE/util-XORG-STABLE.tar.gz
 FONT_UTIL_VER = XORG-STABLE
 FONT_UTIL_PATH = $(SRC_PATH)/util-XORG-STABLE
@@ -333,7 +363,7 @@ download-xorg-libs: .xorg-libs-obtained
 	touch .xorg-libs-obtained
 
 # Compile Xorg libraries
-xorg-libs: download-xorg-libs .xorg-libs-done
+xorg-libs: download-xorg-libs fontconfig .xorg-libs-done
 .xorg-libs-done:
 	for pair in $(X11_PARSED_LIBS); do \
 	  lib=$${pair%%/*}; \
@@ -359,12 +389,12 @@ download-xorg-apps: .xorg-apps-obtained
 	touch .xorg-apps-obtained
 
 # Compile Xorg applications
-xorg-apps: download-xorg-apps .xorg-apps-done
+xorg-apps: download-xorg-apps xbitmaps .xorg-apps-done
 .xorg-apps-done:
 	for pair in $(X11_PARSED_APPS); do \
 	  app=$${pair%%/*}; \
 	  ver=$${pair##*/}; \
-	  cd $(SRC_PATH)/$$app-$$ver/ && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install || exit 1; \
+	  cd $(SRC_PATH)/$$app-$$ver/ && PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install || exit 1; \
 	done
 	touch .xorg-apps-done
 
@@ -591,13 +621,13 @@ luit: download-luit .luit-done
 # Download libinput
 download-libinput: .libinput-obtained
 .libinput-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libinput-$(LIBINPUT_VER).tar.xz $(LIBINPUT_URL) && tar xf libinput-$(LIBINPUT_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libinput-$(LIBINPUT_VER).tar.gz $(LIBINPUT_URL) && tar xf libinput-$(LIBINPUT_VER).tar.gz
 	touch .libinput-obtained
 
 # Compile libinput
-libinput: download-libinput .libinput-done
+libinput: download-libinput libevdev libwacom .libinput-done
 .libinput-done:
-	mkdir -p $(LIBINPUT_PATH)/build && cd $(LIBINPUT_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D documentation=false -D tests=false && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(LIBINPUT_PATH)/build && cd $(LIBINPUT_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D debug-gui=false -D documentation=false -D tests=false -Dc_args="-Wno-error" -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lglib-2.0 -lgobject-2.0" && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .libinput-done
 
 # Download libevdev
@@ -631,7 +661,7 @@ download-libwacom: .libwacom-obtained
 	touch .libwacom-obtained
 
 # Compile libwacom
-libwacom: download-libwacom .libwacom-done
+libwacom: download-libwacom libgudev .libwacom-done
 .libwacom-done:
 	mkdir -p $(LIBWACOM_PATH)/build && cd $(LIBWACOM_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D tests=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install && \
 	sed -i 's|prefix=/usr|prefix=$(STAGING_PATH)/usr|g' $(STAGING_PATH)/usr/lib/pkgconfig/libwacom.pc
@@ -646,7 +676,7 @@ download-libgudev: .libgudev-obtained
 # Compile libgudev
 libgudev: download-libgudev .libgudev-done
 .libgudev-done:
-	mkdir -p $(LIBGUDEV_PATH)/build && cd $(LIBGUDEV_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -Dc_args="-Wno-error" .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(LIBGUDEV_PATH)/build && cd $(LIBGUDEV_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -D introspection=disabled -Dc_args="-Wno-error" .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .libgudev-done
 
 # Download feh
@@ -675,17 +705,41 @@ imlib2: download-imlib2 .imlib2-done
 	cd $(IMLIB2_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .imlib2-done
 
+# Download cairo
+download-cairo: .cairo-obtained
+.cairo-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O cairo-$(CAIRO_VER).tar.xz $(CAIRO_URL) && tar xf cairo-$(CAIRO_VER).tar.xz
+	touch .cairo-obtained
+
 # Download pango
 download-pango: .pango-obtained
 .pango-obtained:
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O pango-$(PANGO_VER).tar.xz $(PANGO_URL) && tar xf pango-$(PANGO_VER).tar.xz
 	touch .pango-obtained
 
+# Download harfbuzz
+download-harfbuzz: .harfbuzz-obtained
+.harfbuzz-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O harfbuzz-$(HARFBUZZ_VER).tar.xz $(HARFBUZZ_URL) && tar xf harfbuzz-$(HARFBUZZ_VER).tar.xz
+	touch .harfbuzz-obtained
+
+# Compile harfbuzz
+harfbuzz: download-harfbuzz .harfbuzz-done
+.harfbuzz-done:
+	mkdir -p $(HARFBUZZ_PATH)/build && cd $(HARFBUZZ_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D tests=disabled -D docs=disabled -D introspection=disabled -Dc_args="-Wno-error" -Dcpp_args="-Wno-error" -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16" -Dcpp_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16" && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	touch .harfbuzz-done
+
+# Compile cairo
+cairo: download-cairo .cairo-done
+.cairo-done:
+	mkdir -p $(CAIRO_PATH)/build && cd $(CAIRO_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -D tests=disabled -D png=enabled -D fontconfig=enabled -D freetype=enabled -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16 -lm" .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	touch .cairo-done
+
 # Compile pango
-pango: download-pango .pango-done
+pango: download-pango libthai harfbuzz cairo .pango-done
 .pango-done:
 	cd $(PANGO_PATH) && sed -i '/#include <hb-ft.h>/a #include <fontconfig\/fcfreetype.h>' pango/pangofc-fontmap.c && \
-	mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release --wrap-mode=nofallback -D introspection=enabled .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release --wrap-mode=nofallback -D introspection=disabled -Dc_args="-Wno-error" -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16 -lm" .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .pango-done
 
 # Download libthai
@@ -719,7 +773,7 @@ download-librsvg: .librsvg-obtained
 	touch .librsvg-obtained
 
 # Compile librsvg
-librsvg: download-librsvg .librsvg-done
+librsvg: download-librsvg pango gdk-pixbuf .librsvg-done
 .librsvg-done:
 	mkdir -p $(LIBRSVG_PATH)/build && cd $(LIBRSVG_PATH) && sed -e "/OUTDIR/s|,| / 'librsvg-2.60.0', '--no-namespace-dir',|" -e '/output/s|Rsvg-2.0|librsvg-2.60.0|' -i doc/meson.build && \
 	cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
@@ -728,7 +782,7 @@ librsvg: download-librsvg .librsvg-done
 # Download libdav1d
 download-libdav1d: .libdav1d-obtained
 .libdav1d-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libdav1d-$(LIBDAV1D_VER).tar.xz $(LIBDAV1D_URL) && tar xf libdav1d-$(LIBDAV1D_VER).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O dav1d-$(LIBDAV1D_VER).tar.xz $(LIBDAV1D_URL) && tar xf dav1d-$(LIBDAV1D_VER).tar.xz
 	touch .libdav1d-obtained
 
 # Compile libdav1d
@@ -744,9 +798,9 @@ download-gdk-pixbuf: .gdk-pixbuf-obtained
 	touch .gdk-pixbuf-obtained
 
 # Compile gdk-pixbuf
-gdk-pixbuf: download-gdk-pixbuf .gdk-pixbuf-done
+gdk-pixbuf: download-gdk-pixbuf libjpeg-turbo .gdk-pixbuf-done
 .gdk-pixbuf-done:
-	mkdir -p $(GDK_PIXBUF_PATH)/build && cd $(GDK_PIXBUF_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D others=enabled --wrap-mode=nofallback && \
+	mkdir -p $(GDK_PIXBUF_PATH)/build && cd $(GDK_PIXBUF_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D others=enabled -D png=enabled -D gio_sniffing=false -D introspection=disabled --wrap-mode=nofallback -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16" && \
 	ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .gdk-pixbuf-done
 
@@ -784,14 +838,14 @@ vulkan: .vulkan-done
 
 # Window Maker (wmaker-crm fork)
 # URL: https://repo.or.cz/w/wmaker-crm.git
-WMAKER_URL = https://repo.or.cz/w/wmaker-crm.git/snapshot/wmaker-crm-0.9.6.tar.gz
-WMAKER_VER = 0.9.6
-WMAKER_PATH = $(SRC_PATH)/wmaker-crm-$(WMAKER_VER)
+WMAKER_URL = https://www.windowmaker.org/pub/source/release/WindowMaker-0.96.0.tar.gz
+WMAKER_VER = 0.96.0
+WMAKER_PATH = $(SRC_PATH)/WindowMaker-$(WMAKER_VER)
 
 # Download Window Maker
 download-wmaker: .wmaker-obtained
 .wmaker-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O wmaker-crm-$(WMAKER_VER).tar.gz $(WMAKER_URL) && tar xf wmaker-crm-$(WMAKER_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O WindowMaker-$(WMAKER_VER).tar.gz $(WMAKER_URL) && tar xf WindowMaker-$(WMAKER_VER).tar.gz
 	touch .wmaker-obtained
 
 # Compile Window Maker

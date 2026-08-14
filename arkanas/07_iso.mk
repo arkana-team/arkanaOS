@@ -222,7 +222,7 @@ download-libisoburn: .libisoburn-obtained
 libisoburn: download-libisoburn .libisoburn-done
 
 .libisoburn-done:
-	cd $(LIBISOBURN_PATH) && ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --enable-pkg-check-modules && $(MAKE) -j$(THREADS) && \
+	cd $(LIBISOBURN_PATH) && ./configure CFLAGS="-O2 -std=gnu17 -fno-stack-protector" --prefix=/usr --enable-pkg-check-modules && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libisoburn-done
 
@@ -644,3 +644,5 @@ iso:
 	echo '}' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
 
 	grub-mkrescue -o $(OUTPUT_PATH)/arkana.iso $(ISO_STAGING_PATH) -- -volid "ARKANA"
+	chmod -R 777 $(OUTPUT_PATH) 2>/dev/null || true
+
