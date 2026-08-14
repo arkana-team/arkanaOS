@@ -368,6 +368,7 @@ glibc: download-glibc .glibc-done
 	cd $(GLIBC_PATH)/build && CFLAGS="-O2 -std=gnu17" ../configure --prefix=/usr --disable-werror --enable-kernel=5.4 \
 	--enable-stack-protector=strong --disable-nscd --enable-shared libc_cv_slibdir=/usr/lib && sed -i '/^CFLAGS/ s/$$/ -O2/' Makefile && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
+	chmod -R 777 $(STAGING_PATH) $(OUTPUT_PATH) 2>/dev/null || true
 	grep -q 'IPPROTO_AGGFRAG' $(STAGING_PATH)/usr/include/netinet/in.h || \
 	  sed -i '/IPPROTO_RAW = 255/a\\    IPPROTO_AGGFRAG = 147,' $(STAGING_PATH)/usr/include/netinet/in.h
 	touch .glibc-done
