@@ -222,7 +222,7 @@ download-libisoburn: .libisoburn-obtained
 libisoburn: download-libisoburn .libisoburn-done
 
 .libisoburn-done:
-	cd $(LIBISOBURN_PATH) && ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --enable-pkg-check-modules && $(MAKE) -j$(THREADS) && \
+	cd $(LIBISOBURN_PATH) && ./configure CFLAGS="-O2 -std=gnu17 -fno-stack-protector" --prefix=/usr --enable-pkg-check-modules && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libisoburn-done
 
