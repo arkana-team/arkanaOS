@@ -12,7 +12,7 @@ OUTPUT_PATH = $(shell realpath ./output)
 
 # Xorg Server
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/x/xorg-server.html
-XORG_SERVER_URL = https://www.x.org/pub/individual/xserver/xorg-server-21.1.18.tar.xz
+XORG_SERVER_URL = https://xorg.freedesktop.org/releases/individual/xserver/xorg-server-21.1.18.tar.xz
 XORG_SERVER_VER = 21.1.18
 XORG_SERVER_PATH = $(SRC_PATH)/xorg-server-$(XORG_SERVER_VER)
 
@@ -67,19 +67,19 @@ SPIRV_TOOLS_PATH = $(SRC_PATH)/SPIRV-Tools-vulkan-sdk-$(SPIRV_TOOLS_VER)
 
 # Xinit
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/x/xinit.html
-XORG_XINIT_URL = https://www.x.org/pub/individual/app/xinit-1.4.4.tar.xz
+XORG_XINIT_URL = https://xorg.freedesktop.org/releases/individual/app/xinit-1.4.4.tar.xz
 XORG_XINIT_VER = 1.4.4
 XORG_XINIT_PATH = $(SRC_PATH)/xinit-$(XORG_XINIT_VER)
 
 # XKeyboardConfig 
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/x/xkeyboard-config.html
-XORG_XKEYBOARD_CONFIG_URL = https://www.x.org/pub/individual/data/xkeyboard-config/xkeyboard-config-2.45.tar.xz
+XORG_XKEYBOARD_CONFIG_URL = https://xorg.freedesktop.org/releases/individual/data/xkeyboard-config/xkeyboard-config-2.45.tar.xz
 XORG_XKEYBOARD_CONFIG_VER = 2.45
 XORG_XKEYBOARD_CONFIG_PATH = $(SRC_PATH)/xkeyboard-config-$(XORG_XKEYBOARD_CONFIG_VER)
 
 # Xorg Input Drivers
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/x/x7driver.html
-XF86_INPUT_EVDEV_URL = https://www.x.org/pub/individual/driver/xf86-input-evdev-2.11.0.tar.xz
+XF86_INPUT_EVDEV_URL = https://xorg.freedesktop.org/releases/individual/driver/xf86-input-evdev-2.11.0.tar.xz
 XF86_INPUT_EVDEV_VER = 2.11.0
 XF86_INPUT_EVDEV_PATH = $(SRC_PATH)/xf86-input-evdev-$(XF86_INPUT_EVDEV_VER)
 
@@ -211,6 +211,10 @@ X11_APP_VERS = 1.1.4 1.4.7 1.1.3 1.5.2
 X11_PARSED_APPS := $(foreach i, $(shell seq 1 $(words $(X11_APPS))), \
   $(word $(i), $(X11_APPS))/$(word $(i), $(X11_APP_VERS)))
 
+BDFTOPCF_VER = 1.1.2
+BDFTOPCF_URL = https://xorg.freedesktop.org/releases/individual/util/bdftopcf-$(BDFTOPCF_VER).tar.xz
+BDFTOPCF_PATH = $(SRC_PATH)/bdftopcf-$(BDFTOPCF_VER)
+BDFTOPCF = $(SRC_PATH)/host-tools/bin/bdftopcf
 X11_FONTS = font-util encodings font-alias font-adobe-utopia-type1 font-bh-ttf font-bh-type1 font-ibm-type1 font-misc-ethiopic font-xfree86-type1 font-cursor-misc
 X11_FONT_VERS = 1.4.1 1.1.0 1.0.5 1.0.5 1.0.4 1.0.4 1.0.4 1.0.5 1.0.5 1.0.4
 
@@ -220,7 +224,7 @@ X11_PARSED_FONTS := $(foreach i, $(shell seq 1 $(words $(X11_FONTS))), \
 # Targets
 all: xorgproto xtrans pixman freetype font-util fontconfig xbitmaps xorg-libs libdrm mesa xorg-server libbsd libmd lm-sensors llvm libedit spirv-tools xinit xorg-apps xorg-fonts xorg-xkeyboard-config xf86-input-evdev openbox fribidi xterm luit libevdev mtdev libgudev libwacom libinput feh imlib2 libdatrie libthai harfbuzz cairo pango libdav1d libjpeg-turbo gdk-pixbuf librsvg wmaker
 
-XORGPROTO_URL = https://www.x.org/pub/individual/proto/xorgproto-2024.1.tar.xz
+XORGPROTO_URL = https://xorg.freedesktop.org/releases/individual/proto/xorgproto-2024.1.tar.xz
 XORGPROTO_VER = 2024.1
 XORGPROTO_PATH = $(SRC_PATH)/xorgproto-$(XORGPROTO_VER)
 
@@ -234,7 +238,7 @@ xorgproto: download-xorgproto .xorgproto-done
 	mkdir -p $(XORGPROTO_PATH)/build && cd $(XORGPROTO_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .xorgproto-done
 
-XTRANS_URL = https://www.x.org/pub/individual/lib/xtrans-1.5.1.tar.xz
+XTRANS_URL = https://xorg.freedesktop.org/releases/individual/lib/xtrans-1.5.1.tar.xz
 XTRANS_VER = 1.5.1
 XTRANS_PATH = $(SRC_PATH)/xtrans-$(XTRANS_VER)
 
@@ -290,7 +294,7 @@ fontconfig: download-fontconfig .fontconfig-done
 .fontconfig-done:
 	cd $(FONTCONFIG_PATH) && ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --sysconfdir=/etc --localstatedir=/var --disable-docs --docdir=/usr/share/doc/fontconfig-$(FONTCONFIG_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .fontconfig-done
-XBITMAPS_URL = https://www.x.org/pub/individual/data/xbitmaps-1.1.3.tar.gz
+XBITMAPS_URL = https://xorg.freedesktop.org/releases/individual/data/xbitmaps-1.1.3.tar.gz
 XBITMAPS_VER = 1.1.3
 XBITMAPS_PATH = $(SRC_PATH)/xbitmaps-$(XBITMAPS_VER)
 download-xbitmaps: .xbitmaps-obtained
@@ -357,7 +361,7 @@ download-xorg-libs: .xorg-libs-obtained
 	for pair in $(X11_PARSED_LIBS); do \
 	  lib=$${pair%%/*}; \
 	  ver=$${pair##*/}; \
-	  cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O "lib$$lib-$$ver.tar.xz" "https://www.x.org/pub/individual/lib/lib$$lib-$$ver.tar.xz" && \
+	  cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O "lib$$lib-$$ver.tar.xz" "https://xorg.freedesktop.org/releases/individual/lib/lib$$lib-$$ver.tar.xz" && \
 	  tar xf "lib$$lib-$$ver.tar.xz" || exit 1; \
 	done
 	touch .xorg-libs-obtained
@@ -375,6 +379,9 @@ xorg-libs: download-xorg-libs fontconfig .xorg-libs-done
 	    LIBDIR=$(SRC_PATH)/lib$$lib-$$ver; [ -d "$$LIBDIR" ] || LIBDIR=$(SRC_PATH)/$$lib-$$ver; cd "$$LIBDIR" && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install || exit 1; \
 	  fi; \
 	done
+	# Shared Xorg libraries need no libtool archives; their dependency paths can escape staging.
+	rm -f $(STAGING_PATH)/usr/lib/libX*.la $(STAGING_PATH)/usr/lib/libxcb*.la
+
 	touch .xorg-libs-done
 
 # Download Xorg applications
@@ -383,7 +390,7 @@ download-xorg-apps: .xorg-apps-obtained
 	for pair in $(X11_PARSED_APPS); do \
 	  app=$${pair%%/*}; \
 	  ver=$${pair##*/}; \
-	  cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O "$$app-$$ver.tar.xz" "http://xorg.freedesktop.org/releases/individual/app/$$app-$$ver.tar.xz" && \
+	  cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O "$$app-$$ver.tar.xz" "https://xorg.freedesktop.org/releases/individual/app/$$app-$$ver.tar.xz" && \
 	  tar xf "$$app-$$ver.tar.xz" || exit 1; \
 	done
 	touch .xorg-apps-obtained
@@ -398,28 +405,36 @@ xorg-apps: download-xorg-apps xbitmaps .xorg-apps-done
 	done
 	touch .xorg-apps-done
 
+# Download and build bdftopcf as a host utility
+download-bdftopcf: .bdftopcf-obtained
+.bdftopcf-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O bdftopcf-$(BDFTOPCF_VER).tar.xz $(BDFTOPCF_URL) && tar xf bdftopcf-$(BDFTOPCF_VER).tar.xz
+	touch .bdftopcf-obtained
+bdftopcf: .bdftopcf-done
+.bdftopcf-done: xorgproto download-bdftopcf
+	cd $(BDFTOPCF_PATH) && PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" ./configure --prefix="$(SRC_PATH)/host-tools" && $(MAKE) -j$(THREADS) && $(MAKE) install
+	touch .bdftopcf-done
 # Download Xorg fonts
 download-xorg-fonts: .xorg-fonts-obtained
 .xorg-fonts-obtained:
 	for pair in $(X11_PARSED_FONTS); do \
 	  font=$${pair%%/*}; \
 	  ver=$${pair##*/}; \
-	  cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O "$$font-$$ver.tar.xz" "http://xorg.freedesktop.org/releases/individual/font/$$font-$$ver.tar.xz" && \
+	  cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O "$$font-$$ver.tar.xz" "https://xorg.freedesktop.org/releases/individual/font/$$font-$$ver.tar.xz" && \
 	  tar xf "$$font-$$ver.tar.xz" || exit 1; \
 	done
 	touch .xorg-fonts-obtained
 
 # Compile Xorg fonts
-xorg-fonts: download-xorg-fonts xorg-apps .xorg-fonts-done
-.xorg-fonts-done:
-	mkdir -p $(STAGING_PATH)/usr/bin
-	if ! [ -x $(STAGING_PATH)/usr/bin/bdftopcf ]; then \
-	  printf '#!/bin/sh\nexit 0\n' > $(STAGING_PATH)/usr/bin/bdftopcf && chmod +x $(STAGING_PATH)/usr/bin/bdftopcf; \
+xorg-fonts: download-xorg-fonts xorg-apps bdftopcf .xorg-fonts-done
+.xorg-fonts-done: .bdftopcf-done
+	if ! [ -x $(BDFTOPCF) ]; then \
+	  echo 'bdftopcf is required to build X.Org fonts' >&2; exit 1; \
 	fi
 	for pair in $(X11_PARSED_FONTS); do \
 	  font=$${pair%%/*}; \
 	  ver=$${pair##*/}; \
-	  cd $(SRC_PATH)/$$font-$$ver/ && PATH="$(STAGING_PATH)/usr/bin:$$PATH" BDFTOPCF="$(STAGING_PATH)/usr/bin/bdftopcf" CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install || exit 1; \
+	  cd $(SRC_PATH)/$$font-$$ver/ && CC="env LD_LIBRARY_PATH=$(STAGING_PATH)/usr/lib $(CC)" PATH="$$PATH:$(STAGING_PATH)/usr/bin" BDFTOPCF="$(BDFTOPCF)" CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install || exit 1; \
 	done
 	touch .xorg-fonts-done
 
@@ -663,7 +678,15 @@ download-libwacom: .libwacom-obtained
 # Compile libwacom
 libwacom: download-libwacom libgudev .libwacom-done
 .libwacom-done:
-	mkdir -p $(LIBWACOM_PATH)/build && cd $(LIBWACOM_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D tests=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install && \
+	cp arkanas/libwacom-glib-compat.h $(LIBWACOM_PATH)/libwacom-glib-compat.h && \
+	for file in $(LIBWACOM_PATH)/libwacom/libwacom.c $(LIBWACOM_PATH)/libwacom/libwacom-database.c $(LIBWACOM_PATH)/tools/debug-device.c; do \
+	  if ! grep -qF '#include "../libwacom-glib-compat.h"' "$$file"; then \
+	    case "$$file" in \
+	      */libwacom.c) sed -i '/#include <gudev\/gudev.h>/a #include "../libwacom-glib-compat.h"' "$$file" ;; \
+	      *) sed -i '/#include <glib.h>/a #include "../libwacom-glib-compat.h"' "$$file" ;; \
+	    esac; \
+	  fi; \
+	done && rm -rf $(LIBWACOM_PATH)/build && mkdir -p $(LIBWACOM_PATH)/build && cd $(LIBWACOM_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D tests=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install && \
 	sed -i 's|prefix=/usr|prefix=$(STAGING_PATH)/usr|g' $(STAGING_PATH)/usr/lib/pkgconfig/libwacom.pc
 	touch .libwacom-done
 
@@ -676,7 +699,8 @@ download-libgudev: .libgudev-obtained
 # Compile libgudev
 libgudev: download-libgudev .libgudev-done
 .libgudev-done:
-	mkdir -p $(LIBGUDEV_PATH)/build && cd $(LIBGUDEV_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -D introspection=disabled -Dc_args="-Wno-error" .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	# Reconfigure against the staged GLib ABI; stale Meson state may reference the host GLib.
+	rm -rf $(LIBGUDEV_PATH)/build && mkdir -p $(LIBGUDEV_PATH)/build && cd $(LIBGUDEV_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -D introspection=disabled -Dc_args="-Wno-error" .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .libgudev-done
 
 # Download feh
@@ -702,7 +726,14 @@ download-imlib2: .imlib2-obtained
 imlib2: download-imlib2 .imlib2-done
 .imlib2-done:
 	rm -f $(STAGING_PATH)/usr/lib/libbz2.a
-	cd $(IMLIB2_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(IMLIB2_PATH) && { $(MAKE) distclean >/dev/null 2>&1 || true; } && \
+	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
+	PKG_CONFIG_LIBDIR="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
+	PKG_CONFIG_SYSROOT_DIR="$(STAGING_PATH)" \
+	CPPFLAGS="-I$(STAGING_PATH)/usr/include" CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" \
+	LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" \
+	./configure --prefix=/usr --without-j2k --without-jxl && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
+	rm -f $(STAGING_PATH)/usr/lib/imlib2/loaders/j2k.so $(STAGING_PATH)/usr/lib/imlib2/loaders/jxl.so
 	touch .imlib2-done
 
 # Download cairo
@@ -726,7 +757,9 @@ download-harfbuzz: .harfbuzz-obtained
 # Compile harfbuzz
 harfbuzz: download-harfbuzz .harfbuzz-done
 .harfbuzz-done:
-	mkdir -p $(HARFBUZZ_PATH)/build && cd $(HARFBUZZ_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D tests=disabled -D docs=disabled -D introspection=disabled -Dc_args="-Wno-error" -Dcpp_args="-Wno-error" -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16" -Dcpp_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16" && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	cd $(HARFBUZZ_PATH) && sed -i '/#pragma GCC diagnostic error   "-Wredundant-decls"/d' src/hb.hh && \
+	rm -rf build && mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -Dicu=disabled -D tests=disabled -D docs=disabled -D introspection=disabled -Dc_args="-Wno-error=redundant-decls -Wno-error" -Dcpp_args="-Wno-error=redundant-decls -Wno-error" -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16" -Dcpp_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16" && ninja && DESTDIR=$(STAGING_PATH) ninja install && \
+	rm -f $(STAGING_PATH)/usr/lib/libharfbuzz-icu.so* $(STAGING_PATH)/usr/lib/pkgconfig/harfbuzz-icu.pc
 	touch .harfbuzz-done
 
 # Compile cairo
@@ -738,7 +771,13 @@ cairo: download-cairo .cairo-done
 # Compile pango
 pango: download-pango libthai harfbuzz cairo .pango-done
 .pango-done:
-	cd $(PANGO_PATH) && sed -i '/#include <hb-ft.h>/a #include <fontconfig\/fcfreetype.h>' pango/pangofc-fontmap.c && \
+	cd $(PANGO_PATH) && \
+	if ! grep -qF '#include <fontconfig/fcfreetype.h>' pango/pangofc-fontmap.c; then \
+	  sed -i '/#include <hb-ft.h>/a #include <fontconfig\/fcfreetype.h>' pango/pangofc-fontmap.c; \
+	fi && \
+	if ! grep -qF "'-Wno-error=redundant-decls'" meson.build; then \
+	  sed -i "s/'-Werror=redundant-decls'/'-Wno-error=redundant-decls'/g" meson.build; \
+	fi && \
 	mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release --wrap-mode=nofallback -D introspection=disabled -Dc_args="-Wno-error" -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16 -lm" .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .pango-done
 
@@ -749,9 +788,13 @@ download-libthai: .libthai-obtained
 	touch .libthai-obtained
 
 # Compile libthai
-libthai: download-libthai .libthai-done
+libthai: download-libthai libdatrie .libthai-done
 .libthai-done:
-	cd $(LIBTHAI_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	# Use Arkana's staged libdatrie so libthai's ABI matches the target libraries.
+	cd $(LIBTHAI_PATH) && { $(MAKE) distclean >/dev/null 2>&1 || true; } && \
+	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_SYSROOT_DIR="$(STAGING_PATH)" \
+	CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" \
+	./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libthai-done
 
 # Download libdatrie
@@ -763,7 +806,9 @@ download-libdatrie: .libdatrie-obtained
 # Compile libdatrie
 libdatrie: download-libdatrie .libdatrie-done
 .libdatrie-done:
-	cd $(LIBDATRIE_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	# Mold rejects libdatrie's version-script probe; GNU BFD enables its DATRIE_0.2 ABI symbols.
+	cd $(LIBDATRIE_PATH) && { $(MAKE) distclean >/dev/null 2>&1 || true; } && \
+	CFLAGS="-O2 -std=gnu17" LDFLAGS="-fuse-ld=bfd" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libdatrie-done
 
 # Download librsvg
@@ -851,7 +896,12 @@ download-wmaker: .wmaker-obtained
 # Compile Window Maker
 wmaker: download-wmaker .wmaker-done
 .wmaker-done:
-	cd $(WMAKER_PATH) && ./autogen.sh && \
-	CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --enable-modelock --enable-pango --with-x --disable-imagemagick && \
+	cd $(WMAKER_PATH) && { $(MAKE) distclean >/dev/null 2>&1 || true; } && ./autogen.sh && \
+	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
+	PKG_CONFIG_LIBDIR="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
+	PKG_CONFIG_SYSROOT_DIR="$(STAGING_PATH)" \
+	CPPFLAGS="-I$(STAGING_PATH)/usr/include" CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" \
+	LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" \
+	./configure --prefix=/usr --sysconfdir=/etc --enable-modelock --enable-pango --with-x --disable-imagemagick && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .wmaker-done

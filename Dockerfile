@@ -4,7 +4,7 @@ ENV PACMAN_NOCONFIRM=1
 ENV NINJAFLAGS="-j$(nproc)"
 ENV CFLAGS="-O2 -pipe -std=gnu17"
 ENV CXXFLAGS="-O2 -pipe -std=gnu++17"
-ENV LDFLAGS="-fuse-ld=mold -Wl,-O1 --as-needed"
+ENV LDFLAGS="-fuse-ld=mold -Wl,-O1 -Wl,--as-needed"
 ENV RUSTFLAGS="-C link-arg=-fuse-ld=mold"
 ENV PATH="/usr/lib/ccache/bin:$PATH"
 ENV CCACHE_COMPRESS=1
@@ -114,13 +114,13 @@ RUN sudo ln -sf /bin/true /sbin/ldconfig && \
     echo 'waitretry = 10' | sudo tee -a /etc/wgetrc && \
     echo 'retry_connrefused = on' | sudo tee -a /etc/wgetrc
 
-CMD ["bash", "-c", "set +e; sudo make; ret=$?; \
+CMD ["bash", "-c", "set +e; sudo --preserve-env make; ret=$?; \
 if [ $ret -eq 130 ]; then \
-    echo -ne '\n*** BUILD INTERRUPTED — ENTERING DEBUGGING SHELL ***\nThe build process was interrupted (CTRL+C).\nRun `sudo make` to continue building.\nCAUTION: Exiting this shell will cause the build progress to be lost!\n\n'; \
-    exec bash; \
+    echo -ne '\n*** BUILD INTERRUPTED — ENTERING DEBUGGING SHELL ***\nThe build process was interrupted (CTRL+C).\nRun `sudo --preserve-env make` to continue building.\nBuild state is saved in the mounted project directory.\n\n'; \
+    bash; sudo --preserve-env make || exit $?; \
 elif [ $ret -ne 0 ]; then \
-    echo -ne '\n*** BUILD FAILED — ENTERING DEBUGGING SHELL ***\nThe build process encountered an error and cannot continue.\nFix any errors and run `sudo make` again\nCAUTION: Exiting this shell will cause the build progress to be lost!\n\n'; \
-    exec bash; \
+    echo -ne '\n*** BUILD FAILED — ENTERING DEBUGGING SHELL ***\nThe build process encountered an error and cannot continue.\nFix any errors and run `sudo --preserve-env make` again\nBuild state is saved in the mounted project directory.\n\n'; \
+    bash; sudo --preserve-env make || exit $?; \
 elif [ ${ARKANA_NO_SUCCESSFUL_EXIT:-0} -eq 1 ]; then \
     exec bash; \
 fi"]

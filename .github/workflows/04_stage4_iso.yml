@@ -106,7 +106,7 @@ jobs:
             -v "$(pwd)/output:/build/arkana/output" \
             -v "$HOME/.cache/ccache:/home/builder/.cache/ccache" \
             -e CCACHE_DIR=/home/builder/.cache/ccache \
-            arkana-builder bash -c "sudo make -f arkanas/07_iso.mk"
+            arkana-builder bash -c "sudo --preserve-env make -f arkanas/07_iso.mk"
 
       - name: Upload Final arkanaOS ISO Artifact
         uses: actions/upload-artifact@v4

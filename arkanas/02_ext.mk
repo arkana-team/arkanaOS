@@ -444,8 +444,10 @@ download-libidn2: .libidn2-obtained
 # Compile libidn2
 libidn2: download-libidn2 .libidn2-done
 
+# Keep libidn2 on its bundled libunistring: linking the host's same-named
+# library while building the bundled target makes libtool try to extract its own archive.
 .libidn2-done:
-	cd $(LIBIDN2_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && mkdir -p unistring/.libs gl/.libs && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(LIBIDN2_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --with-included-libunistring && mkdir -p unistring/.libs gl/.libs && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libidn2-done
 
 # Download libunistring
@@ -494,7 +496,7 @@ download-newt: .newt-obtained
 # Compile newt
 newt: download-newt .newt-done
 .newt-done:
-	cd $(NEWT_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --with-gpm-support --with-python=python3.13 && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(NEWT_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --with-gpm-support --without-python --without-tcl && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .newt-done
 
 # Download libndp
@@ -599,7 +601,8 @@ download-slang: .slang-obtained
 # Compile slang
 slang: download-slang .slang-done
 .slang-done:
-	cd $(SLANG_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --with-readline=gnu && $(MAKE) RPATH= && $(MAKE) DESTDIR=$(STAGING_PATH) RPATH= install
+	cd $(SLANG_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --with-readline=gnu --with-pcre=no && $(MAKE) RPATH= && $(MAKE) DESTDIR=$(STAGING_PATH) RPATH= install
+	rm -f $(STAGING_PATH)/usr/lib/slang/v2/modules/pcre-module.so
 	touch .slang-done
 
 # Download curl
@@ -660,8 +663,9 @@ download-iptables: .iptables-obtained
 # Compile iptables
 iptables: download-iptables .iptables-done
 .iptables-done:
-	cd $(IPTABLES_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --disable-nftables --enable-libipq && $(MAKE) -j$(THREADS) && \
+	cd $(IPTABLES_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --disable-nftables --disable-connlabel --enable-libipq && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
+	rm -f $(STAGING_PATH)/usr/lib/xtables/libxt_connlabel.so
 	touch .iptables-done
 
 # Download flex
@@ -1042,5 +1046,4 @@ licenses: download-licenses .licenses-done
 	done
 	python3 -c "import json; ids=[l['licenseId'] for l in json.load(open('$(LICENSES_PATH)/json/licenses.json'))['licenses'] if not l['isDeprecatedLicenseId']]; open('$(STAGING_PATH)/usr/share/licenses/known_spdx_license_identifiers.txt','w').write('\n'.join(ids)+'\n'); ids=[e['licenseExceptionId'] for e in json.load(open('$(LICENSES_PATH)/json/exceptions.json'))['exceptions']]; open('$(STAGING_PATH)/usr/share/licenses/known_spdx_license_exceptions.txt','w').write('\n'.join(ids)+'\n')"
 	touch .licenses-done
-
 

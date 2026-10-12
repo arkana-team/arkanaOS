@@ -5,7 +5,7 @@ THREADS = $(shell nproc)
 
 # Build the Arkana toolchain?
 BUILD_TOOLCHAIN = true
-TOOLCHAIN_TARGETS = gcc-compilers binutils meson ninja make autoconf cmake gc libarchive guile libuv libxml2 libtool expat python3 perl automake
+TOOLCHAIN_TARGETS = gcc-compilers binutils meson ninja make autoconf cmake gc libarchive guile libuv libxml2 libtool expat gdbm sqlite3 python3 perl automake
 
 # Paths used in the build
 SRC_PATH = $(shell realpath ./src)
@@ -101,6 +101,12 @@ EXPAT_PATH = $(SRC_PATH)/expat-$(EXPAT_VER)
 PYTHON3_URL = https://www.python.org/ftp/python/3.13.7/Python-3.13.7.tar.xz
 PYTHON3_VER = 3.13.7
 PYTHON3_PATH = $(SRC_PATH)/Python-$(PYTHON3_VER)
+GDBM_URL = https://ftp.gnu.org/gnu/gdbm/gdbm-1.26.tar.gz
+GDBM_VER = 1.26
+GDBM_PATH = $(SRC_PATH)/gdbm-$(GDBM_VER)
+SQLITE3_URL = https://www.sqlite.org/2026/sqlite-autoconf-3530400.tar.gz
+SQLITE3_CODE = 3530400
+SQLITE3_PATH = $(SRC_PATH)/sqlite-autoconf-$(SQLITE3_CODE)
 
 # Perl (dependency of autoconf)
 # URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/perl.html
@@ -139,6 +145,8 @@ download-binutils: .binutils-obtained
 # Compile binutils
 binutils: download-binutils .binutils-done
 .binutils-done:
+	# Recursive configure caches retain linker flags from earlier build attempts.
+	find $(BINUTILS_PATH) -name config.cache -delete
 	cd $(BINUTILS_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --enable-gold --enable-ld=default --enable-plugins --enable-shared --disable-werror --enable-64bit-bfd --with-system-zlib --disable-gprofng && $(MAKE) tooldir=/usr -j$(THREADS) && $(MAKE) tooldir=/usr DESTDIR=$(STAGING_PATH) install
 	touch .binutils-done
 
@@ -207,7 +215,7 @@ download-cmake: .cmake-obtained
 # Compile cmake
 cmake: download-cmake .cmake-done
 .cmake-done:
-	cd $(CMAKE_PATH) && sed -i '/"lib64"/s/64//' Modules/GNUInstallDirs.cmake && CFLAGS="-O2 -std=gnu17" CXXFLAGS="-O2 -std=gnu++17" ./bootstrap --prefix=/usr --system-libs --mandir=/share/man --no-system-jsoncpp \
+	cd $(CMAKE_PATH) && sed -i '/"lib64"/s/64//' Modules/GNUInstallDirs.cmake && CFLAGS="-O2 -std=gnu17" CXXFLAGS="-O2 -std=gnu++17" ./bootstrap --parallel=$(THREADS) --prefix=/usr --system-libs --mandir=/share/man --no-system-jsoncpp \
 	--no-system-cppdap --no-system-librhash --docdir=/share/doc/cmake-$(CMAKE_VER).tar.gz && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .cmake-done
 
@@ -270,8 +278,9 @@ download-libxml2: .libxml2-obtained
 # Compile libxml2
 libxml2: download-libxml2 .libxml2-done
 .libxml2-done:
-	cd $(LIBXML2_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --with-history PYTHON=/usr/bin/python3 --docdir=/usr/share/doc/libxml2-$(LIBXML2_VER) && \
+	cd $(LIBXML2_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --with-history --without-python --docdir=/usr/share/doc/libxml2-$(LIBXML2_VER) && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && sed '/libs=/s/xml2.*/xml2"/' -i $(STAGING_PATH)/usr/bin/xml2-config
+	find $(STAGING_PATH)/usr/lib -type f -path '*/site-packages/*' \( -name 'libxml2mod.*' -o -name libxml2.py -o -name drv_libxml2.py -o -path '*/__pycache__/libxml2.*.pyc' -o -path '*/__pycache__/drv_libxml2.*.pyc' \) -delete
 	touch .libxml2-done
 
 # Download libtool
@@ -310,7 +319,7 @@ download-python3: .python3-obtained
 # Compile python3
 python3: download-python3 .python3-done
 .python3-done:
-	cd $(PYTHON3_PATH) && CXX="/usr/bin/g++" CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib" ./configure --prefix=/usr --enable-shared --with-system-expat --with-system-ffi --with-openssl=$(STAGING_PATH)/usr --enable-optimizations --with-ensurepip=no && \
+	cd $(PYTHON3_PATH) && CXX="/usr/bin/g++" CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib" ./configure --prefix=/usr --enable-shared --with-system-expat --with-system-ffi --with-openssl=$(STAGING_PATH)/usr --enable-optimizations --with-ensurepip=no --without-system-libmpdec && \
 	$(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install && \
 	ln -sf python3 $(STAGING_PATH)/usr/bin/python && \
@@ -344,3 +353,21 @@ automake: download-automake .automake-done
 .automake-done:
 	cd $(AUTOMAKE_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --docdir=/usr/share/doc/automake-$(AUTOMAKE_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .automake-done
+# Target database libraries used by Python and Perl
+download-gdbm: .gdbm-obtained
+.gdbm-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O gdbm-$(GDBM_VER).tar.gz $(GDBM_URL) && tar xf gdbm-$(GDBM_VER).tar.gz
+	touch .gdbm-obtained
+gdbm: download-gdbm .gdbm-done
+.gdbm-done:
+	cd $(GDBM_PATH) && CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib" ./configure --prefix=/usr --disable-static --enable-libgdbm-compat && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .gdbm-done
+# SQLite support for target Python
+download-sqlite3: .sqlite3-obtained
+.sqlite3-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O sqlite-autoconf-$(SQLITE3_CODE).tar.gz $(SQLITE3_URL) && tar xf sqlite-autoconf-$(SQLITE3_CODE).tar.gz
+	touch .sqlite3-obtained
+sqlite3: download-sqlite3 .sqlite3-done
+.sqlite3-done:
+	cd $(SQLITE3_PATH) && CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib" ./configure --prefix=/usr --enable-shared --disable-static --disable-readline --disable-editline && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .sqlite3-done

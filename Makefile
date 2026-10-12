@@ -39,11 +39,11 @@ CFLAGS += -mtls-dialect=gnu  # If not set, libgallium will use GLIBC_ABI_GNU2_TL
 export CFLAGS CC CXX CLANG CLANGXX SHELL
 
 # Paths used in the build
-SRC_PATH = $(shell realpath ./src)
-STAGING_PATH = $(shell realpath ./staging)
-ISO_STAGING_PATH = $(shell realpath ./iso-staging)
-CPIO_STAGING_PATH = $(shell realpath ./cpio-staging)
-OUTPUT_PATH = $(shell realpath ./output)
+SRC_PATH = $(shell realpath -m ./src)
+STAGING_PATH = $(shell realpath -m ./staging)
+ISO_STAGING_PATH = $(shell realpath -m ./iso-staging)
+CPIO_STAGING_PATH = $(shell realpath -m ./cpio-staging)
+OUTPUT_PATH = $(shell realpath -m ./output)
 
 # Dependency checking
 LIBRARIES = ./libs.found
@@ -59,7 +59,10 @@ all: arkanas
 arkanas: $(SRC_PATH)/cross_file.txt
 	mkdir -p $(SRC_PATH) $(STAGING_PATH) $(ISO_STAGING_PATH) $(CPIO_STAGING_PATH) $(OUTPUT_PATH)
 	for arkana in arkanas/*.mk; do \
-		$(MAKE) -f $$arkana || { echo "fatal: failed to make the $$arkana arkana"; exit 1; } \
+		if [ "$$arkana" = "arkanas/05_graphics.mk" ]; then \
+			$(MAKE) -f arkanas/07_iso.mk libpng || { echo "fatal: failed to make libpng"; exit 1; }; \
+		fi; \
+		$(MAKE) -f $$arkana || { echo "fatal: failed to make the $$arkana arkana"; exit 1; }; \
 	done
 	$(MAKE) check-libs
 
@@ -82,6 +85,7 @@ $(SRC_PATH)/cross_file.txt:
 		'' \
 		'[properties]' \
 		"pkg_config_libdir = '$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig'" \
+		"sys_root = '$(STAGING_PATH)'" \
 		'' \
 		'[host_machine]' \
 		"system = 'linux'" \
@@ -99,18 +103,25 @@ check-libs:
 	fi
 
 	find $(STAGING_PATH)/usr/bin -type f -executable -printf '/usr/bin/%P\n' > $(EXECUTABLES)
+	find $(STAGING_PATH)/usr/sbin -type f -executable -printf '/usr/sbin/%P\n' >> $(EXECUTABLES)
+	find $(STAGING_PATH)/opt -type f -executable -printf '/opt/%P\n' >> $(EXECUTABLES)
+	find $(STAGING_PATH) -maxdepth 1 -type f -executable -printf '/%f\n' >> $(EXECUTABLES)
 	# systemd incorrectly triggers a missing library, ignore it here
-	find $(STAGING_PATH)/usr/lib -type f -name "*.so*" ! -name "libsystemd-core-257.so" -printf '/usr/bin/%P\n' > $(LIBRARIES)
+	find $(STAGING_PATH)/usr/lib -type f -name "*.so*" ! -name "libsystemd-core-257.so" -printf '/usr/lib/%P\n' > $(LIBRARIES)
+	find $(STAGING_PATH)/opt -type f -name "*.so*" -printf '/opt/%P\n' >> $(LIBRARIES)
+	find $(STAGING_PATH) -maxdepth 1 -type f -name "*.so*" -printf '/%f\n' >> $(LIBRARIES)
 
 	echo "checking missing libraries..."
 	> $(MISSING_LIBS)
 	while read -r file; do \
-	  chroot $(STAGING_PATH) /bin/sh -c "ldd \"$$file\" 2>/dev/null" | grep "not found" | awk -v f="$$file" '{$$1=$$1;print $$0, "in", f}' >> $(MISSING_LIBS) || true; \
+	  library_path=; case "$$file" in /opt/firefox/*) library_path=/opt/firefox ;; esac; \
+	  chroot $(STAGING_PATH) /bin/sh -c "LD_LIBRARY_PATH=$$library_path ldd \"$$file\"" 2>/dev/null | grep "not found" | awk -v f="$$file" '{$$1=$$1;print $$0, "in", f}' >> $(MISSING_LIBS) || true; \
 	done < $(EXECUTABLES)
 	while read -r file; do \
-	  chroot $(STAGING_PATH) /bin/sh -c "ldd \"$$file\" 2>/dev/null" | grep "not found" | awk -v f="$$file" '{$$1=$$1;print $$0, "in", f}' >> $(MISSING_LIBS) || true; \
+	  library_path=; case "$$file" in /opt/firefox/*) library_path=/opt/firefox ;; esac; \
+	  chroot $(STAGING_PATH) /bin/sh -c "LD_LIBRARY_PATH=$$library_path ldd \"$$file\"" 2>/dev/null | grep "not found" | awk -v f="$$file" '{$$1=$$1;print $$0, "in", f}' >> $(MISSING_LIBS) || true; \
 	done < $(LIBRARIES)
-	rm $(STAGING_PATH)/dev/null
+	rm -f $(STAGING_PATH)/dev/null
 	if [ -s $(MISSING_LIBS) ]; then \
 	  echo "warning: found missing libraries:"; cat $(MISSING_LIBS) | sort -u; \
 	else \
@@ -125,6 +136,5 @@ clean:
 
 # There are no test suites in arkanaOS, but we can run QEMU to start the built system.
 .PHONY: test
-.IGNORE: test check-libs
 test: check-libs
 	qemu-system-x86_64 -cdrom $(OUTPUT_PATH)/arkana.iso -m 1G -vnc :0

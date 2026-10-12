@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-BLOCK_DEVICES=("sda" "sdb" "sdc" "hda" "hdb" "hdc" "vda" "vdb" "vdc" "mmcblk0" "mmcblk1" "mmcblk2" "nvme0n1" "nvme0n2" "nvme0n3")
+mapfile -t BLOCK_DEVICES < <(find /sys/block -mindepth 1 -maxdepth 1 -printf '%f\n' | grep -E '^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|mmcblk[0-9]+|nvme[0-9]+n[0-9]+)$')
 BINARIES=("mkfs.vfat" "mkfs.ext4" "rsync" "genfstab" "grub-install" "grub-mkconfig" "sed" "awk" "parted")
 FOUND_BLK=0
 FOUND_DEVS=()
@@ -88,9 +88,9 @@ if [ "$BLKDEV_MOUNTEDAS" != "overlay" ]; then
   false
 fi
 
-if [ "$SELDEV" == "/dev/nvme0n1" ]; then
+if [[ "$SELDEV" =~ ^/dev/nvme[0-9]+n[0-9]+$ ]]; then
   BLKDEV_ISPART=1
-elif [ "$SELDEV" == "/dev/mmcblk0" ]; then
+elif [[ "$SELDEV" =~ ^/dev/mmcblk[0-9]+$ ]]; then
   BLKDEV_ISPART=1
 else
   BLKDEV_ISPART=0
@@ -104,16 +104,16 @@ echo "Partitoning..."
 
 if [ -e /sys/firmware/efi/efivars ]; then
   echo "Found an EFI system."
-  parted "${SELDEV}" \ mklabel gpt \ mkpart primary 1 120M \ mkpart primary 120M 100% -s
+  parted -s "${SELDEV}" mklabel gpt mkpart primary 1MiB 120MiB set 1 esp on mkpart primary 120MiB 100%
   if [ "$BLKDEV_ISPART" == 0 ]; then
-    mkfs.vfat "${SELDEV}1"
+    mkfs.vfat -F 32 "${SELDEV}1"
     mkfs.ext4 -F "${SELDEV}2"
     mount "${SELDEV}2" /mnt
     mkdir -p /mnt/boot/efi
     mkdir /mnt/etc
     mount "${SELDEV}1" /mnt/boot/efi
   else
-    mkfs.vfat "${SELDEV}p1"
+    mkfs.vfat -F 32 "${SELDEV}p1"
     mkfs.ext4 -F "${SELDEV}p2"
     mount "${SELDEV}p2" /mnt
     mkdir -p /mnt/boot/efi
@@ -122,7 +122,7 @@ if [ -e /sys/firmware/efi/efivars ]; then
   fi
 else
   echo "Found a legacy system."
-  parted "${SELDEV}" \ mklabel msdos \ mkpart primary 1 120M \ mkpart primary 120M 100% -s
+  parted -s "${SELDEV}" mklabel msdos mkpart primary 1MiB 120MiB mkpart primary 120MiB 100%
   if [ "$BLKDEV_ISPART" == 0 ]; then
     mkfs.vfat "${SELDEV}1"
     mkfs.ext4 -F "${SELDEV}2"
@@ -144,6 +144,8 @@ echo "Copying system..."
 mkdir -p /mnt/{dev,proc,sys,run,mnt,tmp}
 
 rsync -ax --no-i-r --info=progress2 / /mnt
+cp /run/initramfs/bootdev/boot/vmlinuz /mnt/boot/vmlinuz
+cp /run/initramfs/bootdev/boot/boot-initramfs.img /mnt/boot/initramfs.img
 
 echo "Setting up bootloader..."
 mount --bind /dev /mnt/dev
@@ -176,8 +178,10 @@ fi
 
 if [ "$USES_EFI" == 0 ]; then
   KERNEL_PATH=/vmlinuz
+  INITRAMFS_PATH=/initramfs.img
 else
   KERNEL_PATH=/boot/vmlinuz
+  INITRAMFS_PATH=/boot/initramfs.img
 fi
 
 cat >> /mnt/etc/grub.d/29_main << EOF
@@ -185,7 +189,7 @@ cat >> /mnt/etc/grub.d/29_main << EOF
 exec tail -n +3 \$0
 menuentry "$PRETTY_NAME" {
   linux $KERNEL_PATH root=$BOOTDEV
-  initrd /boot/initramfs.img
+  initrd $INITRAMFS_PATH
 }
 EOF
 chmod +x /mnt/etc/grub.d/29_main

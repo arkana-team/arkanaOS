@@ -1,14 +1,15 @@
 # Enable multi-threaded Bash operation
 SHELL = bash
+.DEFAULT_GOAL := all
 THREADS = $(shell nproc)
 .NOTPARALLEL:
 
 # Paths used to build the ISO components
-SRC_PATH = $(shell realpath ./src)
-STAGING_PATH = $(shell realpath ./staging)
-CPIO_STAGING_PATH = $(shell realpath ./cpio-staging)
-ISO_STAGING_PATH = $(shell realpath ./iso-staging)
-OUTPUT_PATH = $(shell realpath ./output)
+SRC_PATH = $(shell realpath -m ./src)
+STAGING_PATH = $(shell realpath -m ./staging)
+CPIO_STAGING_PATH = $(shell realpath -m ./cpio-staging)
+ISO_STAGING_PATH = $(shell realpath -m ./iso-staging)
+OUTPUT_PATH = $(shell realpath -m ./output)
 
 # Cpio
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/cpio.html
@@ -169,6 +170,20 @@ EFIVAR_PATH = $(SRC_PATH)/efivar-$(EFIVAR_VER)
 FIREFOX_URL = https://archive.mozilla.org/pub/firefox/releases/135.0/linux-x86_64/en-US/firefox-135.0.tar.xz
 FIREFOX_VER = 135.0
 
+# Firefox runtime libraries omitted from the base package list
+ALSA_URL = https://www.alsa-project.org/files/pub/lib/alsa-lib-1.2.16.1.tar.bz2
+ALSA_VER = 1.2.16.1
+ALSA_PATH = $(SRC_PATH)/alsa-lib-$(ALSA_VER)
+AT_SPI_URL = https://download.gnome.org/sources/at-spi2-core/2.54/at-spi2-core-2.54.2.tar.xz
+AT_SPI_VER = 2.54.2
+AT_SPI_PATH = $(SRC_PATH)/at-spi2-core-$(AT_SPI_VER)
+GTK3_URL = https://download.gnome.org/sources/gtk/3.24/gtk-3.24.52.tar.xz
+GTK3_VER = 3.24.52
+GTK3_PATH = $(SRC_PATH)/gtk-$(GTK3_VER)
+LIBXDAMAGE_URL = https://xorg.freedesktop.org/archive/individual/lib/libXdamage-1.1.7.tar.xz
+LIBXDAMAGE_VER = 1.1.7
+LIBXDAMAGE_PATH = $(SRC_PATH)/libXdamage-$(LIBXDAMAGE_VER)
+
 download-firefox: .firefox-obtained
 .firefox-obtained:
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O firefox-$(FIREFOX_VER).tar.xz $(FIREFOX_URL) && tar xf firefox-$(FIREFOX_VER).tar.xz -C $(SRC_PATH)
@@ -187,7 +202,63 @@ firefox: download-firefox .firefox-done
 # Targets
 all: build initramfs boot-initramfs iso
 
-build: cpio busybox linux grub freetype harfbuzz glib libffi elfutils brotli pcre2 cairo fontconfig expat graphite2 pixman libpng libisoburn libburn libisofs mtools squashfs-tools lzo efibootmgr efivar firefox
+build: cpio busybox linux grub freetype harfbuzz glib libffi elfutils brotli pcre2 cairo fontconfig expat graphite2 pixman libpng libisoburn libburn libisofs mtools squashfs-tools lzo efibootmgr efivar alsa-lib at-spi2-core libXdamage gtk3 firefox
+
+download-alsa-lib: .alsa-lib-obtained
+.alsa-lib-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O alsa-lib-$(ALSA_VER).tar.bz2 $(ALSA_URL) && tar xf alsa-lib-$(ALSA_VER).tar.bz2
+	touch .alsa-lib-obtained
+
+alsa-lib: download-alsa-lib .alsa-lib-done
+.alsa-lib-done:
+	cd $(ALSA_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --disable-python && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .alsa-lib-done
+
+download-at-spi2-core: .at-spi2-core-obtained
+.at-spi2-core-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O at-spi2-core-$(AT_SPI_VER).tar.xz $(AT_SPI_URL) && tar xf at-spi2-core-$(AT_SPI_VER).tar.xz
+	touch .at-spi2-core-obtained
+
+at-spi2-core: download-at-spi2-core .at-spi2-core-done
+.at-spi2-core-done:
+	rm -rf $(AT_SPI_PATH)/build && mkdir -p $(AT_SPI_PATH)/build && cd $(AT_SPI_PATH)/build && \
+	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
+	PKG_CONFIG_LIBDIR="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_SYSROOT_DIR="$(STAGING_PATH)" \
+	CPPFLAGS="-I$(STAGING_PATH)/usr/include" CFLAGS="-O2 -pipe -I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" \
+	meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release --wrap-mode=nofallback \
+	-Ddocs=false -Dintrospection=disabled -Dgtk2_atk_adaptor=false -Dx11=enabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	touch .at-spi2-core-done
+
+download-libXdamage: .libXdamage-obtained
+.libXdamage-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libXdamage-$(LIBXDAMAGE_VER).tar.xz $(LIBXDAMAGE_URL) && tar xf libXdamage-$(LIBXDAMAGE_VER).tar.xz
+	touch .libXdamage-obtained
+
+libXdamage: download-libXdamage .libXdamage-done
+.libXdamage-done:
+	cd $(LIBXDAMAGE_PATH) && PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
+	PKG_CONFIG_LIBDIR="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_SYSROOT_DIR="$(STAGING_PATH)" \
+	CPPFLAGS="-I$(STAGING_PATH)/usr/include" CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" \
+	LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" \
+	./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .libXdamage-done
+
+download-gtk3: .gtk3-obtained
+.gtk3-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O gtk-$(GTK3_VER).tar.xz $(GTK3_URL) && tar xf gtk-$(GTK3_VER).tar.xz
+	touch .gtk3-obtained
+
+gtk3: download-gtk3 alsa-lib at-spi2-core libXdamage .gtk3-done
+.gtk3-done:
+	rm -rf $(GTK3_PATH)/build && mkdir -p $(GTK3_PATH)/build && cd $(GTK3_PATH)/build && \
+	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
+	PKG_CONFIG_LIBDIR="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_SYSROOT_DIR="$(STAGING_PATH)" \
+	CPPFLAGS="-I$(STAGING_PATH)/usr/include" CFLAGS="-O2 -pipe -I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" \
+	meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release --wrap-mode=nofallback \
+	-Dx11_backend=true -Dwayland_backend=true -Dbroadway_backend=false -Dcolord=no -Dcloudproviders=false -Dtracker3=false \
+	-Dprint_backends=file -Dgtk_doc=false -Dman=false -Dintrospection=false -Ddemos=false -Dexamples=false -Dtests=false && \
+	ninja && DESTDIR=$(STAGING_PATH) ninja install
+	touch .gtk3-done
 
 # Download cpio
 download-cpio: .cpio-obtained
@@ -299,6 +370,7 @@ linux: download-linux .linux-done
 	$(MAKE) -C $(LINUX_PATH) mrproper && cp $(CURDIR)/linux.config $(LINUX_PATH)/.config && cd $(LINUX_PATH) && $(MAKE) olddefconfig && \
 	$(MAKE) -j$(THREADS) KBUILD_BUILD_HOST="arkana" KBUILD_BUILD_USER="arkana" all && cp arch/x86/boot/bzImage $(STAGING_PATH)/boot/vmlinuz && \
 	$(MAKE) -C $(LINUX_PATH) headers_install INSTALL_HDR_PATH=$(STAGING_PATH)/usr
+	$(MAKE) -C $(LINUX_PATH) INSTALL_MOD_PATH=$(STAGING_PATH) modules_install
 	touch .linux-done
 
 # Download GRUB
@@ -530,7 +602,10 @@ download-libpng: .libpng-obtained
 libpng: download-libpng .libpng-done
 
 .libpng-done:
-	cd $(LIBPNG_PATH) && ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
+	# BFD is needed for libpng's PNG16_0 symbol versions, which Cairo requires.
+	cd $(LIBPNG_PATH) && { $(MAKE) distclean >/dev/null 2>&1 || true; } && \
+	CFLAGS="-O2 -std=gnu17" LDFLAGS="-fuse-ld=bfd" ./configure --prefix=/usr --disable-static && \
+	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
 	mkdir -p $(STAGING_PATH)/usr/share/doc/libpng-$(LIBPNG_VER) && cp README libpng-manual.txt $(STAGING_PATH)/usr/share/doc/libpng-$(LIBPNG_VER)
 	touch .libpng-done
 
@@ -588,12 +663,12 @@ initramfs:
 	mkdir -p $(ISO_STAGING_PATH)/boot/grub
 	cp liveinit $(CPIO_STAGING_PATH)/init
 	$(MAKE) -C $(LINUX_PATH) INSTALL_MOD_PATH=$(CPIO_STAGING_PATH) modules_install
-	cd $(CPIO_STAGING_PATH) && find . | cpio -oH newc | gzip > $(ISO_STAGING_PATH)/boot/initramfs.img
+	bash -o pipefail -c 'cd "$(CPIO_STAGING_PATH)" && find . | cpio -oH newc | gzip > "$(ISO_STAGING_PATH)/boot/initramfs.img"'
 
 .PHONY: boot-initramfs
 boot-initramfs:
 	cp bootinit $(CPIO_STAGING_PATH)/init
-	cd $(CPIO_STAGING_PATH) && find . | cpio -oH newc | gzip > $(STAGING_PATH)/boot/initramfs.img
+	bash -o pipefail -c 'cd "$(CPIO_STAGING_PATH)" && find . | cpio -oH newc | gzip > "$(STAGING_PATH)/boot/initramfs.img"'
 
 # Create ISO file for booting
 .PHONY: iso
@@ -627,11 +702,12 @@ iso:
 
 	chroot $(STAGING_PATH) fc-cache -fv || true
 	chroot $(STAGING_PATH) glib-compile-schemas /usr/share/glib-2.0/schemas || true
-	rm -f $(STAGING_PATH)/etc/ld.so.cache || true
-	/sbin/ldconfig -r $(STAGING_PATH) || true
+	rm -f $(STAGING_PATH)/etc/ld.so.cache
+	chroot $(STAGING_PATH) /usr/bin/ldconfig
 
-	mksquashfs $(STAGING_PATH) $(ISO_STAGING_PATH)/boot/rootfs.sfs -comp zstd -Xcompression-level 15 -b 1M -noappend -e boot/vmlinuz boot/initramfs.img || true
+	mksquashfs $(STAGING_PATH) $(ISO_STAGING_PATH)/boot/rootfs.sfs -comp zstd -Xcompression-level 15 -b 1M -noappend -e boot/vmlinuz boot/initramfs.img
 	cp $(LINUX_PATH)/arch/x86/boot/bzImage $(ISO_STAGING_PATH)/boot/vmlinuz
+	cp $(STAGING_PATH)/boot/initramfs.img $(ISO_STAGING_PATH)/boot/boot-initramfs.img
 
 	echo 'set timeout=5' > $(ISO_STAGING_PATH)/boot/grub/grub.cfg
 	echo 'set default=0' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
@@ -644,5 +720,3 @@ iso:
 	echo '}' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
 
 	grub-mkrescue -o $(OUTPUT_PATH)/arkana.iso $(ISO_STAGING_PATH) -- -volid "ARKANA"
-	chmod -R 777 $(OUTPUT_PATH) 2>/dev/null || true
-

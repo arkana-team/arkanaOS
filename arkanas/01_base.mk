@@ -4,9 +4,9 @@ THREADS = $(shell nproc)
 .NOTPARALLEL:
 
 # Set working paths
-SRC_PATH = $(shell realpath ./src)
-STAGING_PATH = $(shell realpath ./staging)
-OUTPUT_PATH = $(shell realpath ./output)
+SRC_PATH = $(shell realpath -m ./src)
+STAGING_PATH = $(shell realpath -m ./staging)
+OUTPUT_PATH = $(shell realpath -m ./output)
 
 # Build number
 BUILDNUM_FILE := $(shell realpath .buildnum)
@@ -14,8 +14,8 @@ BUILDNUM_FILE := $(shell realpath .buildnum)
 # Package variables
 # Glibc
 # URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter05/glibc.html
-GLIBC_URL = https://mirrors.ocf.berkeley.edu/gnu/glibc/glibc-2.43.tar.gz
-GLIBC_VER = 2.43
+GLIBC_URL = https://ftp.gnu.org/gnu/glibc/glibc-$(GLIBC_VER).tar.xz
+GLIBC_VER = 2.44
 GLIBC_PATH = $(SRC_PATH)/glibc-$(GLIBC_VER)
 
 # Systemd
@@ -302,6 +302,7 @@ dirs: .dirs-done
 
 .dirs-done:
 	mkdir -p $(STAGING_PATH) $(OUTPUT_PATH) $(SRC_PATH)
+	chmod 0755 $(STAGING_PATH)
 
 	mkdir -p $(STAGING_PATH)/{boot,dev,etc,home,mnt,opt,proc,root,run,sys,tmp,var}
 	mkdir -p $(STAGING_PATH)/usr/{bin,include,lib,local,share,src}
@@ -328,6 +329,7 @@ dirs: .dirs-done
 		'' \
 		'[properties]' \
 		"pkg_config_libdir = '$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig'" \
+		"sys_root = '$(STAGING_PATH)'" \
 		'' \
 		'[host_machine]' \
 		"system = 'linux'" \
@@ -356,19 +358,23 @@ download-glibc: .glibc-obtained
 
 .glibc-obtained:
 	mkdir -p $(SRC_PATH)
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O glibc-$(GLIBC_VER).tar.gz $(GLIBC_URL) && tar xf glibc-$(GLIBC_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O glibc-$(GLIBC_VER).tar.xz $(GLIBC_URL) && tar xf glibc-$(GLIBC_VER).tar.xz
 	touch .glibc-obtained
 
 # Compile Glibc
 .PHONY: glibc
 glibc: download-glibc .glibc-done
 
+# Glibc's internal partial and shared-library links are not compatible with
+# mold; use GNU BFD for Glibc while keeping mold for the rest of the system.
+# Glibc's install hook passes install_root to its built ldconfig; keep it in
+# staging so this install cannot update the builder's dynamic linker cache.
 .glibc-done:
 	mkdir -p $(GLIBC_PATH)/build
-	cd $(GLIBC_PATH)/build && CFLAGS="-O2 -std=gnu17" ../configure --prefix=/usr --disable-werror --enable-kernel=5.4 \
-	--enable-stack-protector=strong --disable-nscd --enable-shared libc_cv_slibdir=/usr/lib && sed -i '/^CFLAGS/ s/$$/ -O2/' Makefile && $(MAKE) -j$(THREADS) && \
-	$(MAKE) DESTDIR=$(STAGING_PATH) install
-	chmod -R 777 $(STAGING_PATH) $(OUTPUT_PATH) 2>/dev/null || true
+	cd $(GLIBC_PATH)/build && CFLAGS="-O2 -std=gnu17" LDFLAGS="-fuse-ld=bfd -Wl,-O1 -Wl,--as-needed" ../configure --prefix=/usr --disable-werror --enable-kernel=5.4 \
+	--enable-stack-protector=strong --disable-nscd --enable-shared libc_cv_slibdir=/usr/lib && sed -i '/^CFLAGS/ s/$$/ -O2/' Makefile && \
+	$(MAKE) LDFLAGS="-fuse-ld=bfd -Wl,-O1 -Wl,--as-needed" -j$(THREADS) && \
+	$(MAKE) DESTDIR=$(STAGING_PATH) install_root=$(STAGING_PATH) install
 	grep -q 'IPPROTO_AGGFRAG' $(STAGING_PATH)/usr/include/netinet/in.h || \
 	  sed -i '/IPPROTO_RAW = 255/a\\    IPPROTO_AGGFRAG = 147,' $(STAGING_PATH)/usr/include/netinet/in.h
 	touch .glibc-done
@@ -387,7 +393,7 @@ systemd: download-systemd kernel-headers .systemd-done
 
 .systemd-done:
 	rm -rf $(SYSTEMD_PATH)/build
-	sed -i 's/grep -Ev '\''^#define\[\[:space:\]\]+(ECANCELLED|EREFUSED)'\''/grep -Ev '\''^#define\[\[:space:\]\]+(ECANCELLED|EREFUSED|EFSBADCRC|EFSCORRUPTED)'\''/g' $(SYSTEMD_PATH)/src/basic/generate-errno-list.sh
+	sed -i -e 's/(ECANCELLED|EREFUSED|EFSBADCRC|EFSCORRUPTED)/(ECANCELLED|EREFUSED|EFSBADCRC|EFSCORRUPTED|EFTYPE)/g' -e 's/(ECANCELLED|EREFUSED)/(ECANCELLED|EREFUSED|EFSBADCRC|EFSCORRUPTED|EFTYPE)/g' $(SYSTEMD_PATH)/src/basic/generate-errno-list.sh
 	sed -i 's/-Werror=override-init/-Wno-override-init/g' $(SYSTEMD_PATH)/meson.build
 	mkdir -p $(SYSTEMD_PATH)/build
 	cd $(SYSTEMD_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -Dwerror=false -Dc_args="-Wno-override-init -Wno-error=override-init" \
@@ -537,6 +543,8 @@ download-gcc: .gcc-obtained
 .PHONY: gcc
 gcc: download-gcc .gcc-done
 
+# GCC's bundled libcody requires exactly C++11; the global C++17 flag would
+# override libcody's own -std=c++11 check.
 .gcc-done:
 	cd $(GCC_PATH) && wget --tries=5 --timeout=30 -c https://ftp.gnu.org/gnu/gettext/gettext-0.22.tar.gz && \
 	wget --tries=5 --timeout=30 -c https://ftp.gnu.org/gnu/gmp/gmp-6.2.1.tar.bz2 && \
@@ -546,7 +554,7 @@ gcc: download-gcc .gcc-done
 	./contrib/download_prerequisites --no-force && \
 	find libcody -type f \( -name "*.cc" -o -name "*.hh" \) -exec sed -i 's/u8"/\"/g' {} +
 	rm -rf $(GCC_PATH)/build
-	mkdir -p $(GCC_PATH)/build && cd $(GCC_PATH)/build && CFLAGS="-O2 -std=gnu17" ../configure --prefix=/usr --disable-multilib \
+	mkdir -p $(GCC_PATH)/build && cd $(GCC_PATH)/build && CFLAGS="-O2 -std=gnu17" CXXFLAGS="-O2 -pipe" ../configure --prefix=/usr --disable-multilib \
 	--enable-languages=c,c++ --disable-bootstrap --disable-libsanitizer --disable-libvtv --disable-libitm --disable-libquadmath && $(MAKE) -j$(THREADS) all-target-libstdc++-v3 all-target-libgcc && $(MAKE) DESTDIR=$(STAGING_PATH) install-target-libstdc++-v3 install-target-libgcc
 	touch .gcc-done
 
@@ -1143,7 +1151,7 @@ download-dbus: .dbus-obtained
 dbus: download-dbus .dbus-done
 .dbus-done:
 	mkdir -p $(DBUS_PATH)/build && cd $(DBUS_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release --wrap-mode=nofallback .. && ninja && \
-	DESTDIR=$(STAGING_PATH) ninja install && chown 0:18 $(STAGING_PATH)/usr/lib/dbus-daemon-launch-helper || true && \
+	DESTDIR=$(STAGING_PATH) ninja install || exit 1 && chown 0:18 $(STAGING_PATH)/usr/lib/dbus-daemon-launch-helper || true && \
 	chmod 4750 $(STAGING_PATH)/usr/lib/dbus-daemon-launch-helper || true && if [ -e $(STAGING_PATH)/usr/share/doc/dbus ]; then rm -rf $(STAGING_PATH)/usr/share/doc/dbus-$(DBUS_VER) && \
 	mv $(STAGING_PATH)/usr/share/doc/dbus{,-$(DBUS_VER)}; fi && rm -rf $(STAGING_PATH)/usr/bin/dbus-launch
 	touch .dbus-done

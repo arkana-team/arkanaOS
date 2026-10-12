@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-mkdir -p output
+mkdir -p output src staging
 
 # Build process can be uncapped. This will be faster but will use up more resources.
 CPUS=$(nproc)
@@ -24,10 +24,10 @@ echo "Will use $CONTAINER_RAM GB of memory, $CONTAINER_SWAP GB of swap ($TOTAL_M
 
 echo "Starting build process. This will take several hours."
 docker build -t arkana-builder .
-docker run --rm -i --init \
-  -v "$(pwd)/src:/build/arkana/src" \
-  -v "$(pwd)/staging:/build/arkana/staging" \
-  -v "$(pwd)/output:/build/arkana/output" \
+docker run --rm -it --init \
+  --cap-add=MKNOD \
+  -v "$(pwd):/build/arkana" \
+  -v "$(pwd)/.git:/build/arkana/.git:ro" \
   -e HOST_UID="$(id -u)" \
   -e HOST_GID="$(id -g)" \
   --memory=${CONTAINER_RAM}g \

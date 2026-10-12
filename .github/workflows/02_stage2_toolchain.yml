@@ -105,7 +105,7 @@ jobs:
             -v "$(pwd)/output:/build/arkana/output" \
             -v "$HOME/.cache/ccache:/home/builder/.cache/ccache" \
             -e CCACHE_DIR=/home/builder/.cache/ccache \
-            arkana-builder bash -c "sudo make -f arkanas/02_ext.mk && sudo make -f arkanas/03_arkpkg.mk && sudo make -f arkanas/04_toolchain.mk"
+            arkana-builder bash -c "sudo --preserve-env make -f arkanas/02_ext.mk && sudo --preserve-env make -f arkanas/03_arkpkg.mk && sudo --preserve-env make -f arkanas/04_toolchain.mk"
 
       - name: Archive Stage 2
         run: sudo tar -cf arkana-stage2.tar staging src && sudo chown $USER:$USER arkana-stage2.tar
