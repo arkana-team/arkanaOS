@@ -893,6 +893,7 @@ xorg-nscde-apps: .nscde-xorg-apps-done
 	for pair in $(NSCDE_X11_PARSED_APPS); do \
 	  app=$${pair%%/*}; ver=$${pair##*/}; \
 	  if [ ! -d $(SRC_PATH)/$$app-$$ver ]; then \
+	    cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O $$app-$$ver.tar.xz https://xorg.freedesktop.org/releases/individual/app/$$app-$$ver.tar.xz && tar xf $$app-$$ver.tar.xz || exit 1; \
 
 # Compile Window Maker
 wmaker: download-wmaker .wmaker-done
