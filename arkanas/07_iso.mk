@@ -384,6 +384,7 @@ WIRELESS_REGDB_PATH = $(SRC_PATH)/wireless-regdb-2026-09-03
 linux-firmware: .linux-firmware-done
 .linux-firmware-done: $(CURDIR)/arkanas/07_iso.mk
 	if ! [ -d $(LINUX_FIRMWARE_PATH)/.git ]; then \
+	  git clone --depth 1 --branch $(LINUX_FIRMWARE_TAG) https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git $(LINUX_FIRMWARE_PATH); \
 
 # Download GRUB
 download-grub: .grub-obtained
