@@ -18,6 +18,7 @@ AMD Radeon/AMDGPU and Intel i915/Xe graphics drivers, plus Intel IGC Ethernet
 and iwlwifi wireless support. Matching graphics and Intel wireless firmware is
 present in both the live image and installed system.
 
+Each base build adds a random increment from 1 to 250 to `.buildnum`. The new
 ## Desktop
 
 The default X session is NsCDE with its four-color Solyaris palette, Solaris 7
