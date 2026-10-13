@@ -892,7 +892,7 @@ xorg-nscde-apps: .nscde-xorg-apps-done
 .nscde-xorg-apps-done: .xorg-libs-done
 	for pair in $(NSCDE_X11_PARSED_APPS); do \
 	  app=$${pair%%/*}; ver=$${pair##*/}; \
-	touch .wmaker-obtained
+	  if [ ! -d $(SRC_PATH)/$$app-$$ver ]; then \
 
 # Compile Window Maker
 wmaker: download-wmaker .wmaker-done
