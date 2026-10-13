@@ -721,7 +721,7 @@ iso:
 	cp -a xinitrc $(STAGING_PATH)/root/.xinitrc
 	mkdir -p $(STAGING_PATH)/etc/skel && cp -a xinitrc $(STAGING_PATH)/etc/skel/.xinitrc
 	mkdir -p $(STAGING_PATH)/root/.NsCDE/backer $(STAGING_PATH)/etc/skel/.NsCDE/backer
-	cp -a wmaker-config/WMDefaults $(STAGING_PATH)/root/GNUstep/Library/WindowMaker/
+	cp -a nscde-config/Backdrops.fvwmgen $(STAGING_PATH)/root/.NsCDE/
 	cp -a wmaker-config/WMWindowAttributes $(STAGING_PATH)/root/GNUstep/Library/WindowMaker/
 	cp -a wmaker-config/WMRootMenu $(STAGING_PATH)/root/GNUstep/Library/WindowMaker/
 	mkdir -p $(STAGING_PATH)/etc/skel/GNUstep/Library/WindowMaker
