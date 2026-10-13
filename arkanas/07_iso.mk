@@ -376,6 +376,7 @@ linux: download-linux .linux-done
 # Pin host firmware so the live image and installed system support current hardware.
 LINUX_FIRMWARE_TAG = 20260916
 LINUX_FIRMWARE_PATH = $(SRC_PATH)/linux-firmware-$(LINUX_FIRMWARE_TAG)
+WIRELESS_REGDB_TAG = master-2026-09-03
 
 # Download GRUB
 download-grub: .grub-obtained
