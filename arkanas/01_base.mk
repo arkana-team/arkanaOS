@@ -440,6 +440,7 @@ timestamp:
 	  trap 'rm -f "$$TMP"' EXIT; \
 	  printf '%s\n' "$$BUILD" > "$$TMP"; \
 	  chmod --reference="$(BUILDNUM_FILE)" "$$TMP"; chown --reference="$(BUILDNUM_FILE)" "$$TMP"; \
+	  mv -f "$$TMP" "$(BUILDNUM_FILE)"; \
 
 # Download coreutils
 .PHONY: download-coreutils
