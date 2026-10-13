@@ -927,3 +927,4 @@ PYTHON_SITE = $(STAGING_PATH)$(shell chroot $(STAGING_PATH) /usr/bin/python3 -c 
 pyxdg: .pyxdg-done
 .pyxdg-done:
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O pyxdg-0.28.tar.gz https://files.pythonhosted.org/packages/b0/25/7998cd2dec731acbd438fbf91bc619603fc5188de0a9a17699a781840452/pyxdg-0.28.tar.gz && tar xf pyxdg-0.28.tar.gz
+	install -d $(PYTHON_SITE) && cp -a $(SRC_PATH)/pyxdg-0.28/xdg $(PYTHON_SITE)/
