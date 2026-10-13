@@ -729,6 +729,7 @@ iso:
 	done
 	chroot $(STAGING_PATH) /usr/lib/NsCDE/palette_colorgen -p /usr/share/NsCDE/palettes/Solyaris.dp -n 4 -f > $(STAGING_PATH)/usr/share/NsCDE/fvwm/Colorset.fvwmconf
 	sed -i 's|^Exec=/usr/bin/nscde$$|Exec=/usr/bin/env NSCDE_PALETTE=Solyaris NSCDE_PALETTE_NCOLORS=4 /usr/bin/nscde|' $(STAGING_PATH)/usr/share/xsessions/nscde.desktop
+	sed -i -e 's/DejaVu Serif/Luxi Sans/g' -e 's/DejaVu Sans Mono/Luxi Mono/g' $(STAGING_PATH)/usr/share/NsCDE/fvwm/Font-*dpi.fvwmconf
 	mkdir -p $(STAGING_PATH)/etc/X11/xorg.conf.d
 	printf 'Section "Device"\n    Identifier "Card0"\n    Option "SWcursor" "true"\n    Option "HWCursor" "false"\nEndSection\n' > $(STAGING_PATH)/etc/X11/xorg.conf.d/99-swcursor.conf
 	sed -i 's/arkanaOS Dev/arkanaOS nightly/g' $(STAGING_PATH)/etc/os-release 2>/dev/null || true
