@@ -424,7 +424,7 @@ systemd: download-systemd kernel-headers .systemd-done
 timestamp:
 	@set -euo pipefail; \
 	exec 9>"$(BUILDNUM_FILE).lock"; \
-	echo $$BUILD > $(BUILDNUM_FILE)
+	flock -x 9; \
 
 # Download coreutils
 .PHONY: download-coreutils
