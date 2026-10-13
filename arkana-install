@@ -97,6 +97,7 @@ else
 fi
 
 BOOTPART="${SELDEV}${PART_SUFFIX}1"
+ROOTPART="${SELDEV}${PART_SUFFIX}2"
 umount -R /mnt &>/dev/null || true
 
 echo "Installing $PRETTY_NAME on $SELDEV"
