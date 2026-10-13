@@ -887,7 +887,6 @@ vulkan: .vulkan-done
 # Download Xorg utilities required by NsCDE.
 NSCDE_X11_PARSED_APPS := $(foreach i, $(shell seq 1 $(words $(NSCDE_X11_APPS))), \
   $(word $(i), $(NSCDE_X11_APPS))/$(word $(i), $(NSCDE_X11_APP_VERS)))
-WMAKER_PATH = $(SRC_PATH)/WindowMaker-$(WMAKER_VER)
 
 # Download Window Maker
 download-wmaker: .wmaker-obtained
