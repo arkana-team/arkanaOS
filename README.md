@@ -13,3 +13,4 @@ cd arkanaOS
 ./build.sh
 ```
 
+The ISO uses GRUB for legacy BIOS and x86_64 UEFI. Its Linux image includes
