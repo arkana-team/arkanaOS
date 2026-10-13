@@ -899,7 +899,7 @@ xorg-nscde-apps: .nscde-xorg-apps-done
 	done
 	touch .nscde-xorg-apps-done
 
-# Compile Window Maker
+# libevent is required by FVWM3.
 wmaker: download-wmaker .wmaker-done
 .wmaker-done:
 	cd $(WMAKER_PATH) && { $(MAKE) distclean >/dev/null 2>&1 || true; } && ./autogen.sh && \
