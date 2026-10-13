@@ -16,6 +16,7 @@ ENV ARKANA_NO_SUCCESSFUL_EXIT=0
 RUN yes | pacman -Syu --noconfirm && \
     yes | pacman -S --noconfirm --needed \
         base-devel \
+        coreutils \
         git \
         sudo \
         rsync \
