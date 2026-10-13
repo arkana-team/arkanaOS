@@ -93,7 +93,7 @@ if [[ "$SELDEV" =~ ^/dev/nvme[0-9]+n[0-9]+$ ]]; then
 elif [[ "$SELDEV" =~ ^/dev/mmcblk[0-9]+$ ]]; then
   PART_SUFFIX="p"
 else
-  BLKDEV_ISPART=0
+  PART_SUFFIX=""
 fi
 
 trap "umount -R /mnt &>/dev/null || true" ERR
