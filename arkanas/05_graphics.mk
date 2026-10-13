@@ -884,7 +884,7 @@ vulkan: .vulkan-done
 	$(MAKE) -j$(THREADS) && $(MAKE) install DESTDIR=$(STAGING_PATH)
 	touch .vulkan-done
 
-# Window Maker (wmaker-crm fork)
+# Download Xorg utilities required by NsCDE.
 # URL: https://repo.or.cz/w/wmaker-crm.git
 WMAKER_URL = https://www.windowmaker.org/pub/source/release/WindowMaker-0.96.0.tar.gz
 WMAKER_VER = 0.96.0
