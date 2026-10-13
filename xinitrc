@@ -5,7 +5,6 @@ export NSCDE_PALETTE=Solyaris
 export NSCDE_PALETTE_NCOLORS=4
 xsetroot -cursor_name left_ptr 2>/dev/null || true
 exec /usr/bin/nscde
-    feh --bg-fill /usr/share/backgrounds/X11-bg.png 2>/dev/null || true
 else
     xsetroot -solid "#0f172a" 2>/dev/null || true
 fi
