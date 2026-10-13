@@ -942,3 +942,4 @@ IMAGEMAGICK_URL = https://download.imagemagick.org/archive/releases/ImageMagick-
 IMAGEMAGICK_PATH = $(SRC_PATH)/ImageMagick-$(IMAGEMAGICK_VER)
 
 imagemagick: .imagemagick-done
+.imagemagick-done: $(CURDIR)/arkanas/05_graphics.mk .libjpeg-turbo-done
