@@ -937,3 +937,4 @@ pyyaml: .pyyaml-done
 	touch .pyyaml-done
 
 # Build the X11 image utilities used by NsCDE's backdrop and screenshot tools.
+IMAGEMAGICK_VER = 7.1.2-33
