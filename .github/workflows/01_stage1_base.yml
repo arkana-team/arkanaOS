@@ -30,6 +30,7 @@ jobs:
           esac
           CURRENT=$(cat .buildnum)
           if ! [[ "$CURRENT" =~ ^[0-9]+$ ]]; then
+            echo "Invalid .buildnum value: $CURRENT" >&2
 
       - name: Free Disk Space
         run: |
