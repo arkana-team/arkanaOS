@@ -377,6 +377,7 @@ linux: download-linux .linux-done
 LINUX_FIRMWARE_TAG = 20260916
 LINUX_FIRMWARE_PATH = $(SRC_PATH)/linux-firmware-$(LINUX_FIRMWARE_TAG)
 WIRELESS_REGDB_TAG = master-2026-09-03
+WIRELESS_REGDB_COMMIT = 389b9b702cf9018e9a9078ccc4fa8eaae2e054e3
 
 # Download GRUB
 download-grub: .grub-obtained
