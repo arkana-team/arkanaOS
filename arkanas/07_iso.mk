@@ -400,6 +400,7 @@ linux-firmware: .linux-firmware-done
 	done
 	awk '$$1 == "Link:" && $$4 ~ /^(amdgpu|i915|xe|radeon|amd-ucode|intel\/iwlwifi)\// { print $$2, $$4 }' $(LINUX_FIRMWARE_PATH)/WHENCE | while read -r firmware target; do \
 	  test -e $(STAGING_PATH)/lib/firmware/$$target || continue; \
+	  ln -sf "$$target" $(STAGING_PATH)/lib/firmware/$$firmware || exit 1; \
 
 # Download GRUB
 download-grub: .grub-obtained
