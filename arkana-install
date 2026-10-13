@@ -160,7 +160,6 @@ fi
 
 mkdir -p /mnt/etc/default
 echo 'GRUB_DISABLE_OS_PROBER=false' >> /mnt/etc/default/grub
-if [ "$BLKDEV_ISPART" == 0 ]; then
   BOOTDEV="${SELDEV}2"
 else
   BOOTDEV="${SELDEV}p2"
