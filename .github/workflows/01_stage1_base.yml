@@ -25,6 +25,7 @@ jobs:
         id: reserve_build_number
         run: |
           case "$GITHUB_REF" in
+            refs/heads/*) ;;
 
       - name: Free Disk Space
         run: |
