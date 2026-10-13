@@ -190,7 +190,7 @@ echo "$HOSTNAME" > /mnt/etc/hostname
 
 echo "Please enter your root password: "
 read -rs ROOTPASS
-echo "root:$ROOTPASS" | chroot /mnt chpasswd
+printf '%s:%s\n' root "$ROOTPASS" | chroot /mnt chpasswd
 
 read -rp "Enter the username of your user: " USERNAME
 echo 'CREATE_MAIL_SPOOL=no' >> /mnt/etc/default/useradd
