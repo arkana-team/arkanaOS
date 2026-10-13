@@ -119,7 +119,7 @@ jobs:
       - name: Generate Release Notes & Tags from Template
         run: |
           BUILD_DATE=$(date +%Y%m%d)
-          BUILD_NUM=$(cat .buildnum 2>/dev/null || echo "143")
+          BUILD_NUM=$(cat staging/etc/arkana-build-number 2>/dev/null || cat .buildnum 2>/dev/null || echo "0")
           sed -i "s/BUILD_DATE/$BUILD_DATE/g" RELEASE_TEMPLATE.md
           sed -i "s/BUILD_NUM/$BUILD_NUM/g" RELEASE_TEMPLATE.md
           echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
