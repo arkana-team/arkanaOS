@@ -921,3 +921,4 @@ ksh93: .ksh93-done
 	cd $(KSH93_PATH) && ksh_bin=$$(find arch -type f -path '*/bin/ksh' -perm -111 -print -quit) && test -n "$$ksh_bin" && install -D -m 755 "$$ksh_bin" $(STAGING_PATH)/usr/bin/ksh && ln -sf ksh $(STAGING_PATH)/usr/bin/ksh93
 	touch .ksh93-done
 
+# Install pure-Python desktop integration dependencies for NsCDE.
