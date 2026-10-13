@@ -25,3 +25,4 @@ backdrop, and Luxi Sans/Mono fonts. The NsCDE session is also installed under
 `/usr/share/xsessions` for display managers.
 
 ## CLI installer
+
