@@ -725,7 +725,7 @@ iso:
 	cp -a nscde-config/Backdrops.fvwmgen $(STAGING_PATH)/etc/skel/.NsCDE/
 	for desk in 1 2 3 4 5 6 7 8; do \
 	  chroot $(STAGING_PATH) /usr/lib/NsCDE/palette_colorgen -p /usr/share/NsCDE/palettes/Solyaris.dp -n 4 -i /usr/share/NsCDE/backdrops/Solyaris.pm -P 3 -b > $(STAGING_PATH)/root/.NsCDE/backer/Desk$$desk-Solyaris.pm || exit 1; \
-	cp -a wmaker-config/WMDefaults $(STAGING_PATH)/etc/skel/GNUstep/Library/WindowMaker/
+	  cp $(STAGING_PATH)/root/.NsCDE/backer/Desk$$desk-Solyaris.pm $(STAGING_PATH)/etc/skel/.NsCDE/backer/; \
 	cp -a wmaker-config/WMWindowAttributes $(STAGING_PATH)/etc/skel/GNUstep/Library/WindowMaker/
 	cp -a wmaker-config/WMRootMenu $(STAGING_PATH)/etc/skel/GNUstep/Library/WindowMaker/
 	mkdir -p $(STAGING_PATH)/etc/X11/xorg.conf.d
