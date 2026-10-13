@@ -950,3 +950,4 @@ imagemagick: .imagemagick-done
 
 # Build FVWM3, NsCDE's required window manager.
 FVWM3_VER = 1.1.5
+FVWM3_PATH = $(SRC_PATH)/fvwm3-$(FVWM3_VER)
