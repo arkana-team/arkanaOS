@@ -124,6 +124,7 @@ else
   mount "$BOOTPART" /mnt/boot
 fi
 
+ROOT_UUID="$(blkid -s UUID -o value "$ROOTPART")"
 
 echo "Copying system..."
 mkdir -p /mnt/{dev,proc,sys,run,mnt,tmp}
