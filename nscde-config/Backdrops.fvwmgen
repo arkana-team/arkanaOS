@@ -1,3 +1,4 @@
 # Solaris 7 inspired backdrop for each NsCDE virtual desktop.
 Colorset 31 TiledPixmap $[FVWM_USERDIR]/backer/Desk1-Solyaris.pm
 Colorset 32 TiledPixmap $[FVWM_USERDIR]/backer/Desk2-Solyaris.pm
+Colorset 33 TiledPixmap $[FVWM_USERDIR]/backer/Desk3-Solyaris.pm
