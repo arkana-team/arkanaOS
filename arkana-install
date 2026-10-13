@@ -198,7 +198,7 @@ chroot /mnt useradd -m "$USERNAME"
 chroot /mnt usermod -aG wheel "$USERNAME"
 echo "Please enter your user password: "
 read -rs USERPASS
-echo "$USERNAME:$USERPASS" | chroot /mnt chpasswd
+printf '%s:%s\n' "$USERNAME" "$USERPASS" | chroot /mnt chpasswd
 
 while :; do
   read -rp "Enter your timezone here: " TIMEZONE
