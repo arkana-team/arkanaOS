@@ -24,3 +24,4 @@ The default X session is NsCDE with its four-color Solyaris palette, Solaris 7
 backdrop, and Luxi Sans/Mono fonts. The NsCDE session is also installed under
 `/usr/share/xsessions` for display managers.
 
+## CLI installer
