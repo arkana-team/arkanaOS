@@ -933,3 +933,4 @@ pyxdg: .pyxdg-done
 pyyaml: .pyyaml-done
 .pyyaml-done:
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O pyyaml-6.0.3.tar.gz https://files.pythonhosted.org/packages/05/8e/961c0007c59b8dd7729d542c61a4d537767a59645b82a0b521206e1e25c2/pyyaml-6.0.3.tar.gz && tar xf pyyaml-6.0.3.tar.gz
+	install -d $(PYTHON_SITE) && cp -a $(SRC_PATH)/pyyaml-6.0.3/lib/yaml $(PYTHON_SITE)/
