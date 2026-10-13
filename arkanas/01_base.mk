@@ -431,6 +431,7 @@ timestamp:
 	  if ! [[ "$$BUILD" =~ ^[0-9]+$$ ]] || [ "$$CURRENT" != "$$BUILD" ]; then \
 	    echo "ARKANA_BUILD_NUMBER must match the persisted .buildnum value" >&2; exit 1; \
 	  fi; \
+	else \
 
 # Download coreutils
 .PHONY: download-coreutils
