@@ -24,6 +24,7 @@ jobs:
       - name: Reserve build number
         id: reserve_build_number
         run: |
+          case "$GITHUB_REF" in
 
       - name: Free Disk Space
         run: |
