@@ -10,6 +10,7 @@ iso-staging
 staging
 src
 output
+.buildnum.lock
 
 # Scratch / debug scripts
 *.py
