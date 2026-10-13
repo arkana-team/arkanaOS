@@ -954,3 +954,4 @@ FVWM3_PATH = $(SRC_PATH)/fvwm3-$(FVWM3_VER)
 
 download-fvwm3: .fvwm3-obtained
 .fvwm3-obtained:
+	if ! [ -f $(FVWM3_PATH)/meson.build ]; then cd $(SRC_PATH) && git clone --depth 1 --branch $(FVWM3_VER) https://github.com/fvwmorg/fvwm3.git fvwm3-$(FVWM3_VER); fi
