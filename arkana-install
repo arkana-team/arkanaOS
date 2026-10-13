@@ -224,4 +224,5 @@ rm -rf /mnt/etc/systemd/system/getty@tty1.service.d
 rm -rf /mnt/etc/systemd/system/serial-getty@ttyS0.service.d
 rm -rf /mnt/usr/bin/arkana-install
 
+sync
 echo "Installed $PRETTY_NAME successfully. You can reboot the system now."
