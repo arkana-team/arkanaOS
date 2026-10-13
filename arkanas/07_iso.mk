@@ -397,6 +397,7 @@ linux-firmware: .linux-firmware-done
 	  test -d $(LINUX_FIRMWARE_PATH)/$$firmware || { echo "Missing firmware directory: $$firmware" >&2; exit 1; }; \
 	  cp -a $(LINUX_FIRMWARE_PATH)/$$firmware $(STAGING_PATH)/lib/firmware/ || exit 1; \
 	  cp -a $(LINUX_FIRMWARE_PATH)/$$firmware $(CPIO_STAGING_PATH)/lib/firmware/ || exit 1; \
+	done
 
 # Download GRUB
 download-grub: .grub-obtained
