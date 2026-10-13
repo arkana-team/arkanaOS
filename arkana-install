@@ -113,7 +113,6 @@ if [ -d /sys/firmware/efi ]; then
   mount "$ROOTPART" /mnt
   mkdir -p /mnt/boot/efi /mnt/etc
   mount "$BOOTPART" /mnt/boot/efi
-    mkdir /mnt/etc
     mount "${SELDEV}p1" /mnt/boot/efi
   fi
 else
