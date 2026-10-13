@@ -122,7 +122,6 @@ else
   mount "$ROOTPART" /mnt
   mkdir -p /mnt/boot /mnt/etc
   mount "$BOOTPART" /mnt/boot
-    mount "${SELDEV}p2" /mnt
     mkdir -p /mnt/boot
     mkdir /mnt/etc
     mount "${SELDEV}p1" /mnt/boot
