@@ -21,6 +21,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Reserve build number
 
       - name: Free Disk Space
         run: |
