@@ -109,7 +109,7 @@ if [ -d /sys/firmware/efi ]; then
   echo "Found an EFI system."
   parted -s "${SELDEV}" mklabel gpt mkpart primary 1MiB 120MiB set 1 esp on mkpart primary 120MiB 100%
   mkfs.vfat -F 32 "$BOOTPART"
-    mkfs.vfat -F 32 "${SELDEV}1"
+  mkfs.ext4 -F "$ROOTPART"
     mkfs.ext4 -F "${SELDEV}2"
     mount "${SELDEV}2" /mnt
     mkdir -p /mnt/boot/efi
