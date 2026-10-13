@@ -917,3 +917,4 @@ KSH93_PATH = $(SRC_PATH)/ksh-$(KSH93_TAG)
 ksh93: .ksh93-done
 .ksh93-done:
 	if ! [ -d $(KSH93_PATH)/.git ]; then git clone --depth 1 --branch $(KSH93_TAG) https://github.com/ksh93/ksh.git $(KSH93_PATH); fi
+	cd $(KSH93_PATH) && AST_NO_DYLIB=y bin/package make
