@@ -435,6 +435,7 @@ timestamp:
 	  CURRENT="$$(cat "$(BUILDNUM_FILE)" 2>/dev/null || echo 0)"; \
 	  if ! [[ "$$CURRENT" =~ ^[0-9]+$$ ]]; then echo "Invalid build number: $$CURRENT" >&2; exit 1; fi; \
 	  INCREMENT="$$(shuf -i 1-250 -n 1)"; \
+	  BUILD=$$((CURRENT + INCREMENT)); \
 
 # Download coreutils
 .PHONY: download-coreutils
