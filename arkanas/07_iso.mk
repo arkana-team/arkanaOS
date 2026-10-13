@@ -407,6 +407,7 @@ linux-firmware: .linux-firmware-done
 	  test -f $(WIRELESS_REGDB_PATH)/$$firmware || { echo "Missing regulatory data: $$firmware" >&2; exit 1; }; \
 	  install -m 644 $(WIRELESS_REGDB_PATH)/$$firmware $(STAGING_PATH)/lib/firmware/; \
 	  install -m 644 $(WIRELESS_REGDB_PATH)/$$firmware $(CPIO_STAGING_PATH)/lib/firmware/; \
+	done
 
 # Download GRUB
 download-grub: .grub-obtained
