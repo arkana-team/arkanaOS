@@ -140,7 +140,7 @@ mount --bind /proc /mnt/proc
 mount --bind /run /mnt/run
 mount --bind /tmp /mnt/tmp
 
-if [ -e /sys/firmware/efi/efivars ]; then
+if [ -d /sys/firmware/efi ]; then
   USES_EFI=1
   mount --bind /sys/firmware/efi/efivars /mnt/sys/firmware/efi/efivars
   if [ "$BLKDEV_ISPART" == 0 ]; then
