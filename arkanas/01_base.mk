@@ -423,7 +423,7 @@ systemd: download-systemd kernel-headers .systemd-done
 .PHONY: timestamp
 timestamp:
 	@set -euo pipefail; \
-	echo "arkanaOS nightly ($$(date +%Y%m%d)) (build $$BUILD)" > $(STAGING_PATH)/etc/issue; \
+	exec 9>"$(BUILDNUM_FILE).lock"; \
 	echo $$BUILD > $(BUILDNUM_FILE)
 
 # Download coreutils
