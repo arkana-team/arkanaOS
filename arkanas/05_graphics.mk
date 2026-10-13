@@ -486,7 +486,7 @@ download-mesa: .mesa-obtained
 
 # Compile Mesa
 mesa: download-mesa .mesa-done
-.mesa-done:
+.mesa-done: $(CURDIR)/arkanas/05_graphics.mk
 	cd $(MESA_PATH) && \
 	sed -i '/#include <clang\/Config\/config.h>/i #undef UNUSED' src/compiler/clc/clc_helpers.cpp && \
 	sed -i '/#include "clc_helpers.h"/a #undef UNUSED\n#define UNUSED __attribute__((unused))' src/compiler/clc/clc_helpers.cpp && \
