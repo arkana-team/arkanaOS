@@ -2,6 +2,7 @@
 # Start the Solaris-style NsCDE session.
 
 export NSCDE_PALETTE=Solyaris
+export NSCDE_PALETTE_NCOLORS=4
 xsetroot -cursor_name left_ptr 2>/dev/null || true
 if command -v feh >/dev/null 2>&1 && [ -f /usr/share/backgrounds/X11-bg.png ]; then
     feh --bg-fill /usr/share/backgrounds/X11-bg.png 2>/dev/null || true
