@@ -396,6 +396,7 @@ linux-firmware: .linux-firmware-done
 	for firmware in amdgpu i915 xe radeon amd-ucode intel; do \
 	  test -d $(LINUX_FIRMWARE_PATH)/$$firmware || { echo "Missing firmware directory: $$firmware" >&2; exit 1; }; \
 	  cp -a $(LINUX_FIRMWARE_PATH)/$$firmware $(STAGING_PATH)/lib/firmware/ || exit 1; \
+	  cp -a $(LINUX_FIRMWARE_PATH)/$$firmware $(CPIO_STAGING_PATH)/lib/firmware/ || exit 1; \
 
 # Download GRUB
 download-grub: .grub-obtained
