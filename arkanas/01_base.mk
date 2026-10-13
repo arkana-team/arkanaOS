@@ -442,6 +442,7 @@ timestamp:
 	  chmod --reference="$(BUILDNUM_FILE)" "$$TMP"; chown --reference="$(BUILDNUM_FILE)" "$$TMP"; \
 	  mv -f "$$TMP" "$(BUILDNUM_FILE)"; \
 	fi; \
+	mkdir -p "$(STAGING_PATH)/etc"; \
 
 # Download coreutils
 .PHONY: download-coreutils
