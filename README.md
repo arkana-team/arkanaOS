@@ -3,6 +3,7 @@
 <h1 align="center">arkanaOS Source Files</h1>
 <p>This repository contains everything needed to compile arkanaOS.</p>
 
+## Build
 
 ## Cloning and Building
 To build the project, run the following commands:
