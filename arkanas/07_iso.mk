@@ -388,6 +388,7 @@ linux-firmware: .linux-firmware-done
 	fi
 	if ! [ -d $(WIRELESS_REGDB_PATH)/.git ]; then \
 	  git clone --depth 1 --branch $(WIRELESS_REGDB_TAG) https://git.kernel.org/pub/scm/linux/kernel/git/wens/wireless-regdb.git $(WIRELESS_REGDB_PATH); \
+	fi
 
 # Download GRUB
 download-grub: .grub-obtained
