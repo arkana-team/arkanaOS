@@ -96,7 +96,7 @@ else
   PART_SUFFIX=""
 fi
 
-trap "umount -R /mnt &>/dev/null || true" ERR
+BOOTPART="${SELDEV}${PART_SUFFIX}1"
 umount -R /mnt &>/dev/null || true
 
 echo "Installing $PRETTY_NAME on $SELDEV"
