@@ -202,7 +202,7 @@ firefox: download-firefox .firefox-done
 # Targets
 all: build initramfs boot-initramfs iso
 
-build: cpio busybox linux grub freetype harfbuzz glib libffi elfutils brotli pcre2 cairo fontconfig expat graphite2 pixman libpng libisoburn libburn libisofs mtools squashfs-tools lzo efibootmgr efivar alsa-lib at-spi2-core libXdamage gtk3 firefox
+build: cpio busybox linux linux-firmware grub freetype harfbuzz glib libffi elfutils brotli pcre2 cairo fontconfig expat graphite2 pixman libpng libisoburn libburn libisofs mtools squashfs-tools lzo efibootmgr efivar alsa-lib at-spi2-core libXdamage gtk3 firefox
 
 download-alsa-lib: .alsa-lib-obtained
 .alsa-lib-obtained:
