@@ -6,7 +6,7 @@
 ## Build
 
 Build the hybrid BIOS/UEFI ISO from the project container:
-To build the project, run the following commands:
+
 ```bash
 git clone https://github.com/arkana-team/arkanaOS.git
 cd arkanaOS
