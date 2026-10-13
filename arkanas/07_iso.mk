@@ -374,6 +374,7 @@ linux: download-linux .linux-done
 	touch .linux-done
 
 # Pin host firmware so the live image and installed system support current hardware.
+LINUX_FIRMWARE_TAG = 20260916
 
 # Download GRUB
 download-grub: .grub-obtained
