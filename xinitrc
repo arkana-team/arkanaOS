@@ -1,5 +1,5 @@
 #!/bin/sh
-# Open a desktop session and start Window Maker
+# Start the Solaris-style NsCDE session.
 # Arkana provides X11 with Window Maker as the window manager
 
 xsetroot -cursor_name left_ptr 2>/dev/null || true
