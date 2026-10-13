@@ -428,6 +428,7 @@ timestamp:
 	if [ -n "$${ARKANA_BUILD_NUMBER:-}" ]; then \
 	  BUILD="$$ARKANA_BUILD_NUMBER"; \
 	  CURRENT="$$(cat "$(BUILDNUM_FILE)" 2>/dev/null || echo 0)"; \
+	  if ! [[ "$$BUILD" =~ ^[0-9]+$$ ]] || [ "$$CURRENT" != "$$BUILD" ]; then \
 
 # Download coreutils
 .PHONY: download-coreutils
