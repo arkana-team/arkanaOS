@@ -18,6 +18,7 @@ RUN yes | pacman -Syu --noconfirm && \
         base-devel \
         coreutils \
         git \
+        util-linux \
         sudo \
         rsync \
         squashfs-tools \
