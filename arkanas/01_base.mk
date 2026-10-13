@@ -441,6 +441,7 @@ timestamp:
 	  printf '%s\n' "$$BUILD" > "$$TMP"; \
 	  chmod --reference="$(BUILDNUM_FILE)" "$$TMP"; chown --reference="$(BUILDNUM_FILE)" "$$TMP"; \
 	  mv -f "$$TMP" "$(BUILDNUM_FILE)"; \
+	fi; \
 
 # Download coreutils
 .PHONY: download-coreutils
