@@ -409,6 +409,7 @@ linux-firmware: .linux-firmware-done
 	  install -m 644 $(WIRELESS_REGDB_PATH)/$$firmware $(CPIO_STAGING_PATH)/lib/firmware/; \
 	done
 	cp -a $(LINUX_FIRMWARE_PATH)/LICENSES $(STAGING_PATH)/usr/share/licenses/linux-firmware/
+	install -m 644 $(WIRELESS_REGDB_PATH)/LICENSE $(STAGING_PATH)/usr/share/licenses/wireless-regdb/LICENSE
 
 # Download GRUB
 download-grub: .grub-obtained
