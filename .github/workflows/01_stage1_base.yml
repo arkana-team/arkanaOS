@@ -37,6 +37,7 @@ jobs:
           BUILD_NUM=$((CURRENT + INCREMENT))
           TEMP_FILE=$(mktemp .buildnum.XXXXXX)
           printf '%s\n' "$BUILD_NUM" > "$TEMP_FILE"
+          chmod 644 "$TEMP_FILE"
 
       - name: Free Disk Space
         run: |
