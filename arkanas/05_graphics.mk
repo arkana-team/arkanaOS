@@ -959,3 +959,4 @@ download-fvwm3: .fvwm3-obtained
 	touch .fvwm3-obtained
 
 fvwm3: .fvwm3-done
+.fvwm3-done: $(CURDIR)/arkanas/05_graphics.mk .fvwm3-obtained .libevent-done .xorg-libs-done
