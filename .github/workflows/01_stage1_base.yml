@@ -32,6 +32,7 @@ jobs:
           if ! [[ "$CURRENT" =~ ^[0-9]+$ ]]; then
             echo "Invalid .buildnum value: $CURRENT" >&2
             exit 1
+          fi
 
       - name: Free Disk Space
         run: |
