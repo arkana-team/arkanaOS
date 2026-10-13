@@ -392,6 +392,7 @@ linux-firmware: .linux-firmware-done
 	test "$$(git -C $(WIRELESS_REGDB_PATH) rev-parse HEAD)" = "$(WIRELESS_REGDB_COMMIT)"
 	git -C $(LINUX_FIRMWARE_PATH) sparse-checkout set amdgpu i915 xe radeon amd-ucode intel LICENSES
 	install -d $(STAGING_PATH)/lib/firmware $(CPIO_STAGING_PATH)/lib/firmware $(STAGING_PATH)/usr/share/licenses/linux-firmware $(STAGING_PATH)/usr/share/licenses/wireless-regdb
+	rm -rf $(STAGING_PATH)/lib/firmware/ath9k_htc $(STAGING_PATH)/lib/firmware/ath10k $(STAGING_PATH)/lib/firmware/ath11k $(STAGING_PATH)/lib/firmware/ath12k $(STAGING_PATH)/lib/firmware/intel $(CPIO_STAGING_PATH)/lib/firmware/ath9k_htc $(CPIO_STAGING_PATH)/lib/firmware/ath10k $(CPIO_STAGING_PATH)/lib/firmware/ath11k $(CPIO_STAGING_PATH)/lib/firmware/ath12k $(CPIO_STAGING_PATH)/lib/firmware/intel
 
 # Download GRUB
 download-grub: .grub-obtained
