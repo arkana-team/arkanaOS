@@ -381,6 +381,7 @@ WIRELESS_REGDB_COMMIT = 389b9b702cf9018e9a9078ccc4fa8eaae2e054e3
 WIRELESS_REGDB_PATH = $(SRC_PATH)/wireless-regdb-2026-09-03
 
 .PHONY: linux-firmware
+linux-firmware: .linux-firmware-done
 
 # Download GRUB
 download-grub: .grub-obtained
