@@ -918,3 +918,4 @@ ksh93: .ksh93-done
 .ksh93-done:
 	if ! [ -d $(KSH93_PATH)/.git ]; then git clone --depth 1 --branch $(KSH93_TAG) https://github.com/ksh93/ksh.git $(KSH93_PATH); fi
 	cd $(KSH93_PATH) && AST_NO_DYLIB=y bin/package make
+	cd $(KSH93_PATH) && ksh_bin=$$(find arch -type f -path '*/bin/ksh' -perm -111 -print -quit) && test -n "$$ksh_bin" && install -D -m 755 "$$ksh_bin" $(STAGING_PATH)/usr/bin/ksh && ln -sf ksh $(STAGING_PATH)/usr/bin/ksh93
