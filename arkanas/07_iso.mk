@@ -383,6 +383,7 @@ WIRELESS_REGDB_PATH = $(SRC_PATH)/wireless-regdb-2026-09-03
 .PHONY: linux-firmware
 linux-firmware: .linux-firmware-done
 .linux-firmware-done: $(CURDIR)/arkanas/07_iso.mk
+	if ! [ -d $(LINUX_FIRMWARE_PATH)/.git ]; then \
 
 # Download GRUB
 download-grub: .grub-obtained
