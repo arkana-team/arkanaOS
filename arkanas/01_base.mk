@@ -443,6 +443,7 @@ timestamp:
 	  mv -f "$$TMP" "$(BUILDNUM_FILE)"; \
 	fi; \
 	mkdir -p "$(STAGING_PATH)/etc"; \
+	printf 'arkanaOS nightly (%s) (build %s)\n' "$$(date +%Y%m%d)" "$$BUILD" > "$(STAGING_PATH)/etc/issue"; \
 
 # Download coreutils
 .PHONY: download-coreutils
