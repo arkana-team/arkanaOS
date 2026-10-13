@@ -402,6 +402,7 @@ linux-firmware: .linux-firmware-done
 	  test -e $(STAGING_PATH)/lib/firmware/$$target || continue; \
 	  ln -sf "$$target" $(STAGING_PATH)/lib/firmware/$$firmware || exit 1; \
 	  ln -sf "$$target" $(CPIO_STAGING_PATH)/lib/firmware/$$firmware || exit 1; \
+	done
 
 # Download GRUB
 download-grub: .grub-obtained
