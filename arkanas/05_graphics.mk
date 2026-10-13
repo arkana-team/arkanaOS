@@ -936,3 +936,4 @@ pyyaml: .pyyaml-done
 	install -d $(PYTHON_SITE) && cp -a $(SRC_PATH)/pyyaml-6.0.3/lib/yaml $(PYTHON_SITE)/
 	touch .pyyaml-done
 
+# Build the X11 image utilities used by NsCDE's backdrop and screenshot tools.
