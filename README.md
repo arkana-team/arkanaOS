@@ -19,3 +19,4 @@ and iwlwifi wireless support. Matching graphics and Intel wireless firmware is
 present in both the live image and installed system.
 
 ## Desktop
+
