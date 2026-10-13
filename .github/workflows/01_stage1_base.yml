@@ -8,6 +8,7 @@ concurrency:
   group: arkana-build-number-${{ github.ref }}
   cancel-in-progress: false
 
+permissions:
 
 jobs:
   base:
