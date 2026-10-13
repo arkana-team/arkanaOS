@@ -432,6 +432,7 @@ timestamp:
 	    echo "ARKANA_BUILD_NUMBER must match the persisted .buildnum value" >&2; exit 1; \
 	  fi; \
 	else \
+	  CURRENT="$$(cat "$(BUILDNUM_FILE)" 2>/dev/null || echo 0)"; \
 
 # Download coreutils
 .PHONY: download-coreutils
