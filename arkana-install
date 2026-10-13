@@ -143,7 +143,7 @@ mount --bind /tmp /mnt/tmp
 if [ -d /sys/firmware/efi ]; then
   USES_EFI=1
   if [ -d /sys/firmware/efi/efivars ]; then
-  if [ "$BLKDEV_ISPART" == 0 ]; then
+    if ! grep -qs ' /sys/firmware/efi/efivars efivarfs ' /proc/mounts; then
     chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$PRETTY_NAME" --force "${SELDEV}1"
   else
     chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$PRETTY_NAME" --force "${SELDEV}p1"
