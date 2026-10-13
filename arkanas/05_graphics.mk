@@ -891,7 +891,7 @@ NSCDE_X11_PARSED_APPS := $(foreach i, $(shell seq 1 $(words $(NSCDE_X11_APPS))),
 xorg-nscde-apps: .nscde-xorg-apps-done
 .nscde-xorg-apps-done: .xorg-libs-done
 	for pair in $(NSCDE_X11_PARSED_APPS); do \
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O WindowMaker-$(WMAKER_VER).tar.gz $(WMAKER_URL) && tar xf WindowMaker-$(WMAKER_VER).tar.gz
+	  app=$${pair%%/*}; ver=$${pair##*/}; \
 	touch .wmaker-obtained
 
 # Compile Window Maker
