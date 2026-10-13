@@ -939,3 +939,4 @@ pyyaml: .pyyaml-done
 # Build the X11 image utilities used by NsCDE's backdrop and screenshot tools.
 IMAGEMAGICK_VER = 7.1.2-33
 IMAGEMAGICK_URL = https://download.imagemagick.org/archive/releases/ImageMagick-$(IMAGEMAGICK_VER).tar.xz
+IMAGEMAGICK_PATH = $(SRC_PATH)/ImageMagick-$(IMAGEMAGICK_VER)
