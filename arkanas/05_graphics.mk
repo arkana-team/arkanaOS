@@ -904,7 +904,7 @@ LIBEVENT_VER = 2.1.12-stable
 LIBEVENT_URL = https://github.com/libevent/libevent/releases/download/release-$(LIBEVENT_VER)/libevent-$(LIBEVENT_VER).tar.gz
 LIBEVENT_PATH = $(SRC_PATH)/libevent-$(LIBEVENT_VER)
 
-	PKG_CONFIG_LIBDIR="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
+libevent: .libevent-done
 	PKG_CONFIG_SYSROOT_DIR="$(STAGING_PATH)" \
 	CPPFLAGS="-I$(STAGING_PATH)/usr/include" CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" \
 	LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" \
