@@ -26,6 +26,7 @@ jobs:
         run: |
           case "$GITHUB_REF" in
             refs/heads/*) ;;
+            *) echo "Build number reservation requires a branch ref." >&2; exit 1 ;;
 
       - name: Free Disk Space
         run: |
