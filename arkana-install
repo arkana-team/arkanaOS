@@ -173,7 +173,7 @@ cat >> /mnt/etc/grub.d/29_main << EOF
 #!/bin/sh
 exec tail -n +3 \$0
 menuentry "$PRETTY_NAME" {
-  linux $KERNEL_PATH root=$BOOTDEV
+  linux $KERNEL_PATH root=UUID=$ROOT_UUID console=ttyS0,115200 console=tty0
   initrd $INITRAMFS_PATH
 }
 EOF
