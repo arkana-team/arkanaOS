@@ -974,3 +974,4 @@ download-nscde: .nscde-obtained
 	touch .nscde-obtained
 
 nscde: .nscde-done
+.nscde-done: $(CURDIR)/arkanas/05_graphics.mk .nscde-obtained .ksh93-done .pyxdg-done .pyyaml-done .nscde-xorg-apps-done .imagemagick-done .fvwm3-done
