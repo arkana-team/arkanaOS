@@ -948,3 +948,4 @@ imagemagick: .imagemagick-done
 	cd $(IMAGEMAGICK_PATH) && PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_LIBDIR="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_SYSROOT_DIR="$(STAGING_PATH)" CPPFLAGS="-I$(STAGING_PATH)/usr/include" CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" ./configure --prefix=/usr --sysconfdir=/etc --disable-docs --without-perl --without-magick-plus-plus --with-quantum-depth=8 --disable-hdri --with-modules --enable-legacy-support --disable-openmp --with-x && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .imagemagick-done
 
+# Build FVWM3, NsCDE's required window manager.
