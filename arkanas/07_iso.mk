@@ -395,6 +395,7 @@ linux-firmware: .linux-firmware-done
 	rm -rf $(STAGING_PATH)/lib/firmware/ath9k_htc $(STAGING_PATH)/lib/firmware/ath10k $(STAGING_PATH)/lib/firmware/ath11k $(STAGING_PATH)/lib/firmware/ath12k $(STAGING_PATH)/lib/firmware/intel $(CPIO_STAGING_PATH)/lib/firmware/ath9k_htc $(CPIO_STAGING_PATH)/lib/firmware/ath10k $(CPIO_STAGING_PATH)/lib/firmware/ath11k $(CPIO_STAGING_PATH)/lib/firmware/ath12k $(CPIO_STAGING_PATH)/lib/firmware/intel
 	for firmware in amdgpu i915 xe radeon amd-ucode intel; do \
 	  test -d $(LINUX_FIRMWARE_PATH)/$$firmware || { echo "Missing firmware directory: $$firmware" >&2; exit 1; }; \
+	  cp -a $(LINUX_FIRMWARE_PATH)/$$firmware $(STAGING_PATH)/lib/firmware/ || exit 1; \
 
 # Download GRUB
 download-grub: .grub-obtained
