@@ -404,6 +404,7 @@ linux-firmware: .linux-firmware-done
 	  ln -sf "$$target" $(CPIO_STAGING_PATH)/lib/firmware/$$firmware || exit 1; \
 	done
 	for firmware in regulatory.db regulatory.db.p7s; do \
+	  test -f $(WIRELESS_REGDB_PATH)/$$firmware || { echo "Missing regulatory data: $$firmware" >&2; exit 1; }; \
 
 # Download GRUB
 download-grub: .grub-obtained
