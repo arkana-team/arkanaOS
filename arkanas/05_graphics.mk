@@ -930,3 +930,4 @@ pyxdg: .pyxdg-done
 	install -d $(PYTHON_SITE) && cp -a $(SRC_PATH)/pyxdg-0.28/xdg $(PYTHON_SITE)/
 	touch .pyxdg-done
 
+pyyaml: .pyyaml-done
