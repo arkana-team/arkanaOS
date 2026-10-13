@@ -33,6 +33,7 @@ jobs:
             echo "Invalid .buildnum value: $CURRENT" >&2
             exit 1
           fi
+          INCREMENT=$(shuf -i 1-250 -n 1)
 
       - name: Free Disk Space
         run: |
