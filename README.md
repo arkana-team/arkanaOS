@@ -24,6 +24,7 @@ ISO. GitHub Actions reserves and pushes the next number before compiling, so
 future clones start from the latest CI build. A local build updates `.buildnum`
 in its working tree; commit and push that file to share the new number with
 other clones.
+
 ## Desktop
 
 The default X session is NsCDE with its four-color Solyaris palette, Solaris 7
