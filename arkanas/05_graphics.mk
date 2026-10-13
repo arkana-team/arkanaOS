@@ -956,3 +956,4 @@ download-fvwm3: .fvwm3-obtained
 .fvwm3-obtained:
 	if ! [ -f $(FVWM3_PATH)/meson.build ]; then cd $(SRC_PATH) && git clone --depth 1 --branch $(FVWM3_VER) https://github.com/fvwmorg/fvwm3.git fvwm3-$(FVWM3_VER); fi
 	test "$$(git -C $(FVWM3_PATH) rev-parse HEAD 2>/dev/null || true)" = e14139da41d2ef52d35bbe33af9c57d04db6c5cd || [ -f $(FVWM3_PATH)/.current-version ]
+	touch .fvwm3-obtained
