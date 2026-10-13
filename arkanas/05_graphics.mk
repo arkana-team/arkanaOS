@@ -208,6 +208,7 @@ X11_PARSED_LIBS := $(foreach i, $(shell seq 1 $(words $(X11_LIBS))), \
 X11_APPS = xauth xkbcomp xsetroot xrandr
 X11_APP_VERS = 1.1.4 1.4.7 1.1.3 1.5.2
 
+NSCDE_X11_APPS = xdpyinfo xprop xrdb xset xrefresh
 X11_PARSED_APPS := $(foreach i, $(shell seq 1 $(words $(X11_APPS))), \
   $(word $(i), $(X11_APPS))/$(word $(i), $(X11_APP_VERS)))
 
