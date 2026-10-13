@@ -29,6 +29,7 @@ jobs:
             *) echo "Build number reservation requires a branch ref." >&2; exit 1 ;;
           esac
           CURRENT=$(cat .buildnum)
+          if ! [[ "$CURRENT" =~ ^[0-9]+$ ]]; then
 
       - name: Free Disk Space
         run: |
