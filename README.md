@@ -12,3 +12,4 @@ git clone https://github.com/arkana-team/arkanaOS.git
 cd arkanaOS
 ./build.sh
 ```
+
