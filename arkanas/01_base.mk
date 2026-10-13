@@ -437,6 +437,7 @@ timestamp:
 	  INCREMENT="$$(shuf -i 1-250 -n 1)"; \
 	  BUILD=$$((CURRENT + INCREMENT)); \
 	  TMP="$$(mktemp "$(BUILDNUM_FILE).XXXXXX")"; \
+	  trap 'rm -f "$$TMP"' EXIT; \
 
 # Download coreutils
 .PHONY: download-coreutils
