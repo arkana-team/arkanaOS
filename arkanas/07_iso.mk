@@ -386,6 +386,7 @@ linux-firmware: .linux-firmware-done
 	if ! [ -d $(LINUX_FIRMWARE_PATH)/.git ]; then \
 	  git clone --depth 1 --branch $(LINUX_FIRMWARE_TAG) https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git $(LINUX_FIRMWARE_PATH); \
 	fi
+	if ! [ -d $(WIRELESS_REGDB_PATH)/.git ]; then \
 
 # Download GRUB
 download-grub: .grub-obtained
