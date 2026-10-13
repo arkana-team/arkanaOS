@@ -78,6 +78,7 @@ jobs:
             -v "$(pwd)/staging:/build/arkana/staging" \
             -v "$(pwd)/output:/build/arkana/output" \
             -v "$HOME/.cache/ccache:/home/builder/.cache/ccache" \
+            -e ARKANA_BUILD_NUMBER="${{ steps.reserve_build_number.outputs.number }}" \
             -e CCACHE_DIR=/home/builder/.cache/ccache \
             arkana-builder bash -c "sudo --preserve-env make -f arkanas/01_base.mk"
 
