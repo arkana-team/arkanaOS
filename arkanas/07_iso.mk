@@ -391,6 +391,7 @@ linux-firmware: .linux-firmware-done
 	fi
 	test "$$(git -C $(WIRELESS_REGDB_PATH) rev-parse HEAD)" = "$(WIRELESS_REGDB_COMMIT)"
 	git -C $(LINUX_FIRMWARE_PATH) sparse-checkout set amdgpu i915 xe radeon amd-ucode intel LICENSES
+	install -d $(STAGING_PATH)/lib/firmware $(CPIO_STAGING_PATH)/lib/firmware $(STAGING_PATH)/usr/share/licenses/linux-firmware $(STAGING_PATH)/usr/share/licenses/wireless-regdb
 
 # Download GRUB
 download-grub: .grub-obtained
