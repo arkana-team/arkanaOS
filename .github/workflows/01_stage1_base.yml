@@ -28,6 +28,7 @@ jobs:
             refs/heads/*) ;;
             *) echo "Build number reservation requires a branch ref." >&2; exit 1 ;;
           esac
+          CURRENT=$(cat .buildnum)
 
       - name: Free Disk Space
         run: |
