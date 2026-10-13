@@ -38,6 +38,7 @@ jobs:
           TEMP_FILE=$(mktemp .buildnum.XXXXXX)
           printf '%s\n' "$BUILD_NUM" > "$TEMP_FILE"
           chmod 644 "$TEMP_FILE"
+          mv "$TEMP_FILE" .buildnum
 
       - name: Free Disk Space
         run: |
