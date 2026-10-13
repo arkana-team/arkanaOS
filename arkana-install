@@ -147,6 +147,7 @@ if [ -d /sys/firmware/efi ]; then
       mount -t efivarfs efivarfs /sys/firmware/efi/efivars || true
     fi
     mkdir -p /mnt/sys/firmware/efi/efivars
+    mount --bind /sys/firmware/efi/efivars /mnt/sys/firmware/efi/efivars
   fi
 else
   USES_EFI=0
