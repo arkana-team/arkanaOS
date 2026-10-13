@@ -968,3 +968,4 @@ NSCDE_PATH = $(SRC_PATH)/NsCDE-2.3
 NSCDE_VER = 2.3
 
 download-nscde: .nscde-obtained
+.nscde-obtained:
