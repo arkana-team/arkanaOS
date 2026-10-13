@@ -906,7 +906,7 @@ LIBEVENT_PATH = $(SRC_PATH)/libevent-$(LIBEVENT_VER)
 
 libevent: .libevent-done
 .libevent-done:
-	CPPFLAGS="-I$(STAGING_PATH)/usr/include" CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" \
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libevent-$(LIBEVENT_VER).tar.gz $(LIBEVENT_URL) && tar xf libevent-$(LIBEVENT_VER).tar.gz
 	LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" \
 	./configure --prefix=/usr --sysconfdir=/etc --enable-modelock --enable-pango --with-x --disable-imagemagick && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
