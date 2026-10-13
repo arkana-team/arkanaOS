@@ -146,7 +146,7 @@ if [ -d /sys/firmware/efi ]; then
     if ! grep -qs ' /sys/firmware/efi/efivars efivarfs ' /proc/mounts; then
       mount -t efivarfs efivarfs /sys/firmware/efi/efivars || true
     fi
-    chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$PRETTY_NAME" --force "${SELDEV}p1"
+    mkdir -p /mnt/sys/firmware/efi/efivars
   fi
 else
   USES_EFI=0
