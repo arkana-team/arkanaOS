@@ -949,3 +949,4 @@ imagemagick: .imagemagick-done
 	touch .imagemagick-done
 
 # Build FVWM3, NsCDE's required window manager.
+FVWM3_VER = 1.1.5
