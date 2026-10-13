@@ -972,3 +972,4 @@ download-nscde: .nscde-obtained
 	if ! [ -f $(NSCDE_PATH)/autogen.sh ]; then cd $(SRC_PATH) && git clone --depth 1 --branch $(NSCDE_VER) https://github.com/NsCDE/NsCDE.git NsCDE-$(NSCDE_VER); fi
 	test "$$(git -C $(NSCDE_PATH) rev-parse HEAD 2>/dev/null || true)" = 63e15a6bc497d701279f432f950d90adf5fc1966 || [ -f $(NSCDE_PATH)/ChangeLog ]
 	touch .nscde-obtained
+
