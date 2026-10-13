@@ -22,6 +22,7 @@ Each base build adds a random increment from 1 to 250 to `.buildnum`. The new
 number is saved in that file and in `/etc/arkana-build-number` in the build
 ISO. GitHub Actions reserves and pushes the next number before compiling, so
 future clones start from the latest CI build. A local build updates `.buildnum`
+in its working tree; commit and push that file to share the new number with
 ## Desktop
 
 The default X session is NsCDE with its four-color Solyaris palette, Solaris 7
