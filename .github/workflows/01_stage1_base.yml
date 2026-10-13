@@ -36,6 +36,7 @@ jobs:
           INCREMENT=$(shuf -i 1-250 -n 1)
           BUILD_NUM=$((CURRENT + INCREMENT))
           TEMP_FILE=$(mktemp .buildnum.XXXXXX)
+          printf '%s\n' "$BUILD_NUM" > "$TEMP_FILE"
 
       - name: Free Disk Space
         run: |
