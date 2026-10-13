@@ -398,6 +398,7 @@ linux-firmware: .linux-firmware-done
 	  cp -a $(LINUX_FIRMWARE_PATH)/$$firmware $(STAGING_PATH)/lib/firmware/ || exit 1; \
 	  cp -a $(LINUX_FIRMWARE_PATH)/$$firmware $(CPIO_STAGING_PATH)/lib/firmware/ || exit 1; \
 	done
+	awk '$$1 == "Link:" && $$4 ~ /^(amdgpu|i915|xe|radeon|amd-ucode|intel\/iwlwifi)\// { print $$2, $$4 }' $(LINUX_FIRMWARE_PATH)/WHENCE | while read -r firmware target; do \
 
 # Download GRUB
 download-grub: .grub-obtained
