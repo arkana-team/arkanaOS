@@ -119,7 +119,7 @@ else
   parted -s "${SELDEV}" mklabel msdos mkpart primary fat32 1MiB 512MiB set 1 boot on mkpart primary ext4 512MiB 100%
   mkfs.vfat -F 32 "$BOOTPART"
   mkfs.ext4 -F "$ROOTPART"
-    mount "${SELDEV}2" /mnt
+  mount "$ROOTPART" /mnt
     mkdir -p /mnt/boot
     mkdir /mnt/etc
     mount "${SELDEV}1" /mnt/boot
