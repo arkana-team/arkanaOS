@@ -410,6 +410,7 @@ linux-firmware: .linux-firmware-done
 	done
 	cp -a $(LINUX_FIRMWARE_PATH)/LICENSES $(STAGING_PATH)/usr/share/licenses/linux-firmware/
 	install -m 644 $(WIRELESS_REGDB_PATH)/LICENSE $(STAGING_PATH)/usr/share/licenses/wireless-regdb/LICENSE
+	touch .linux-firmware-done
 
 # Download GRUB
 download-grub: .grub-obtained
