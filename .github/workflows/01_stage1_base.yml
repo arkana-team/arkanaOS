@@ -40,6 +40,7 @@ jobs:
           chmod 644 "$TEMP_FILE"
           mv "$TEMP_FILE" .buildnum
           git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Free Disk Space
         run: |
