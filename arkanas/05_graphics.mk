@@ -931,3 +931,4 @@ pyxdg: .pyxdg-done
 	touch .pyxdg-done
 
 pyyaml: .pyyaml-done
+.pyyaml-done:
