@@ -902,7 +902,7 @@ xorg-nscde-apps: .nscde-xorg-apps-done
 # libevent is required by FVWM3.
 LIBEVENT_VER = 2.1.12-stable
 LIBEVENT_URL = https://github.com/libevent/libevent/releases/download/release-$(LIBEVENT_VER)/libevent-$(LIBEVENT_VER).tar.gz
-	cd $(WMAKER_PATH) && { $(MAKE) distclean >/dev/null 2>&1 || true; } && ./autogen.sh && \
+LIBEVENT_PATH = $(SRC_PATH)/libevent-$(LIBEVENT_VER)
 	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
 	PKG_CONFIG_LIBDIR="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
 	PKG_CONFIG_SYSROOT_DIR="$(STAGING_PATH)" \
