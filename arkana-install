@@ -124,6 +124,7 @@ else
   mount "$BOOTPART" /mnt/boot
 fi
 
+
 echo "Copying system..."
 mkdir -p /mnt/{dev,proc,sys,run,mnt,tmp}
 
