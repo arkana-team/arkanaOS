@@ -149,6 +149,7 @@ if [ -d /sys/firmware/efi ]; then
     mkdir -p /mnt/sys/firmware/efi/efivars
     mount --bind /sys/firmware/efi/efivars /mnt/sys/firmware/efi/efivars
   fi
+  if ! chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ArkanaOS; then
 else
   USES_EFI=0
   chroot /mnt grub-install --target=i386-pc --force "$SELDEV"
