@@ -915,3 +915,4 @@ KSH93_TAG = v1.0.9
 KSH93_PATH = $(SRC_PATH)/ksh-$(KSH93_TAG)
 
 ksh93: .ksh93-done
+.ksh93-done:
