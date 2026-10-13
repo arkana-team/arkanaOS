@@ -905,7 +905,7 @@ LIBEVENT_URL = https://github.com/libevent/libevent/releases/download/release-$(
 LIBEVENT_PATH = $(SRC_PATH)/libevent-$(LIBEVENT_VER)
 
 libevent: .libevent-done
-	PKG_CONFIG_SYSROOT_DIR="$(STAGING_PATH)" \
+.libevent-done:
 	CPPFLAGS="-I$(STAGING_PATH)/usr/include" CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" \
 	LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" \
 	./configure --prefix=/usr --sysconfdir=/etc --enable-modelock --enable-pango --with-x --disable-imagemagick && \
