@@ -34,6 +34,7 @@ jobs:
             exit 1
           fi
           INCREMENT=$(shuf -i 1-250 -n 1)
+          BUILD_NUM=$((CURRENT + INCREMENT))
 
       - name: Free Disk Space
         run: |
