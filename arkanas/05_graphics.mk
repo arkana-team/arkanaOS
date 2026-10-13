@@ -961,3 +961,4 @@ download-fvwm3: .fvwm3-obtained
 fvwm3: .fvwm3-done
 .fvwm3-done: $(CURDIR)/arkanas/05_graphics.mk .fvwm3-obtained .libevent-done .xorg-libs-done
 	cd $(FVWM3_PATH) && rm -rf meson-build && PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_LIBDIR="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_SYSROOT_DIR="$(STAGING_PATH)" meson setup --native-file $(SRC_PATH)/cross_file.txt meson-build --prefix=/usr --sysconfdir=/etc --buildtype=release -Dmandoc=false -Dhtmldoc=false -Dnls=disabled -Dgolang=disabled -Dpython=/usr/bin/python3 && ninja -C meson-build && DESTDIR=$(STAGING_PATH) ninja -C meson-build install
+	touch .fvwm3-done
