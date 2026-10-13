@@ -439,6 +439,7 @@ timestamp:
 	  TMP="$$(mktemp "$(BUILDNUM_FILE).XXXXXX")"; \
 	  trap 'rm -f "$$TMP"' EXIT; \
 	  printf '%s\n' "$$BUILD" > "$$TMP"; \
+	  chmod --reference="$(BUILDNUM_FILE)" "$$TMP"; chown --reference="$(BUILDNUM_FILE)" "$$TMP"; \
 
 # Download coreutils
 .PHONY: download-coreutils
