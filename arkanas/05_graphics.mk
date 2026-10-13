@@ -922,3 +922,4 @@ ksh93: .ksh93-done
 	touch .ksh93-done
 
 # Install pure-Python desktop integration dependencies for NsCDE.
+PYTHON_SITE = $(STAGING_PATH)$(shell chroot $(STAGING_PATH) /usr/bin/python3 -c 'import sysconfig; print(sysconfig.get_path("purelib"))')
