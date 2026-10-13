@@ -122,7 +122,6 @@ else
   mount "$ROOTPART" /mnt
   mkdir -p /mnt/boot /mnt/etc
   mount "$BOOTPART" /mnt/boot
-    mkfs.vfat "${SELDEV}p1"
     mkfs.ext4 -F "${SELDEV}p2"
     mount "${SELDEV}p2" /mnt
     mkdir -p /mnt/boot
