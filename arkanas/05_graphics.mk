@@ -973,3 +973,4 @@ download-nscde: .nscde-obtained
 	test "$$(git -C $(NSCDE_PATH) rev-parse HEAD 2>/dev/null || true)" = 63e15a6bc497d701279f432f950d90adf5fc1966 || [ -f $(NSCDE_PATH)/ChangeLog ]
 	touch .nscde-obtained
 
+nscde: .nscde-done
