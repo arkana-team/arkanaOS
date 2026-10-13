@@ -221,6 +221,7 @@ sed -i "/# %wheel ALL=(ALL:ALL) ALL/s/^# //g" /mnt/etc/sudoers
 
 echo "Removing live environment files..."
 rm -rf /mnt/etc/systemd/system/getty@tty1.service.d
+rm -rf /mnt/etc/systemd/system/serial-getty@ttyS0.service.d
 rm -rf /mnt/usr/bin/arkana-install
 
 echo "Installed $PRETTY_NAME successfully. You can reboot the system now."
