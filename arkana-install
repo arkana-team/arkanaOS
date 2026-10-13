@@ -2,7 +2,7 @@
 set -euo pipefail
 
 mapfile -t BLOCK_DEVICES < <(find /sys/block -mindepth 1 -maxdepth 1 -printf '%f\n' | grep -E '^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|mmcblk[0-9]+|nvme[0-9]+n[0-9]+)$')
-BINARIES=("mkfs.vfat" "mkfs.ext4" "rsync" "genfstab" "grub-install" "grub-mkconfig" "sed" "awk" "parted")
+BINARIES=("mkfs.vfat" "mkfs.ext4" "rsync" "genfstab" "grub-install" "grub-mkconfig" "sed" "awk" "parted" "blkid" "blockdev" "mount" "umount" "chroot" "useradd" "usermod" "chpasswd" "grep" "find" "ln" "chmod" "rm" "sync" "mkdir" "cp" "cat" "id" "mountpoint" "realpath" "findmnt" "lsblk")
 FOUND_BLK=0
 FOUND_DEVS=()
 
