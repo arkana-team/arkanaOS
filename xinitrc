@@ -5,7 +5,6 @@ export NSCDE_PALETTE=Solyaris
 export NSCDE_PALETTE_NCOLORS=4
 xsetroot -cursor_name left_ptr 2>/dev/null || true
 exec /usr/bin/nscde
-
 if command -v wmaker >/dev/null 2>&1; then
     exec wmaker
 elif command -v openbox >/dev/null 2>&1; then
