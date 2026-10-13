@@ -26,3 +26,4 @@ backdrop, and Luxi Sans/Mono fonts. The NsCDE session is also installed under
 
 ## CLI installer
 
+Boot the live ISO as root and run `arkana-install`. It partitions the selected
