@@ -978,3 +978,4 @@ nscde: .nscde-done
 	cd $(NSCDE_PATH) && ./autogen.sh
 	cd $(NSCDE_PATH) && LD_LIBRARY_PATH="$(STAGING_PATH)/usr/lib" PYTHONPATH="$(PYTHON_SITE)" PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_LIBDIR="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_SYSROOT_DIR="$(STAGING_PATH)" CPPFLAGS="-I$(STAGING_PATH)/usr/include" CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" KSH=$(STAGING_PATH)/usr/bin/ksh FVWM=fvwm3 ./configure --prefix=/usr --sysconfdir=/etc --with-xsessiondir=/usr/share/xsessions --with-python-shebang=/usr/bin/python3
 	cd $(NSCDE_PATH) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	find $(STAGING_PATH)/usr/bin $(STAGING_PATH)/usr/lib/NsCDE -type f -exec grep -IlF -- '#!$(STAGING_PATH)/usr/bin/ksh' {} + | xargs -r sed -i '1s|.*|#!/usr/bin/ksh|'
