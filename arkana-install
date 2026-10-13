@@ -111,7 +111,7 @@ if [ -d /sys/firmware/efi ]; then
   mkfs.vfat -F 32 "$BOOTPART"
   mkfs.ext4 -F "$ROOTPART"
   mount "$ROOTPART" /mnt
-    mount "${SELDEV}2" /mnt
+  mkdir -p /mnt/boot/efi /mnt/etc
     mkdir -p /mnt/boot/efi
     mkdir /mnt/etc
     mount "${SELDEV}1" /mnt/boot/efi
