@@ -727,7 +727,7 @@ iso:
 	  chroot $(STAGING_PATH) /usr/lib/NsCDE/palette_colorgen -p /usr/share/NsCDE/palettes/Solyaris.dp -n 4 -i /usr/share/NsCDE/backdrops/Solyaris.pm -P 3 -b > $(STAGING_PATH)/root/.NsCDE/backer/Desk$$desk-Solyaris.pm || exit 1; \
 	  cp $(STAGING_PATH)/root/.NsCDE/backer/Desk$$desk-Solyaris.pm $(STAGING_PATH)/etc/skel/.NsCDE/backer/; \
 	done
-	cp -a wmaker-config/WMRootMenu $(STAGING_PATH)/etc/skel/GNUstep/Library/WindowMaker/
+	chroot $(STAGING_PATH) /usr/lib/NsCDE/palette_colorgen -p /usr/share/NsCDE/palettes/Solyaris.dp -n 4 -f > $(STAGING_PATH)/usr/share/NsCDE/fvwm/Colorset.fvwmconf
 	mkdir -p $(STAGING_PATH)/etc/X11/xorg.conf.d
 	printf 'Section "Device"\n    Identifier "Card0"\n    Option "SWcursor" "true"\n    Option "HWCursor" "false"\nEndSection\n' > $(STAGING_PATH)/etc/X11/xorg.conf.d/99-swcursor.conf
 	sed -i 's/arkanaOS Dev/arkanaOS nightly/g' $(STAGING_PATH)/etc/os-release 2>/dev/null || true
