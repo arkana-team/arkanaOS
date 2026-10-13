@@ -966,3 +966,4 @@ fvwm3: .fvwm3-done
 # Install NsCDE and its display-manager session entry.
 NSCDE_PATH = $(SRC_PATH)/NsCDE-2.3
 NSCDE_VER = 2.3
+
