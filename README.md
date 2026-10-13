@@ -17,3 +17,4 @@ The ISO uses GRUB for legacy BIOS and x86_64 UEFI. Its Linux image includes
 AMD Radeon/AMDGPU and Intel i915/Xe graphics drivers, plus Intel IGC Ethernet
 and iwlwifi wireless support. Matching graphics and Intel wireless firmware is
 present in both the live image and installed system.
+
