@@ -105,7 +105,7 @@ umount -R /mnt &>/dev/null || true
 echo "Installing $PRETTY_NAME on $SELDEV"
 echo "Partitoning..."
 
-if [ -e /sys/firmware/efi/efivars ]; then
+if [ -d /sys/firmware/efi ]; then
   echo "Found an EFI system."
   parted -s "${SELDEV}" mklabel gpt mkpart primary 1MiB 120MiB set 1 esp on mkpart primary 120MiB 100%
   if [ "$BLKDEV_ISPART" == 0 ]; then
