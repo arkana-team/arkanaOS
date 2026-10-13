@@ -958,3 +958,4 @@ download-fvwm3: .fvwm3-obtained
 	test "$$(git -C $(FVWM3_PATH) rev-parse HEAD 2>/dev/null || true)" = e14139da41d2ef52d35bbe33af9c57d04db6c5cd || [ -f $(FVWM3_PATH)/.current-version ]
 	touch .fvwm3-obtained
 
+fvwm3: .fvwm3-done
