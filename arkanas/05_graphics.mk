@@ -911,3 +911,4 @@ libevent: .libevent-done
 	touch .libevent-done
 
 # Build AT&T KornShell 93, which NsCDE requires for its configuration scripts.
+KSH93_TAG = v1.0.9
