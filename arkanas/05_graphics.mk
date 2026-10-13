@@ -888,7 +888,7 @@ vulkan: .vulkan-done
 NSCDE_X11_PARSED_APPS := $(foreach i, $(shell seq 1 $(words $(NSCDE_X11_APPS))), \
   $(word $(i), $(NSCDE_X11_APPS))/$(word $(i), $(NSCDE_X11_APP_VERS)))
 
-# Download Window Maker
+xorg-nscde-apps: .nscde-xorg-apps-done
 download-wmaker: .wmaker-obtained
 .wmaker-obtained:
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O WindowMaker-$(WMAKER_VER).tar.gz $(WMAKER_URL) && tar xf WindowMaker-$(WMAKER_VER).tar.gz
