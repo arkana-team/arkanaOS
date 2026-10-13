@@ -210,6 +210,7 @@ X11_APP_VERS = 1.1.4 1.4.7 1.1.3 1.5.2
 
 NSCDE_X11_APPS = xdpyinfo xprop xrdb xset xrefresh
 NSCDE_X11_APP_VERS = 1.4.0 1.2.8 1.2.3 1.2.5 1.0.7
+
 X11_PARSED_APPS := $(foreach i, $(shell seq 1 $(words $(X11_APPS))), \
   $(word $(i), $(X11_APPS))/$(word $(i), $(X11_APP_VERS)))
 
