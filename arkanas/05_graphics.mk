@@ -910,4 +910,4 @@ libevent: .libevent-done
 	cd $(LIBEVENT_PATH) && CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" ./configure --prefix=/usr --disable-static --disable-openssl --disable-libevent-regress --disable-samples && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libevent-done
 
-	touch .wmaker-done
+# Build AT&T KornShell 93, which NsCDE requires for its configuration scripts.
