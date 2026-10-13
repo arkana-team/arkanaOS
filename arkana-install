@@ -91,7 +91,7 @@ fi
 if [[ "$SELDEV" =~ ^/dev/nvme[0-9]+n[0-9]+$ ]]; then
   PART_SUFFIX="p"
 elif [[ "$SELDEV" =~ ^/dev/mmcblk[0-9]+$ ]]; then
-  BLKDEV_ISPART=1
+  PART_SUFFIX="p"
 else
   BLKDEV_ISPART=0
 fi
