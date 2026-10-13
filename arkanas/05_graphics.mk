@@ -895,6 +895,7 @@ xorg-nscde-apps: .nscde-xorg-apps-done
 	  if [ ! -d $(SRC_PATH)/$$app-$$ver ]; then \
 	    cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O $$app-$$ver.tar.xz https://xorg.freedesktop.org/releases/individual/app/$$app-$$ver.tar.xz && tar xf $$app-$$ver.tar.xz || exit 1; \
 	  fi; \
+	  cd $(SRC_PATH)/$$app-$$ver && PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_LIBDIR="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_SYSROOT_DIR="$(STAGING_PATH)" CPPFLAGS="-I$(STAGING_PATH)/usr/include" CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install || exit 1; \
 
 # Compile Window Maker
 wmaker: download-wmaker .wmaker-done
