@@ -403,6 +403,7 @@ linux-firmware: .linux-firmware-done
 	  ln -sf "$$target" $(STAGING_PATH)/lib/firmware/$$firmware || exit 1; \
 	  ln -sf "$$target" $(CPIO_STAGING_PATH)/lib/firmware/$$firmware || exit 1; \
 	done
+	for firmware in regulatory.db regulatory.db.p7s; do \
 
 # Download GRUB
 download-grub: .grub-obtained
