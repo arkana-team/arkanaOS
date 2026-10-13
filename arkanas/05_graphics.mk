@@ -969,3 +969,4 @@ NSCDE_VER = 2.3
 
 download-nscde: .nscde-obtained
 .nscde-obtained:
+	if ! [ -f $(NSCDE_PATH)/autogen.sh ]; then cd $(SRC_PATH) && git clone --depth 1 --branch $(NSCDE_VER) https://github.com/NsCDE/NsCDE.git NsCDE-$(NSCDE_VER); fi
