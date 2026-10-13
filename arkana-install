@@ -112,7 +112,7 @@ if [ -d /sys/firmware/efi ]; then
   mkfs.ext4 -F "$ROOTPART"
   mount "$ROOTPART" /mnt
   mkdir -p /mnt/boot/efi /mnt/etc
-    mkdir -p /mnt/boot/efi
+  mount "$BOOTPART" /mnt/boot/efi
     mkdir /mnt/etc
     mount "${SELDEV}1" /mnt/boot/efi
   else
