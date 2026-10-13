@@ -943,3 +943,4 @@ IMAGEMAGICK_PATH = $(SRC_PATH)/ImageMagick-$(IMAGEMAGICK_VER)
 
 imagemagick: .imagemagick-done
 .imagemagick-done: $(CURDIR)/arkanas/05_graphics.mk .libjpeg-turbo-done
+	if ! [ -f $(IMAGEMAGICK_PATH)/configure ]; then cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O ImageMagick-$(IMAGEMAGICK_VER).tar.xz $(IMAGEMAGICK_URL) && tar xf ImageMagick-$(IMAGEMAGICK_VER).tar.xz; fi
