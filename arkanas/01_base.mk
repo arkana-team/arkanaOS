@@ -425,6 +425,7 @@ timestamp:
 	@set -euo pipefail; \
 	exec 9>"$(BUILDNUM_FILE).lock"; \
 	flock -x 9; \
+	if [ -n "$${ARKANA_BUILD_NUMBER:-}" ]; then \
 
 # Download coreutils
 .PHONY: download-coreutils
