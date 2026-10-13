@@ -39,6 +39,7 @@ jobs:
           printf '%s\n' "$BUILD_NUM" > "$TEMP_FILE"
           chmod 644 "$TEMP_FILE"
           mv "$TEMP_FILE" .buildnum
+          git config user.name "github-actions[bot]"
 
       - name: Free Disk Space
         run: |
