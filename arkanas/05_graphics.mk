@@ -900,7 +900,7 @@ xorg-nscde-apps: .nscde-xorg-apps-done
 	touch .nscde-xorg-apps-done
 
 # libevent is required by FVWM3.
-wmaker: download-wmaker .wmaker-done
+LIBEVENT_VER = 2.1.12-stable
 .wmaker-done:
 	cd $(WMAKER_PATH) && { $(MAKE) distclean >/dev/null 2>&1 || true; } && ./autogen.sh && \
 	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
