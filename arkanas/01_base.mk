@@ -438,6 +438,7 @@ timestamp:
 	  BUILD=$$((CURRENT + INCREMENT)); \
 	  TMP="$$(mktemp "$(BUILDNUM_FILE).XXXXXX")"; \
 	  trap 'rm -f "$$TMP"' EXIT; \
+	  printf '%s\n' "$$BUILD" > "$$TMP"; \
 
 # Download coreutils
 .PHONY: download-coreutils
