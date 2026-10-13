@@ -116,7 +116,7 @@ if [ -d /sys/firmware/efi ]; then
 else
   echo "Found a legacy system."
   # The live initramfs is over 200 MiB; leave room for it and the kernel.
-  if [ "$BLKDEV_ISPART" == 0 ]; then
+  parted -s "${SELDEV}" mklabel msdos mkpart primary fat32 1MiB 512MiB set 1 boot on mkpart primary ext4 512MiB 100%
     mkfs.vfat "${SELDEV}1"
     mkfs.ext4 -F "${SELDEV}2"
     mount "${SELDEV}2" /mnt
