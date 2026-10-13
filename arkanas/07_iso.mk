@@ -723,7 +723,7 @@ iso:
 	mkdir -p $(STAGING_PATH)/root/.NsCDE/backer $(STAGING_PATH)/etc/skel/.NsCDE/backer
 	cp -a nscde-config/Backdrops.fvwmgen $(STAGING_PATH)/root/.NsCDE/
 	cp -a nscde-config/Backdrops.fvwmgen $(STAGING_PATH)/etc/skel/.NsCDE/
-	cp -a wmaker-config/WMRootMenu $(STAGING_PATH)/root/GNUstep/Library/WindowMaker/
+	for desk in 1 2 3 4 5 6 7 8; do \
 	mkdir -p $(STAGING_PATH)/etc/skel/GNUstep/Library/WindowMaker
 	cp -a wmaker-config/WMDefaults $(STAGING_PATH)/etc/skel/GNUstep/Library/WindowMaker/
 	cp -a wmaker-config/WMWindowAttributes $(STAGING_PATH)/etc/skel/GNUstep/Library/WindowMaker/
