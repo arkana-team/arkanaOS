@@ -158,6 +158,7 @@ else
   chroot /mnt grub-install --target=i386-pc "$SELDEV"
 fi
 
+mkdir -p /mnt/boot/grub/fonts && chroot /mnt grub-mkfont --size=16 -o /boot/grub/fonts/unicode.pf2 /usr/share/fonts/unifont/unifont.pcf
 mkdir -p /mnt/etc/default
 echo 'GRUB_DISABLE_OS_PROBER=false' >> /mnt/etc/default/grub
 
