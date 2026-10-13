@@ -160,7 +160,6 @@ fi
 
 mkdir -p /mnt/etc/default
 echo 'GRUB_DISABLE_OS_PROBER=false' >> /mnt/etc/default/grub
-else
   BOOTDEV="${SELDEV}p2"
 fi
 
