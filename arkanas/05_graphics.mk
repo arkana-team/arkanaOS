@@ -980,4 +980,5 @@ nscde: .nscde-done
 	cd $(NSCDE_PATH) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	find $(STAGING_PATH)/usr/bin $(STAGING_PATH)/usr/lib/NsCDE -type f -exec grep -IlF -- '#!$(STAGING_PATH)/usr/bin/ksh' {} + | xargs -r sed -i '1s|.*|#!/usr/bin/ksh|'
 	find $(STAGING_PATH)/usr/bin $(STAGING_PATH)/usr/lib/NsCDE $(STAGING_PATH)/usr/libexec/NsCDE $(STAGING_PATH)/usr/share/NsCDE/fvwm $(STAGING_PATH)/usr/share/NsCDE/config_templates -type f -exec grep -IlF -- '$(STAGING_PATH)/usr/bin/ksh' {} + | xargs -r sed -i 's|$(STAGING_PATH)/usr/bin/ksh|/usr/bin/ksh|g'
+	! grep -RIlF -- '$(STAGING_PATH)/usr/bin/ksh' $(STAGING_PATH)/usr/bin $(STAGING_PATH)/usr/lib/NsCDE $(STAGING_PATH)/usr/libexec/NsCDE $(STAGING_PATH)/usr/share/NsCDE/fvwm $(STAGING_PATH)/usr/share/NsCDE/config_templates
 	touch .nscde-done
