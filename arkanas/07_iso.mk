@@ -732,6 +732,7 @@ iso:
 	sed -i -e 's/DejaVu Serif/Luxi Sans/g' -e 's/DejaVu Sans Mono/Luxi Mono/g' $(STAGING_PATH)/usr/share/NsCDE/fvwm/Font-*dpi.fvwmconf
 	mkdir -p $(STAGING_PATH)/etc/systemd/system/serial-getty@ttyS0.service.d
 	printf '[Service]\nExecStart=\nExecStart=-/sbin/agetty --autologin root --noclear --keep-baud 115200,38400,9600 %%I vt220\n' > $(STAGING_PATH)/etc/systemd/system/serial-getty@ttyS0.service.d/override.conf
+	rm -rf $(STAGING_PATH)/root/GNUstep $(STAGING_PATH)/etc/skel/GNUstep $(STAGING_PATH)/usr/share/WindowMaker
 	mkdir -p $(STAGING_PATH)/etc/X11/xorg.conf.d
 	printf 'Section "Device"\n    Identifier "Card0"\n    Option "SWcursor" "true"\n    Option "HWCursor" "false"\nEndSection\n' > $(STAGING_PATH)/etc/X11/xorg.conf.d/99-swcursor.conf
 	sed -i 's/arkanaOS Dev/arkanaOS nightly/g' $(STAGING_PATH)/etc/os-release 2>/dev/null || true
