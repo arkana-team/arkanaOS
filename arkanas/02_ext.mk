@@ -614,7 +614,7 @@ download-curl: .curl-obtained
 # Compile curl
 curl: download-curl .curl-done
 .curl-done:
-	cd $(CURL_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --enable-versioned-symbols --with-gssapi --with-openssl --with-ca-path=/etc/ssl/certs --without-brotli --without-zstd && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(CURL_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --enable-versioned-symbols --with-gssapi --with-openssl --with-ca-path=/etc/ssl/certs --with-ca-bundle=/etc/ssl/ca-bundle.crt --without-brotli --without-zstd && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .curl-done
 
 # Download wget
