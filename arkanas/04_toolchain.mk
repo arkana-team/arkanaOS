@@ -432,3 +432,4 @@ gdb: download-gdb .gdb-done
 .gdb-done:
 	mkdir -p $(GDB_PATH)/build && cd $(GDB_PATH)/build && CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" CXXFLAGS="-O2 -std=gnu++17 -I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" ../configure --prefix=/usr --disable-nls --disable-werror --disable-gdbserver --disable-sim --without-python --without-guile --with-system-readline --with-system-zlib --without-expat --without-debuginfod && $(MAKE) -j$(THREADS) all-gdb && $(MAKE) DESTDIR=$(STAGING_PATH) install-gdb
 	touch .gdb-done
+download-git: .git-obtained
