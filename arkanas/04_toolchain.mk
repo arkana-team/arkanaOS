@@ -122,6 +122,7 @@ AUTOMAKE_VER = 1.18.1
 AUTOMAKE_PATH = $(SRC_PATH)/automake-$(AUTOMAKE_VER)
 M4_VER = 1.4.21
 M4_URL = https://ftp.gnu.org/gnu/m4/m4-$(M4_VER).tar.xz
+M4_PATH = $(SRC_PATH)/m4-$(M4_VER)
 
 # Targets
 all:
