@@ -129,6 +129,7 @@ BISON_PATH = $(SRC_PATH)/bison-$(BISON_VER)
 PATCH_VER = 2.8
 PATCH_URL = https://ftp.gnu.org/gnu/patch/patch-$(PATCH_VER).tar.xz
 PATCH_PATH = $(SRC_PATH)/patch-$(PATCH_VER)
+PKGCONF_VER = 3.0.8
 
 # Targets
 all:
