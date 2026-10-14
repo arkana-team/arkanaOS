@@ -124,6 +124,7 @@ M4_VER = 1.4.21
 M4_URL = https://ftp.gnu.org/gnu/m4/m4-$(M4_VER).tar.xz
 M4_PATH = $(SRC_PATH)/m4-$(M4_VER)
 BISON_VER = 3.8.2
+BISON_URL = https://ftp.gnu.org/gnu/bison/bison-$(BISON_VER).tar.xz
 
 # Targets
 all:
