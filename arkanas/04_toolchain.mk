@@ -127,6 +127,7 @@ BISON_VER = 3.8.2
 BISON_URL = https://ftp.gnu.org/gnu/bison/bison-$(BISON_VER).tar.xz
 BISON_PATH = $(SRC_PATH)/bison-$(BISON_VER)
 PATCH_VER = 2.8
+PATCH_URL = https://ftp.gnu.org/gnu/patch/patch-$(PATCH_VER).tar.xz
 
 # Targets
 all:
