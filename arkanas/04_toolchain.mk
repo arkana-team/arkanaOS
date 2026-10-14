@@ -400,3 +400,4 @@ m4: download-m4 .m4-done
 .m4-done:
 	cd $(M4_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --disable-nls && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .m4-done
+download-bison: .bison-obtained
