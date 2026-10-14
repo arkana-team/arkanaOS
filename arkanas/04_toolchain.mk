@@ -180,7 +180,7 @@ download-meson: .meson-obtained
 meson: download-meson .meson-done
 	install -d $(PYTHON3_SITE) && cp -a $(MESON_PATH)/mesonbuild $(PYTHON3_SITE)/ && install -Dm755 $(MESON_PATH)/meson.py $(STAGING_PATH)/usr/bin/meson && rm -rf $(STAGING_PATH)/usr/mesonbuild $(STAGING_PATH)/usr/meson-$(MESON_VER).dist-info
 .meson-done:
-	cd $(MESON_PATH) && /usr/bin/pip3 wheel -w dist --no-cache-dir --no-build-isolation --no-deps $$PWD && \
+	cd $(MESON_PATH) && install -d $(PYTHON3_SITE) && cp -a mesonbuild $(PYTHON3_SITE)/ && install -Dm755 meson.py $(STAGING_PATH)/usr/bin/meson && \
 	/usr/bin/pip3 install --no-index --target=$(STAGING_PATH)/usr --find-links dist meson && \
 	install -Dm644 data/shell-completions/bash/meson $(STAGING_PATH)/usr/share/bash-completion/completions/meson
 	touch .meson-done
