@@ -130,6 +130,7 @@ PATCH_VER = 2.8
 PATCH_URL = https://ftp.gnu.org/gnu/patch/patch-$(PATCH_VER).tar.xz
 PATCH_PATH = $(SRC_PATH)/patch-$(PATCH_VER)
 PKGCONF_VER = 3.0.8
+PKGCONF_URL = https://github.com/pkgconf/pkgconf/releases/download/pkgconf-$(PKGCONF_VER)/pkgconf-$(PKGCONF_VER).tar.xz
 
 # Targets
 all:
