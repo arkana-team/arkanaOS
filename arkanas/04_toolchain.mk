@@ -455,3 +455,4 @@ git: pkgconf download-git .git-done
 	touch .git-done
 .PHONY: download-m4 m4 download-bison bison download-patch patch download-pkgconf pkgconf download-gdb gdb download-git git
 .PHONY: download-rust rust
+# Download and verify the pinned Rust distribution components.
