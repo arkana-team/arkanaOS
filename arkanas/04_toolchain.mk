@@ -458,3 +458,4 @@ git: pkgconf download-git .git-done
 # Download and verify the pinned Rust distribution components.
 download-rust: .rust-obtained
 .rust-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O rustc-$(RUST_VER)-$(RUST_HOST).tar.xz $(RUSTC_URL)
