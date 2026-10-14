@@ -409,3 +409,4 @@ bison: m4 download-bison .bison-done
 	cd $(BISON_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --disable-nls && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .bison-done
 download-patch: .patch-obtained
+.patch-obtained:
