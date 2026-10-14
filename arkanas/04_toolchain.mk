@@ -395,3 +395,4 @@ sqlite3: download-sqlite3 .sqlite3-done
 download-m4: .m4-obtained
 .m4-obtained:
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O m4-$(M4_VER).tar.xz $(M4_URL) && tar xf m4-$(M4_VER).tar.xz
+	touch .m4-obtained
