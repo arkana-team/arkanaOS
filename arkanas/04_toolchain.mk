@@ -469,3 +469,4 @@ download-rust: .rust-obtained
 	cd $(SRC_PATH) && tar xf cargo-$(RUST_VER)-$(RUST_HOST).tar.xz
 	touch .rust-obtained
 # Install rustc, the native standard library, and Cargo into the target root.
+rust: download-rust .rust-done
