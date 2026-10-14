@@ -120,6 +120,7 @@ PERL_PATH = $(SRC_PATH)/perl-$(PERL_VER)
 AUTOMAKE_URL = https://mirrors.ocf.berkeley.edu/gnu/automake/automake-1.18.1.tar.gz
 AUTOMAKE_VER = 1.18.1
 AUTOMAKE_PATH = $(SRC_PATH)/automake-$(AUTOMAKE_VER)
+M4_VER = 1.4.21
 
 # Targets
 all:
