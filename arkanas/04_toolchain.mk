@@ -143,6 +143,7 @@ RUST_VER = 1.99.0
 RUST_DIST_DATE = 2026-10-01
 RUST_HOST = x86_64-unknown-linux-gnu
 RUST_DIST_BASE = https://static.rust-lang.org/dist/$(RUST_DIST_DATE)
+RUSTC_URL = $(RUST_DIST_BASE)/rustc-$(RUST_VER)-$(RUST_HOST).tar.xz
 
 # Targets
 all:
