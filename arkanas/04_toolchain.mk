@@ -135,6 +135,7 @@ PKGCONF_PATH = $(SRC_PATH)/pkgconf-$(PKGCONF_VER)
 GDB_VER = 18.1
 GDB_URL = https://sourceware.org/pub/gdb/releases/gdb-$(GDB_VER).tar.xz
 GDB_PATH = $(SRC_PATH)/gdb-$(GDB_VER)
+GIT_VER = 2.56.0
 
 # Targets
 all:
