@@ -439,3 +439,4 @@ download-git: .git-obtained
 git: pkgconf download-git .git-done
 .git-done:
 	cd $(GIT_PATH) && $(MAKE) -j$(THREADS) prefix=/usr CURL_CONFIG=$(STAGING_PATH)/usr/bin/curl-config USE_LIBPCRE2=YesPlease NO_GETTEXT=YesPlease NO_TCLTK=YesPlease NO_PYTHON=YesPlease NO_RUST=YesPlease CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" all && $(MAKE) prefix=/usr DESTDIR=$(STAGING_PATH) install
+	touch .git-done
