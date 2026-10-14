@@ -5,7 +5,7 @@ THREADS = $(shell nproc)
 
 # Build the Arkana toolchain?
 BUILD_TOOLCHAIN = true
-TOOLCHAIN_TARGETS = gcc-compilers binutils meson ninja make autoconf cmake gc libarchive guile libuv libxml2 libtool expat gdbm sqlite3 python3 perl automake
+TOOLCHAIN_TARGETS = gcc-compilers binutils meson ninja make autoconf cmake gc libarchive guile libuv libxml2 libtool expat gdbm sqlite3 python3 perl automake m4 bison patch pkgconf gdb git
 
 # Paths used in the build
 SRC_PATH = $(shell realpath ./src)
@@ -101,6 +101,7 @@ EXPAT_PATH = $(SRC_PATH)/expat-$(EXPAT_VER)
 PYTHON3_URL = https://www.python.org/ftp/python/3.13.7/Python-3.13.7.tar.xz
 PYTHON3_VER = 3.13.7
 PYTHON3_PATH = $(SRC_PATH)/Python-$(PYTHON3_VER)
+PYTHON3_SITE = $(STAGING_PATH)/usr/lib/python3.13/site-packages
 GDBM_URL = https://ftp.gnu.org/gnu/gdbm/gdbm-1.26.tar.gz
 GDBM_VER = 1.26
 GDBM_PATH = $(SRC_PATH)/gdbm-$(GDBM_VER)
@@ -119,6 +120,24 @@ PERL_PATH = $(SRC_PATH)/perl-$(PERL_VER)
 AUTOMAKE_URL = https://mirrors.ocf.berkeley.edu/gnu/automake/automake-1.18.1.tar.gz
 AUTOMAKE_VER = 1.18.1
 AUTOMAKE_PATH = $(SRC_PATH)/automake-$(AUTOMAKE_VER)
+M4_VER = 1.4.21
+M4_URL = https://ftp.gnu.org/gnu/m4/m4-$(M4_VER).tar.xz
+M4_PATH = $(SRC_PATH)/m4-$(M4_VER)
+BISON_VER = 3.8.2
+BISON_URL = https://ftp.gnu.org/gnu/bison/bison-$(BISON_VER).tar.xz
+BISON_PATH = $(SRC_PATH)/bison-$(BISON_VER)
+PATCH_VER = 2.8
+PATCH_URL = https://ftp.gnu.org/gnu/patch/patch-$(PATCH_VER).tar.xz
+PATCH_PATH = $(SRC_PATH)/patch-$(PATCH_VER)
+PKGCONF_VER = 3.0.8
+PKGCONF_URL = https://github.com/pkgconf/pkgconf/archive/refs/tags/pkgconf-$(PKGCONF_VER).tar.gz
+PKGCONF_PATH = $(SRC_PATH)/pkgconf-pkgconf-$(PKGCONF_VER)
+GDB_VER = 18.1
+GDB_URL = https://sourceware.org/pub/gdb/releases/gdb-$(GDB_VER).tar.xz
+GDB_PATH = $(SRC_PATH)/gdb-$(GDB_VER)
+GIT_VER = 2.56.0
+GIT_URL = https://www.kernel.org/pub/software/scm/git/git-$(GIT_VER).tar.xz
+GIT_PATH = $(SRC_PATH)/git-$(GIT_VER)
 
 # Targets
 all:
@@ -131,9 +150,10 @@ all:
 
 # Install the GCC compilers
 gcc-compilers: .gcc-compilers-done
+	ln -sf gcc $(STAGING_PATH)/usr/bin/cc
 .gcc-compilers-done:
 	# GCC has been pre-configured before in 01_base.mk, now we build the compilers.
-	cd $(GCC_PATH)/build && $(MAKE) -j$(THREADS) all-gcc && $(MAKE) DESTDIR=$(STAGING_PATH) install-gcc install-target-libgcc install-target-libstdc++-v3
+	cd $(GCC_PATH)/build && $(MAKE) -j$(THREADS) all-gcc all-target-libatomic && $(MAKE) DESTDIR=$(STAGING_PATH) install-gcc install-target-libgcc install-target-libstdc++-v3 install-target-libatomic
 	touch .gcc-compilers-done
 
 # Download binutils
@@ -158,9 +178,9 @@ download-meson: .meson-obtained
 
 # Compile meson
 meson: download-meson .meson-done
+	install -d $(PYTHON3_SITE) && cp -a $(MESON_PATH)/mesonbuild $(PYTHON3_SITE)/ && install -Dm755 $(MESON_PATH)/meson.py $(STAGING_PATH)/usr/bin/meson && rm -rf $(STAGING_PATH)/usr/mesonbuild $(STAGING_PATH)/usr/meson-$(MESON_VER).dist-info
 .meson-done:
-	cd $(MESON_PATH) && /usr/bin/pip3 wheel -w dist --no-cache-dir --no-build-isolation --no-deps $$PWD && \
-	/usr/bin/pip3 install --no-index --target=$(STAGING_PATH)/usr --find-links dist meson && \
+	cd $(MESON_PATH) && install -d $(PYTHON3_SITE) && cp -a mesonbuild $(PYTHON3_SITE)/ && install -Dm755 meson.py $(STAGING_PATH)/usr/bin/meson && \
 	install -Dm644 data/shell-completions/bash/meson $(STAGING_PATH)/usr/share/bash-completion/completions/meson
 	touch .meson-done
 
@@ -371,3 +391,52 @@ sqlite3: download-sqlite3 .sqlite3-done
 .sqlite3-done:
 	cd $(SQLITE3_PATH) && CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib" ./configure --prefix=/usr --enable-shared --disable-static --disable-readline --disable-editline && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .sqlite3-done
+download-m4: .m4-obtained
+.m4-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O m4-$(M4_VER).tar.xz $(M4_URL) && tar xf m4-$(M4_VER).tar.xz
+	touch .m4-obtained
+m4: download-m4 .m4-done
+.m4-done:
+	cd $(M4_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --disable-nls && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .m4-done
+download-bison: .bison-obtained
+.bison-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O bison-$(BISON_VER).tar.xz $(BISON_URL) && tar xf bison-$(BISON_VER).tar.xz
+	touch .bison-obtained
+bison: m4 download-bison .bison-done
+.bison-done:
+	cd $(BISON_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --disable-nls && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .bison-done
+download-patch: .patch-obtained
+.patch-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O patch-$(PATCH_VER).tar.xz $(PATCH_URL) && tar xf patch-$(PATCH_VER).tar.xz
+	touch .patch-obtained
+patch: download-patch .patch-done
+.patch-done:
+	cd $(PATCH_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .patch-done
+download-pkgconf: .pkgconf-obtained
+.pkgconf-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O pkgconf-$(PKGCONF_VER).tar.gz $(PKGCONF_URL) && tar xf pkgconf-$(PKGCONF_VER).tar.gz
+	touch .pkgconf-obtained
+pkgconf: download-pkgconf .pkgconf-done
+.pkgconf-done:
+	cd $(PKGCONF_PATH) && meson setup --native-file $(SRC_PATH)/cross_file.txt build --prefix=/usr --buildtype=release --wrap-mode=nofallback -Dwith-pkg-config-dir=/usr/lib/pkgconfig:/usr/share/pkgconfig -Dwith-system-libdir=/usr/lib -Dwith-system-includedir=/usr/include && ninja -C build && DESTDIR=$(STAGING_PATH) ninja -C build install && ln -sf pkgconf $(STAGING_PATH)/usr/bin/pkg-config
+	touch .pkgconf-done
+download-gdb: .gdb-obtained
+.gdb-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O gdb-$(GDB_VER).tar.xz $(GDB_URL) && tar xf gdb-$(GDB_VER).tar.xz
+	touch .gdb-obtained
+gdb: download-gdb .gdb-done
+.gdb-done:
+	mkdir -p $(GDB_PATH)/build && cd $(GDB_PATH)/build && CFLAGS="-O2 -std=gnu17" CXXFLAGS="-O2 -std=gnu++17" LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" ../configure --prefix=/usr --disable-nls --disable-werror --disable-gdbserver --disable-sim --without-python --without-guile --with-system-readline --with-system-zlib --without-expat --without-debuginfod --disable-source-highlight --with-xxhash=no && $(MAKE) -j$(THREADS) all-gdb && $(MAKE) DESTDIR=$(STAGING_PATH) install-gdb
+	touch .gdb-done
+download-git: .git-obtained
+.git-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O git-$(GIT_VER).tar.xz $(GIT_URL) && tar xf git-$(GIT_VER).tar.xz
+	touch .git-obtained
+git: pkgconf download-git .git-done
+.git-done:
+	cd $(GIT_PATH) && $(MAKE) -j$(THREADS) prefix=/usr CURL_CONFIG=$(STAGING_PATH)/usr/bin/curl-config USE_LIBPCRE2=YesPlease NO_GETTEXT=YesPlease NO_TCLTK=YesPlease NO_PYTHON=YesPlease NO_RUST=YesPlease CFLAGS="-O2 -std=gnu17" LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" all && $(MAKE) prefix=/usr DESTDIR=$(STAGING_PATH) install
+	touch .git-done
+.PHONY: download-m4 m4 download-bison bison download-patch patch download-pkgconf pkgconf download-gdb gdb download-git git
