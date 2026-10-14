@@ -5,7 +5,7 @@ THREADS = $(shell nproc)
 
 # Build the Arkana toolchain?
 BUILD_TOOLCHAIN = true
-TOOLCHAIN_TARGETS = gcc-compilers binutils meson ninja make autoconf cmake gc libarchive guile libuv libxml2 libtool expat gdbm sqlite3 python3 perl automake
+TOOLCHAIN_TARGETS = gcc-compilers binutils meson ninja make autoconf cmake gc libarchive guile libuv libxml2 libtool expat gdbm sqlite3 python3 perl automake m4 bison patch pkgconf gdb git
 
 # Paths used in the build
 SRC_PATH = $(shell realpath ./src)
