@@ -414,3 +414,4 @@ download-patch: .patch-obtained
 	touch .patch-obtained
 patch: download-patch .patch-done
 .patch-done:
+	cd $(PATCH_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --disable-nls && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
