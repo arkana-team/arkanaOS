@@ -101,6 +101,7 @@ EXPAT_PATH = $(SRC_PATH)/expat-$(EXPAT_VER)
 PYTHON3_URL = https://www.python.org/ftp/python/3.13.7/Python-3.13.7.tar.xz
 PYTHON3_VER = 3.13.7
 PYTHON3_PATH = $(SRC_PATH)/Python-$(PYTHON3_VER)
+PYTHON3_SITE = $(STAGING_PATH)/usr/lib/python3.13/site-packages
 GDBM_URL = https://ftp.gnu.org/gnu/gdbm/gdbm-1.26.tar.gz
 GDBM_VER = 1.26
 GDBM_PATH = $(SRC_PATH)/gdbm-$(GDBM_VER)
