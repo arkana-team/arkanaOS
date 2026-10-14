@@ -465,3 +465,4 @@ download-rust: .rust-obtained
 	cd $(SRC_PATH) && echo '$(RUST_STD_SHA256)  rust-std-$(RUST_VER)-$(RUST_HOST).tar.xz' | sha256sum -c -
 	cd $(SRC_PATH) && tar xf rust-std-$(RUST_VER)-$(RUST_HOST).tar.xz
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O cargo-$(RUST_VER)-$(RUST_HOST).tar.xz $(CARGO_URL)
+	cd $(SRC_PATH) && echo '$(CARGO_SHA256)  cargo-$(RUST_VER)-$(RUST_HOST).tar.xz' | sha256sum -c -
