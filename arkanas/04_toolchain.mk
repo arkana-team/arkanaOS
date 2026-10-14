@@ -141,6 +141,7 @@ GIT_PATH = $(SRC_PATH)/git-$(GIT_VER)
 # Pinned Rust compiler components for the native x86_64 GNU/Linux target.
 RUST_VER = 1.99.0
 RUST_DIST_DATE = 2026-10-01
+RUST_HOST = x86_64-unknown-linux-gnu
 
 # Targets
 all:
