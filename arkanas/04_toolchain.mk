@@ -474,3 +474,4 @@ rust: download-rust .rust-done
 	cd $(RUSTC_PATH) && ./install.sh --prefix=/usr --destdir=$(STAGING_PATH) --disable-ldconfig
 	cd $(RUST_STD_PATH) && ./install.sh --prefix=/usr --destdir=$(STAGING_PATH) --disable-ldconfig
 	cd $(CARGO_PATH) && ./install.sh --prefix=/usr --destdir=$(STAGING_PATH) --disable-ldconfig
+	touch .rust-done
