@@ -429,3 +429,4 @@ download-gdb: .gdb-obtained
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O gdb-$(GDB_VER).tar.xz $(GDB_URL) && tar xf gdb-$(GDB_VER).tar.xz
 	touch .gdb-obtained
 gdb: download-gdb .gdb-done
+.gdb-done:
