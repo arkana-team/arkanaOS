@@ -121,6 +121,7 @@ AUTOMAKE_URL = https://mirrors.ocf.berkeley.edu/gnu/automake/automake-1.18.1.tar
 AUTOMAKE_VER = 1.18.1
 AUTOMAKE_PATH = $(SRC_PATH)/automake-$(AUTOMAKE_VER)
 M4_VER = 1.4.21
+M4_URL = https://ftp.gnu.org/gnu/m4/m4-$(M4_VER).tar.xz
 
 # Targets
 all:
