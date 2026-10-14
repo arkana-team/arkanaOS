@@ -5,8 +5,11 @@ on:
   workflow_call:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: arkana-build-number-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
 
 jobs:
   base:
@@ -17,6 +20,31 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Reserve build number
+        id: reserve_build_number
+        run: |
+          case "$GITHUB_REF" in
+            refs/heads/*) ;;
+            *) echo "Build number reservation requires a branch ref." >&2; exit 1 ;;
+          esac
+          CURRENT=$(cat .buildnum)
+          if ! [[ "$CURRENT" =~ ^[0-9]+$ ]]; then
+            echo "Invalid .buildnum value: $CURRENT" >&2
+            exit 1
+          fi
+          INCREMENT=$(shuf -i 1-250 -n 1)
+          BUILD_NUM=$((CURRENT + INCREMENT))
+          TEMP_FILE=$(mktemp .buildnum.XXXXXX)
+          printf '%s\n' "$BUILD_NUM" > "$TEMP_FILE"
+          chmod 644 "$TEMP_FILE"
+          mv "$TEMP_FILE" .buildnum
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .buildnum
+          git commit -m "Reserve build number $BUILD_NUM"
+          git push origin "HEAD:$GITHUB_REF"
+          echo "number=$BUILD_NUM" >> "$GITHUB_OUTPUT"
 
       - name: Free Disk Space
         run: |
@@ -50,6 +78,7 @@ jobs:
             -v "$(pwd)/staging:/build/arkana/staging" \
             -v "$(pwd)/output:/build/arkana/output" \
             -v "$HOME/.cache/ccache:/home/builder/.cache/ccache" \
+            -e ARKANA_BUILD_NUMBER="${{ steps.reserve_build_number.outputs.number }}" \
             -e CCACHE_DIR=/home/builder/.cache/ccache \
             arkana-builder bash -c "sudo --preserve-env make -f arkanas/01_base.mk"
 

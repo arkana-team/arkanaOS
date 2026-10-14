@@ -422,9 +422,29 @@ systemd: download-systemd kernel-headers .systemd-done
 
 .PHONY: timestamp
 timestamp:
-	BUILD=$$(($$(cat $(BUILDNUM_FILE) 2>/dev/null || echo 0)+1)); \
-	echo "arkanaOS nightly ($$(date +%Y%m%d)) (build $$BUILD)" > $(STAGING_PATH)/etc/issue; \
-	echo $$BUILD > $(BUILDNUM_FILE)
+	@set -euo pipefail; \
+	exec 9>"$(BUILDNUM_FILE).lock"; \
+	flock -x 9; \
+	if [ -n "$${ARKANA_BUILD_NUMBER:-}" ]; then \
+	  BUILD="$$ARKANA_BUILD_NUMBER"; \
+	  CURRENT="$$(cat "$(BUILDNUM_FILE)" 2>/dev/null || echo 0)"; \
+	  if ! [[ "$$BUILD" =~ ^[0-9]+$$ ]] || [ "$$CURRENT" != "$$BUILD" ]; then \
+	    echo "ARKANA_BUILD_NUMBER must match the persisted .buildnum value" >&2; exit 1; \
+	  fi; \
+	else \
+	  CURRENT="$$(cat "$(BUILDNUM_FILE)" 2>/dev/null || echo 0)"; \
+	  if ! [[ "$$CURRENT" =~ ^[0-9]+$$ ]]; then echo "Invalid build number: $$CURRENT" >&2; exit 1; fi; \
+	  INCREMENT="$$(shuf -i 1-250 -n 1)"; \
+	  BUILD=$$((CURRENT + INCREMENT)); \
+	  TMP="$$(mktemp "$(BUILDNUM_FILE).XXXXXX")"; \
+	  trap 'rm -f "$$TMP"' EXIT; \
+	  printf '%s\n' "$$BUILD" > "$$TMP"; \
+	  chmod --reference="$(BUILDNUM_FILE)" "$$TMP"; chown --reference="$(BUILDNUM_FILE)" "$$TMP"; \
+	  mv -f "$$TMP" "$(BUILDNUM_FILE)"; \
+	fi; \
+	mkdir -p "$(STAGING_PATH)/etc"; \
+	printf 'arkanaOS nightly (%s) (build %s)\n' "$$(date +%Y%m%d)" "$$BUILD" > "$(STAGING_PATH)/etc/issue"; \
+	printf '%s\n' "$$BUILD" > "$(STAGING_PATH)/etc/arkana-build-number"
 
 # Download coreutils
 .PHONY: download-coreutils

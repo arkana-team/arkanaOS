@@ -208,6 +208,9 @@ X11_PARSED_LIBS := $(foreach i, $(shell seq 1 $(words $(X11_LIBS))), \
 X11_APPS = xauth xkbcomp xsetroot xrandr
 X11_APP_VERS = 1.1.4 1.4.7 1.1.3 1.5.2
 
+NSCDE_X11_APPS = xdpyinfo xprop xrdb xset xrefresh
+NSCDE_X11_APP_VERS = 1.4.0 1.2.8 1.2.3 1.2.5 1.0.7
+
 X11_PARSED_APPS := $(foreach i, $(shell seq 1 $(words $(X11_APPS))), \
   $(word $(i), $(X11_APPS))/$(word $(i), $(X11_APP_VERS)))
 
@@ -222,7 +225,7 @@ X11_PARSED_FONTS := $(foreach i, $(shell seq 1 $(words $(X11_FONTS))), \
   $(word $(i), $(X11_FONTS))/$(word $(i), $(X11_FONT_VERS)))
 
 # Targets
-all: xorgproto xtrans pixman freetype font-util fontconfig xbitmaps xorg-libs libdrm mesa xorg-server libbsd libmd lm-sensors llvm libedit spirv-tools xinit xorg-apps xorg-fonts xorg-xkeyboard-config xf86-input-evdev openbox fribidi xterm luit libevdev mtdev libgudev libwacom libinput feh imlib2 libdatrie libthai harfbuzz cairo pango libdav1d libjpeg-turbo gdk-pixbuf librsvg wmaker
+all: xorgproto xtrans pixman freetype font-util fontconfig xbitmaps xorg-libs libdrm mesa xorg-server libbsd libmd lm-sensors llvm libedit spirv-tools xinit xorg-apps xorg-nscde-apps xorg-fonts xorg-xkeyboard-config xf86-input-evdev openbox fribidi xterm luit libevdev mtdev libgudev libwacom libinput feh imlib2 libdatrie libthai harfbuzz cairo pango libdav1d libjpeg-turbo gdk-pixbuf librsvg libevent ksh93 pyxdg pyyaml imagemagick fvwm3 nscde
 
 XORGPROTO_URL = https://xorg.freedesktop.org/releases/individual/proto/xorgproto-2024.1.tar.xz
 XORGPROTO_VER = 2024.1
@@ -483,11 +486,11 @@ download-mesa: .mesa-obtained
 
 # Compile Mesa
 mesa: download-mesa .mesa-done
-.mesa-done:
+.mesa-done: $(CURDIR)/arkanas/05_graphics.mk
 	cd $(MESA_PATH) && \
 	sed -i '/#include <clang\/Config\/config.h>/i #undef UNUSED' src/compiler/clc/clc_helpers.cpp && \
 	sed -i '/#include "clc_helpers.h"/a #undef UNUSED\n#define UNUSED __attribute__((unused))' src/compiler/clc/clc_helpers.cpp && \
-	mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D platforms=x11 -D gallium-drivers=softpipe,virgl,nouveau,radeonsi \
+	rm -rf build && mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D platforms=x11 -D gallium-drivers=softpipe,virgl,nouveau,radeonsi,crocus \
 	-D valgrind=disabled -D video-codecs=all -D libunwind=disabled -D glvnd=disabled -D llvm=disabled -D werror=false -D vulkan-drivers="" && ninja && DESTDIR=$(STAGING_PATH) ninja install
 	touch .mesa-done
 
@@ -881,27 +884,101 @@ vulkan: .vulkan-done
 	$(MAKE) -j$(THREADS) && $(MAKE) install DESTDIR=$(STAGING_PATH)
 	touch .vulkan-done
 
-# Window Maker (wmaker-crm fork)
-# URL: https://repo.or.cz/w/wmaker-crm.git
-WMAKER_URL = https://www.windowmaker.org/pub/source/release/WindowMaker-0.96.0.tar.gz
-WMAKER_VER = 0.96.0
-WMAKER_PATH = $(SRC_PATH)/WindowMaker-$(WMAKER_VER)
+# Download Xorg utilities required by NsCDE.
+NSCDE_X11_PARSED_APPS := $(foreach i, $(shell seq 1 $(words $(NSCDE_X11_APPS))), \
+  $(word $(i), $(NSCDE_X11_APPS))/$(word $(i), $(NSCDE_X11_APP_VERS)))
 
-# Download Window Maker
-download-wmaker: .wmaker-obtained
-.wmaker-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O WindowMaker-$(WMAKER_VER).tar.gz $(WMAKER_URL) && tar xf WindowMaker-$(WMAKER_VER).tar.gz
-	touch .wmaker-obtained
+xorg-nscde-apps: .nscde-xorg-apps-done
+.nscde-xorg-apps-done: .xorg-libs-done
+	for pair in $(NSCDE_X11_PARSED_APPS); do \
+	  app=$${pair%%/*}; ver=$${pair##*/}; \
+	  if [ ! -d $(SRC_PATH)/$$app-$$ver ]; then \
+	    cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O $$app-$$ver.tar.xz https://xorg.freedesktop.org/releases/individual/app/$$app-$$ver.tar.xz && tar xf $$app-$$ver.tar.xz || exit 1; \
+	  fi; \
+	  cd $(SRC_PATH)/$$app-$$ver && PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_LIBDIR="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_SYSROOT_DIR="$(STAGING_PATH)" CPPFLAGS="-I$(STAGING_PATH)/usr/include" CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install || exit 1; \
+	done
+	touch .nscde-xorg-apps-done
 
-# Compile Window Maker
-wmaker: download-wmaker .wmaker-done
-.wmaker-done:
-	cd $(WMAKER_PATH) && { $(MAKE) distclean >/dev/null 2>&1 || true; } && ./autogen.sh && \
-	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
-	PKG_CONFIG_LIBDIR="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
-	PKG_CONFIG_SYSROOT_DIR="$(STAGING_PATH)" \
-	CPPFLAGS="-I$(STAGING_PATH)/usr/include" CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" \
-	LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" \
-	./configure --prefix=/usr --sysconfdir=/etc --enable-modelock --enable-pango --with-x --disable-imagemagick && \
-	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
-	touch .wmaker-done
+# libevent is required by FVWM3.
+LIBEVENT_VER = 2.1.12-stable
+LIBEVENT_URL = https://github.com/libevent/libevent/releases/download/release-$(LIBEVENT_VER)/libevent-$(LIBEVENT_VER).tar.gz
+LIBEVENT_PATH = $(SRC_PATH)/libevent-$(LIBEVENT_VER)
+
+libevent: .libevent-done
+.libevent-done:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libevent-$(LIBEVENT_VER).tar.gz $(LIBEVENT_URL) && tar xf libevent-$(LIBEVENT_VER).tar.gz
+	cd $(LIBEVENT_PATH) && CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" ./configure --prefix=/usr --disable-static --disable-openssl --disable-libevent-regress --disable-samples && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .libevent-done
+
+# Build AT&T KornShell 93, which NsCDE requires for its configuration scripts.
+KSH93_TAG = v1.0.9
+KSH93_PATH = $(SRC_PATH)/ksh-$(KSH93_TAG)
+
+ksh93: .ksh93-done
+.ksh93-done:
+	if ! [ -d $(KSH93_PATH)/.git ]; then git clone --depth 1 --branch $(KSH93_TAG) https://github.com/ksh93/ksh.git $(KSH93_PATH); fi
+	cd $(KSH93_PATH) && AST_NO_DYLIB=y bin/package make
+	cd $(KSH93_PATH) && ksh_bin=$$(find arch -type f -path '*/bin/ksh' -perm -111 -print -quit) && test -n "$$ksh_bin" && install -D -m 755 "$$ksh_bin" $(STAGING_PATH)/usr/bin/ksh && ln -sf ksh $(STAGING_PATH)/usr/bin/ksh93
+	touch .ksh93-done
+
+# Install pure-Python desktop integration dependencies for NsCDE.
+PYTHON_SITE = $(STAGING_PATH)$(shell chroot $(STAGING_PATH) /usr/bin/python3 -c 'import sysconfig; print(sysconfig.get_path("purelib"))')
+
+pyxdg: .pyxdg-done
+.pyxdg-done:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O pyxdg-0.28.tar.gz https://files.pythonhosted.org/packages/b0/25/7998cd2dec731acbd438fbf91bc619603fc5188de0a9a17699a781840452/pyxdg-0.28.tar.gz && tar xf pyxdg-0.28.tar.gz
+	install -d $(PYTHON_SITE) && cp -a $(SRC_PATH)/pyxdg-0.28/xdg $(PYTHON_SITE)/
+	touch .pyxdg-done
+
+pyyaml: .pyyaml-done
+.pyyaml-done:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O pyyaml-6.0.3.tar.gz https://files.pythonhosted.org/packages/05/8e/961c0007c59b8dd7729d542c61a4d537767a59645b82a0b521206e1e25c2/pyyaml-6.0.3.tar.gz && tar xf pyyaml-6.0.3.tar.gz
+	install -d $(PYTHON_SITE) && cp -a $(SRC_PATH)/pyyaml-6.0.3/lib/yaml $(PYTHON_SITE)/
+	touch .pyyaml-done
+
+# Build the X11 image utilities used by NsCDE's backdrop and screenshot tools.
+IMAGEMAGICK_VER = 7.1.2-33
+IMAGEMAGICK_URL = https://download.imagemagick.org/archive/releases/ImageMagick-$(IMAGEMAGICK_VER).tar.xz
+IMAGEMAGICK_PATH = $(SRC_PATH)/ImageMagick-$(IMAGEMAGICK_VER)
+
+imagemagick: .imagemagick-done
+.imagemagick-done: $(CURDIR)/arkanas/05_graphics.mk .libjpeg-turbo-done
+	if ! [ -f $(IMAGEMAGICK_PATH)/configure ]; then cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O ImageMagick-$(IMAGEMAGICK_VER).tar.xz $(IMAGEMAGICK_URL) && tar xf ImageMagick-$(IMAGEMAGICK_VER).tar.xz; fi
+	if [ -f $(IMAGEMAGICK_PATH)/Makefile ]; then $(MAKE) -C $(IMAGEMAGICK_PATH) clean; fi
+	cd $(IMAGEMAGICK_PATH) && PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_LIBDIR="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_SYSROOT_DIR="$(STAGING_PATH)" CPPFLAGS="-I$(STAGING_PATH)/usr/include" CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" ./configure --prefix=/usr --sysconfdir=/etc --disable-docs --without-perl --without-magick-plus-plus --with-quantum-depth=8 --disable-hdri --with-modules --enable-legacy-support --disable-openmp --with-x && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .imagemagick-done
+
+# Build FVWM3, NsCDE's required window manager.
+FVWM3_VER = 1.1.5
+FVWM3_PATH = $(SRC_PATH)/fvwm3-$(FVWM3_VER)
+
+download-fvwm3: .fvwm3-obtained
+.fvwm3-obtained:
+	if ! [ -f $(FVWM3_PATH)/meson.build ]; then cd $(SRC_PATH) && git clone --depth 1 --branch $(FVWM3_VER) https://github.com/fvwmorg/fvwm3.git fvwm3-$(FVWM3_VER); fi
+	test "$$(git -C $(FVWM3_PATH) rev-parse HEAD 2>/dev/null || true)" = e14139da41d2ef52d35bbe33af9c57d04db6c5cd || [ -f $(FVWM3_PATH)/.current-version ]
+	touch .fvwm3-obtained
+
+fvwm3: .fvwm3-done
+.fvwm3-done: $(CURDIR)/arkanas/05_graphics.mk .fvwm3-obtained .libevent-done .xorg-libs-done
+	cd $(FVWM3_PATH) && rm -rf meson-build && PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_LIBDIR="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_SYSROOT_DIR="$(STAGING_PATH)" meson setup --native-file $(SRC_PATH)/cross_file.txt meson-build --prefix=/usr --sysconfdir=/etc --buildtype=release -Dmandoc=false -Dhtmldoc=false -Dnls=disabled -Dgolang=disabled -Dpython=/usr/bin/python3 && ninja -C meson-build && DESTDIR=$(STAGING_PATH) ninja -C meson-build install
+	touch .fvwm3-done
+
+# Install NsCDE and its display-manager session entry.
+NSCDE_PATH = $(SRC_PATH)/NsCDE-2.3
+NSCDE_VER = 2.3
+
+download-nscde: .nscde-obtained
+.nscde-obtained:
+	if ! [ -f $(NSCDE_PATH)/autogen.sh ]; then cd $(SRC_PATH) && git clone --depth 1 --branch $(NSCDE_VER) https://github.com/NsCDE/NsCDE.git NsCDE-$(NSCDE_VER); fi
+	test "$$(git -C $(NSCDE_PATH) rev-parse HEAD 2>/dev/null || true)" = 63e15a6bc497d701279f432f950d90adf5fc1966 || [ -f $(NSCDE_PATH)/ChangeLog ]
+	touch .nscde-obtained
+
+nscde: .nscde-done
+.nscde-done: $(CURDIR)/arkanas/05_graphics.mk .nscde-obtained .ksh93-done .pyxdg-done .pyyaml-done .nscde-xorg-apps-done .imagemagick-done .fvwm3-done
+	cd $(NSCDE_PATH) && ./autogen.sh
+	cd $(NSCDE_PATH) && LD_LIBRARY_PATH="$(STAGING_PATH)/usr/lib" PYTHONPATH="$(PYTHON_SITE)" PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_LIBDIR="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_SYSROOT_DIR="$(STAGING_PATH)" CPPFLAGS="-I$(STAGING_PATH)/usr/include" CFLAGS="-O2 -std=gnu17 -I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" KSH=$(STAGING_PATH)/usr/bin/ksh FVWM=fvwm3 ./configure --prefix=/usr --sysconfdir=/etc --with-xsessiondir=/usr/share/xsessions --with-python-shebang=/usr/bin/python3
+	cd $(NSCDE_PATH) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	find $(STAGING_PATH)/usr/bin $(STAGING_PATH)/usr/lib/NsCDE -type f -exec grep -IlF -- '#!$(STAGING_PATH)/usr/bin/ksh' {} + | xargs -r sed -i '1s|.*|#!/usr/bin/ksh|'
+	find $(STAGING_PATH)/usr/bin $(STAGING_PATH)/usr/lib/NsCDE $(STAGING_PATH)/usr/libexec/NsCDE $(STAGING_PATH)/usr/share/NsCDE/fvwm $(STAGING_PATH)/usr/share/NsCDE/config_templates -type f -exec grep -IlF -- '$(STAGING_PATH)/usr/bin/ksh' {} + | xargs -r sed -i 's|$(STAGING_PATH)/usr/bin/ksh|/usr/bin/ksh|g'
+	! grep -RIlF -- '$(STAGING_PATH)/usr/bin/ksh' $(STAGING_PATH)/usr/bin $(STAGING_PATH)/usr/lib/NsCDE $(STAGING_PATH)/usr/libexec/NsCDE $(STAGING_PATH)/usr/share/NsCDE/fvwm $(STAGING_PATH)/usr/share/NsCDE/config_templates
+	touch .nscde-done

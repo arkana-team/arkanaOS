@@ -2,7 +2,7 @@
 set -euo pipefail
 
 mapfile -t BLOCK_DEVICES < <(find /sys/block -mindepth 1 -maxdepth 1 -printf '%f\n' | grep -E '^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|mmcblk[0-9]+|nvme[0-9]+n[0-9]+)$')
-BINARIES=("mkfs.vfat" "mkfs.ext4" "rsync" "genfstab" "grub-install" "grub-mkconfig" "sed" "awk" "parted")
+BINARIES=("mkfs.vfat" "mkfs.ext4" "rsync" "genfstab" "grub-install" "grub-mkconfig" "sed" "awk" "parted" "blkid" "blockdev" "mount" "umount" "chroot" "useradd" "usermod" "chpasswd" "grep" "find" "ln" "chmod" "rm" "sync" "mkdir" "cp" "cat" "id" "mountpoint" "realpath" "findmnt" "lsblk")
 FOUND_BLK=0
 FOUND_DEVS=()
 
@@ -89,56 +89,42 @@ if [ "$BLKDEV_MOUNTEDAS" != "overlay" ]; then
 fi
 
 if [[ "$SELDEV" =~ ^/dev/nvme[0-9]+n[0-9]+$ ]]; then
-  BLKDEV_ISPART=1
+  PART_SUFFIX="p"
 elif [[ "$SELDEV" =~ ^/dev/mmcblk[0-9]+$ ]]; then
-  BLKDEV_ISPART=1
+  PART_SUFFIX="p"
 else
-  BLKDEV_ISPART=0
+  PART_SUFFIX=""
 fi
 
-trap "umount -R /mnt &>/dev/null || true" ERR
+BOOTPART="${SELDEV}${PART_SUFFIX}1"
+ROOTPART="${SELDEV}${PART_SUFFIX}2"
+
+trap 'umount -R /mnt &>/dev/null || true' EXIT
 umount -R /mnt &>/dev/null || true
 
 echo "Installing $PRETTY_NAME on $SELDEV"
 echo "Partitoning..."
 
-if [ -e /sys/firmware/efi/efivars ]; then
+if [ -d /sys/firmware/efi ]; then
   echo "Found an EFI system."
   parted -s "${SELDEV}" mklabel gpt mkpart primary 1MiB 120MiB set 1 esp on mkpart primary 120MiB 100%
-  if [ "$BLKDEV_ISPART" == 0 ]; then
-    mkfs.vfat -F 32 "${SELDEV}1"
-    mkfs.ext4 -F "${SELDEV}2"
-    mount "${SELDEV}2" /mnt
-    mkdir -p /mnt/boot/efi
-    mkdir /mnt/etc
-    mount "${SELDEV}1" /mnt/boot/efi
-  else
-    mkfs.vfat -F 32 "${SELDEV}p1"
-    mkfs.ext4 -F "${SELDEV}p2"
-    mount "${SELDEV}p2" /mnt
-    mkdir -p /mnt/boot/efi
-    mkdir /mnt/etc
-    mount "${SELDEV}p1" /mnt/boot/efi
-  fi
+  mkfs.vfat -F 32 "$BOOTPART"
+  mkfs.ext4 -F "$ROOTPART"
+  mount "$ROOTPART" /mnt
+  mkdir -p /mnt/boot/efi /mnt/etc
+  mount "$BOOTPART" /mnt/boot/efi
 else
   echo "Found a legacy system."
-  parted -s "${SELDEV}" mklabel msdos mkpart primary 1MiB 120MiB mkpart primary 120MiB 100%
-  if [ "$BLKDEV_ISPART" == 0 ]; then
-    mkfs.vfat "${SELDEV}1"
-    mkfs.ext4 -F "${SELDEV}2"
-    mount "${SELDEV}2" /mnt
-    mkdir -p /mnt/boot
-    mkdir /mnt/etc
-    mount "${SELDEV}1" /mnt/boot
-  else
-    mkfs.vfat "${SELDEV}p1"
-    mkfs.ext4 -F "${SELDEV}p2"
-    mount "${SELDEV}p2" /mnt
-    mkdir -p /mnt/boot
-    mkdir /mnt/etc
-    mount "${SELDEV}p1" /mnt/boot
-  fi
+  # The live initramfs is over 200 MiB; leave room for it and the kernel.
+  parted -s "${SELDEV}" mklabel msdos mkpart primary fat32 1MiB 512MiB set 1 boot on mkpart primary ext4 512MiB 100%
+  mkfs.vfat -F 32 "$BOOTPART"
+  mkfs.ext4 -F "$ROOTPART"
+  mount "$ROOTPART" /mnt
+  mkdir -p /mnt/boot /mnt/etc
+  mount "$BOOTPART" /mnt/boot
 fi
+
+ROOT_UUID="$(blkid -s UUID -o value "$ROOTPART")"
 
 echo "Copying system..."
 mkdir -p /mnt/{dev,proc,sys,run,mnt,tmp}
@@ -154,27 +140,27 @@ mount --bind /proc /mnt/proc
 mount --bind /run /mnt/run
 mount --bind /tmp /mnt/tmp
 
-if [ -e /sys/firmware/efi/efivars ]; then
+if [ -d /sys/firmware/efi ]; then
   USES_EFI=1
-  mount --bind /sys/firmware/efi/efivars /mnt/sys/firmware/efi/efivars
-  if [ "$BLKDEV_ISPART" == 0 ]; then
-    chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$PRETTY_NAME" --force "${SELDEV}1"
-  else
-    chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$PRETTY_NAME" --force "${SELDEV}p1"
+  if [ -d /sys/firmware/efi/efivars ]; then
+    if ! grep -qs ' /sys/firmware/efi/efivars efivarfs ' /proc/mounts; then
+      mount -t efivarfs efivarfs /sys/firmware/efi/efivars || true
+    fi
+    mkdir -p /mnt/sys/firmware/efi/efivars
+    mount --bind /sys/firmware/efi/efivars /mnt/sys/firmware/efi/efivars
   fi
+  if ! chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ArkanaOS; then
+    echo "Could not create an EFI NVRAM entry; installing the removable-media fallback loader."
+  fi
+  chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ArkanaOS --no-nvram --removable
 else
   USES_EFI=0
-  chroot /mnt grub-install --target=i386-pc --force "$SELDEV"
+  chroot /mnt grub-install --target=i386-pc "$SELDEV"
 fi
 
+mkdir -p /mnt/boot/grub/fonts && chroot /mnt grub-mkfont --size=16 -o /boot/grub/fonts/unicode.pf2 /usr/share/fonts/unifont/unifont.pcf
 mkdir -p /mnt/etc/default
 echo 'GRUB_DISABLE_OS_PROBER=false' >> /mnt/etc/default/grub
-
-if [ "$BLKDEV_ISPART" == 0 ]; then
-  BOOTDEV="${SELDEV}2"
-else
-  BOOTDEV="${SELDEV}p2"
-fi
 
 if [ "$USES_EFI" == 0 ]; then
   KERNEL_PATH=/vmlinuz
@@ -188,7 +174,7 @@ cat >> /mnt/etc/grub.d/29_main << EOF
 #!/bin/sh
 exec tail -n +3 \$0
 menuentry "$PRETTY_NAME" {
-  linux $KERNEL_PATH root=$BOOTDEV
+  linux $KERNEL_PATH root=UUID=$ROOT_UUID console=ttyS0,115200 console=tty0
   initrd $INITRAMFS_PATH
 }
 EOF
@@ -205,7 +191,7 @@ echo "$HOSTNAME" > /mnt/etc/hostname
 
 echo "Please enter your root password: "
 read -rs ROOTPASS
-echo "root:$ROOTPASS" | chroot /mnt chpasswd
+printf '%s:%s\n' root "$ROOTPASS" | chroot /mnt chpasswd
 
 read -rp "Enter the username of your user: " USERNAME
 echo 'CREATE_MAIL_SPOOL=no' >> /mnt/etc/default/useradd
@@ -213,7 +199,7 @@ chroot /mnt useradd -m "$USERNAME"
 chroot /mnt usermod -aG wheel "$USERNAME"
 echo "Please enter your user password: "
 read -rs USERPASS
-echo "$USERNAME:$USERPASS" | chroot /mnt chpasswd
+printf '%s:%s\n' "$USERNAME" "$USERPASS" | chroot /mnt chpasswd
 
 while :; do
   read -rp "Enter your timezone here: " TIMEZONE
@@ -236,6 +222,8 @@ sed -i "/# %wheel ALL=(ALL:ALL) ALL/s/^# //g" /mnt/etc/sudoers
 
 echo "Removing live environment files..."
 rm -rf /mnt/etc/systemd/system/getty@tty1.service.d
+rm -rf /mnt/etc/systemd/system/serial-getty@ttyS0.service.d
 rm -rf /mnt/usr/bin/arkana-install
 
+sync
 echo "Installed $PRETTY_NAME successfully. You can reboot the system now."

@@ -202,7 +202,7 @@ firefox: download-firefox .firefox-done
 # Targets
 all: build initramfs boot-initramfs iso
 
-build: cpio busybox linux grub freetype harfbuzz glib libffi elfutils brotli pcre2 cairo fontconfig expat graphite2 pixman libpng libisoburn libburn libisofs mtools squashfs-tools lzo efibootmgr efivar alsa-lib at-spi2-core libXdamage gtk3 firefox
+build: cpio busybox linux linux-firmware grub freetype harfbuzz glib libffi elfutils brotli pcre2 cairo fontconfig expat graphite2 pixman libpng libisoburn libburn libisofs mtools squashfs-tools lzo efibootmgr efivar alsa-lib at-spi2-core libXdamage gtk3 firefox
 
 download-alsa-lib: .alsa-lib-obtained
 .alsa-lib-obtained:
@@ -365,13 +365,52 @@ download-linux: .linux-obtained
 # Compile Linux kernel
 linux: download-linux .linux-done
 
-.linux-done:
+.linux-done: $(CURDIR)/linux.config
 	# Linus, you've fucked with the SBAT file config and my builder broke!
 	$(MAKE) -C $(LINUX_PATH) mrproper && cp $(CURDIR)/linux.config $(LINUX_PATH)/.config && cd $(LINUX_PATH) && $(MAKE) olddefconfig && \
 	$(MAKE) -j$(THREADS) KBUILD_BUILD_HOST="arkana" KBUILD_BUILD_USER="arkana" all && cp arch/x86/boot/bzImage $(STAGING_PATH)/boot/vmlinuz && \
 	$(MAKE) -C $(LINUX_PATH) headers_install INSTALL_HDR_PATH=$(STAGING_PATH)/usr
 	$(MAKE) -C $(LINUX_PATH) INSTALL_MOD_PATH=$(STAGING_PATH) modules_install
 	touch .linux-done
+
+# Pin host firmware so the live image and installed system support current hardware.
+LINUX_FIRMWARE_TAG = 20260916
+LINUX_FIRMWARE_PATH = $(SRC_PATH)/linux-firmware-$(LINUX_FIRMWARE_TAG)
+WIRELESS_REGDB_TAG = master-2026-09-03
+WIRELESS_REGDB_COMMIT = 389b9b702cf9018e9a9078ccc4fa8eaae2e054e3
+WIRELESS_REGDB_PATH = $(SRC_PATH)/wireless-regdb-2026-09-03
+
+.PHONY: linux-firmware
+linux-firmware: .linux-firmware-done
+.linux-firmware-done: $(CURDIR)/arkanas/07_iso.mk
+	if ! [ -d $(LINUX_FIRMWARE_PATH)/.git ]; then \
+	  git clone --depth 1 --branch $(LINUX_FIRMWARE_TAG) https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git $(LINUX_FIRMWARE_PATH); \
+	fi
+	if ! [ -d $(WIRELESS_REGDB_PATH)/.git ]; then \
+	  git clone --depth 1 --branch $(WIRELESS_REGDB_TAG) https://git.kernel.org/pub/scm/linux/kernel/git/wens/wireless-regdb.git $(WIRELESS_REGDB_PATH); \
+	fi
+	test "$$(git -C $(WIRELESS_REGDB_PATH) rev-parse HEAD)" = "$(WIRELESS_REGDB_COMMIT)"
+	git -C $(LINUX_FIRMWARE_PATH) sparse-checkout set amdgpu i915 xe radeon amd-ucode intel LICENSES
+	install -d $(STAGING_PATH)/lib/firmware $(CPIO_STAGING_PATH)/lib/firmware $(STAGING_PATH)/usr/share/licenses/linux-firmware $(STAGING_PATH)/usr/share/licenses/wireless-regdb
+	rm -rf $(STAGING_PATH)/lib/firmware/ath9k_htc $(STAGING_PATH)/lib/firmware/ath10k $(STAGING_PATH)/lib/firmware/ath11k $(STAGING_PATH)/lib/firmware/ath12k $(STAGING_PATH)/lib/firmware/intel $(CPIO_STAGING_PATH)/lib/firmware/ath9k_htc $(CPIO_STAGING_PATH)/lib/firmware/ath10k $(CPIO_STAGING_PATH)/lib/firmware/ath11k $(CPIO_STAGING_PATH)/lib/firmware/ath12k $(CPIO_STAGING_PATH)/lib/firmware/intel
+	for firmware in amdgpu i915 xe radeon amd-ucode intel; do \
+	  test -d $(LINUX_FIRMWARE_PATH)/$$firmware || { echo "Missing firmware directory: $$firmware" >&2; exit 1; }; \
+	  cp -a $(LINUX_FIRMWARE_PATH)/$$firmware $(STAGING_PATH)/lib/firmware/ || exit 1; \
+	  cp -a $(LINUX_FIRMWARE_PATH)/$$firmware $(CPIO_STAGING_PATH)/lib/firmware/ || exit 1; \
+	done
+	awk '$$1 == "Link:" && $$4 ~ /^(amdgpu|i915|xe|radeon|amd-ucode|intel\/iwlwifi)\// { print $$2, $$4 }' $(LINUX_FIRMWARE_PATH)/WHENCE | while read -r firmware target; do \
+	  test -e $(STAGING_PATH)/lib/firmware/$$target || continue; \
+	  ln -sf "$$target" $(STAGING_PATH)/lib/firmware/$$firmware || exit 1; \
+	  ln -sf "$$target" $(CPIO_STAGING_PATH)/lib/firmware/$$firmware || exit 1; \
+	done
+	for firmware in regulatory.db regulatory.db.p7s; do \
+	  test -f $(WIRELESS_REGDB_PATH)/$$firmware || { echo "Missing regulatory data: $$firmware" >&2; exit 1; }; \
+	  install -m 644 $(WIRELESS_REGDB_PATH)/$$firmware $(STAGING_PATH)/lib/firmware/; \
+	  install -m 644 $(WIRELESS_REGDB_PATH)/$$firmware $(CPIO_STAGING_PATH)/lib/firmware/; \
+	done
+	cp -a $(LINUX_FIRMWARE_PATH)/LICENSES $(STAGING_PATH)/usr/share/licenses/linux-firmware/
+	install -m 644 $(WIRELESS_REGDB_PATH)/LICENSE $(STAGING_PATH)/usr/share/licenses/wireless-regdb/LICENSE
+	touch .linux-firmware-done
 
 # Download GRUB
 download-grub: .grub-obtained
@@ -681,14 +720,20 @@ iso:
 	chmod +x $(STAGING_PATH)/usr/bin/arkcfg
 	cp -a xinitrc $(STAGING_PATH)/root/.xinitrc
 	mkdir -p $(STAGING_PATH)/etc/skel && cp -a xinitrc $(STAGING_PATH)/etc/skel/.xinitrc
-	mkdir -p $(STAGING_PATH)/root/GNUstep/Library/WindowMaker
-	cp -a wmaker-config/WMDefaults $(STAGING_PATH)/root/GNUstep/Library/WindowMaker/
-	cp -a wmaker-config/WMWindowAttributes $(STAGING_PATH)/root/GNUstep/Library/WindowMaker/
-	cp -a wmaker-config/WMRootMenu $(STAGING_PATH)/root/GNUstep/Library/WindowMaker/
-	mkdir -p $(STAGING_PATH)/etc/skel/GNUstep/Library/WindowMaker
-	cp -a wmaker-config/WMDefaults $(STAGING_PATH)/etc/skel/GNUstep/Library/WindowMaker/
-	cp -a wmaker-config/WMWindowAttributes $(STAGING_PATH)/etc/skel/GNUstep/Library/WindowMaker/
-	cp -a wmaker-config/WMRootMenu $(STAGING_PATH)/etc/skel/GNUstep/Library/WindowMaker/
+	mkdir -p $(STAGING_PATH)/root/.NsCDE/backer $(STAGING_PATH)/etc/skel/.NsCDE/backer
+	cp -a nscde-config/Backdrops.fvwmgen $(STAGING_PATH)/root/.NsCDE/
+	cp -a nscde-config/Backdrops.fvwmgen $(STAGING_PATH)/etc/skel/.NsCDE/
+	for desk in 1 2 3 4 5 6 7 8; do \
+	  chroot $(STAGING_PATH) /usr/lib/NsCDE/palette_colorgen -p /usr/share/NsCDE/palettes/Solyaris.dp -n 4 -i /usr/share/NsCDE/backdrops/Solyaris.pm -P 3 -b > $(STAGING_PATH)/root/.NsCDE/backer/Desk$$desk-Solyaris.pm || exit 1; \
+	  cp $(STAGING_PATH)/root/.NsCDE/backer/Desk$$desk-Solyaris.pm $(STAGING_PATH)/etc/skel/.NsCDE/backer/; \
+	done
+	chroot $(STAGING_PATH) /usr/lib/NsCDE/palette_colorgen -p /usr/share/NsCDE/palettes/Solyaris.dp -n 4 -f > $(STAGING_PATH)/usr/share/NsCDE/fvwm/Colorset.fvwmconf
+	sed -i 's|^Exec=/usr/bin/nscde$$|Exec=/usr/bin/env NSCDE_PALETTE=Solyaris NSCDE_PALETTE_NCOLORS=4 /usr/bin/nscde|' $(STAGING_PATH)/usr/share/xsessions/nscde.desktop
+	sed -i -e 's/DejaVu Serif/Luxi Sans/g' -e 's/DejaVu Sans Mono/Luxi Mono/g' $(STAGING_PATH)/usr/share/NsCDE/fvwm/Font-*dpi.fvwmconf
+	mkdir -p $(STAGING_PATH)/etc/systemd/system/serial-getty@ttyS0.service.d
+	printf '[Service]\nExecStart=\nExecStart=-/sbin/agetty --autologin root --noclear --keep-baud 115200,38400,9600 %%I vt220\n' > $(STAGING_PATH)/etc/systemd/system/serial-getty@ttyS0.service.d/override.conf
+	rm -rf $(STAGING_PATH)/root/GNUstep $(STAGING_PATH)/etc/skel/GNUstep $(STAGING_PATH)/usr/share/WindowMaker
+	rm -f $(STAGING_PATH)/usr/bin/wmaker $(STAGING_PATH)/usr/bin/wmaker.inst $(STAGING_PATH)/usr/include/WMaker.h $(STAGING_PATH)/usr/lib/libWMaker.* $(STAGING_PATH)/usr/share/xsessions/wmaker.desktop $(STAGING_PATH)/usr/share/man/man1/WindowMaker.1 $(STAGING_PATH)/usr/share/man/man1/wmaker.1
 	mkdir -p $(STAGING_PATH)/etc/X11/xorg.conf.d
 	printf 'Section "Device"\n    Identifier "Card0"\n    Option "SWcursor" "true"\n    Option "HWCursor" "false"\nEndSection\n' > $(STAGING_PATH)/etc/X11/xorg.conf.d/99-swcursor.conf
 	sed -i 's/arkanaOS Dev/arkanaOS nightly/g' $(STAGING_PATH)/etc/os-release 2>/dev/null || true

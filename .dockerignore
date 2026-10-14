@@ -1,5 +1,7 @@
 .*-obtained
 .*-done
+.git
+.buildnum.*
 src/
 staging/
 output/
