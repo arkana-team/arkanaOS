@@ -403,3 +403,4 @@ m4: download-m4 .m4-done
 download-bison: .bison-obtained
 .bison-obtained:
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O bison-$(BISON_VER).tar.xz $(BISON_URL) && tar xf bison-$(BISON_VER).tar.xz
+	touch .bison-obtained
