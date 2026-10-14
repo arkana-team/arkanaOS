@@ -434,3 +434,4 @@ gdb: download-gdb .gdb-done
 	touch .gdb-done
 download-git: .git-obtained
 .git-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O git-$(GIT_VER).tar.xz $(GIT_URL) && tar xf git-$(GIT_VER).tar.xz
