@@ -420,3 +420,4 @@ download-pkgconf: .pkgconf-obtained
 .pkgconf-obtained:
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O pkgconf-$(PKGCONF_VER).tar.xz $(PKGCONF_URL) && tar xf pkgconf-$(PKGCONF_VER).tar.xz
 	touch .pkgconf-obtained
+pkgconf: download-pkgconf .pkgconf-done
