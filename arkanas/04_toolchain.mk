@@ -153,7 +153,7 @@ gcc-compilers: .gcc-compilers-done
 	ln -sf gcc $(STAGING_PATH)/usr/bin/cc
 .gcc-compilers-done:
 	# GCC has been pre-configured before in 01_base.mk, now we build the compilers.
-	cd $(GCC_PATH)/build && $(MAKE) -j$(THREADS) all-gcc && $(MAKE) DESTDIR=$(STAGING_PATH) install-gcc install-target-libgcc install-target-libstdc++-v3
+	cd $(GCC_PATH)/build && $(MAKE) -j$(THREADS) all-gcc all-target-libatomic && $(MAKE) DESTDIR=$(STAGING_PATH) install-gcc install-target-libgcc install-target-libstdc++-v3 install-target-libatomic
 	touch .gcc-compilers-done
 
 # Download binutils
