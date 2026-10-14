@@ -470,3 +470,4 @@ download-rust: .rust-obtained
 	touch .rust-obtained
 # Install rustc, the native standard library, and Cargo into the target root.
 rust: download-rust .rust-done
+.rust-done: $(CURDIR)/arkanas/04_toolchain.mk
