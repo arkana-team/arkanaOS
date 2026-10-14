@@ -411,3 +411,4 @@ bison: m4 download-bison .bison-done
 download-patch: .patch-obtained
 .patch-obtained:
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O patch-$(PATCH_VER).tar.xz $(PATCH_URL) && tar xf patch-$(PATCH_VER).tar.xz
+	touch .patch-obtained
