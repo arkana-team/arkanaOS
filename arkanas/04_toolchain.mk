@@ -136,6 +136,7 @@ GDB_VER = 18.1
 GDB_URL = https://sourceware.org/pub/gdb/releases/gdb-$(GDB_VER).tar.xz
 GDB_PATH = $(SRC_PATH)/gdb-$(GDB_VER)
 GIT_VER = 2.56.0
+GIT_URL = https://www.kernel.org/pub/software/scm/git/git-$(GIT_VER).tar.xz
 
 # Targets
 all:
