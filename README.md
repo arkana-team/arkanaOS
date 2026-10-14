@@ -18,7 +18,7 @@ AMD Radeon/AMDGPU and Intel i915/Xe graphics drivers, plus Intel IGC Ethernet
 and iwlwifi wireless support. Matching graphics and Intel wireless firmware is
 present in both the live image and installed system.
 
-Each base build adds a random increment from 1 to 250 to `.buildnum`. The new
+Each base build increments `.buildnum` by exactly 1. The new
 number is saved in that file and in `/etc/arkana-build-number` in the build
 ISO. GitHub Actions reserves and pushes the next number before compiling, so
 future clones start from the latest CI build. A local build updates `.buildnum`
