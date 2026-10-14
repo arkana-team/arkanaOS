@@ -472,3 +472,4 @@ download-rust: .rust-obtained
 rust: download-rust .rust-done
 .rust-done: $(CURDIR)/arkanas/04_toolchain.mk
 	cd $(RUSTC_PATH) && ./install.sh --prefix=/usr --destdir=$(STAGING_PATH) --disable-ldconfig
+	cd $(RUST_STD_PATH) && ./install.sh --prefix=/usr --destdir=$(STAGING_PATH) --disable-ldconfig
