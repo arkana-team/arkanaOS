@@ -138,6 +138,7 @@ GDB_PATH = $(SRC_PATH)/gdb-$(GDB_VER)
 GIT_VER = 2.56.0
 GIT_URL = https://www.kernel.org/pub/software/scm/git/git-$(GIT_VER).tar.xz
 GIT_PATH = $(SRC_PATH)/git-$(GIT_VER)
+# Pinned Rust compiler components for the native x86_64 GNU/Linux target.
 
 # Targets
 all:
