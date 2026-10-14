@@ -146,6 +146,7 @@ RUST_DIST_BASE = https://static.rust-lang.org/dist/$(RUST_DIST_DATE)
 RUSTC_URL = $(RUST_DIST_BASE)/rustc-$(RUST_VER)-$(RUST_HOST).tar.xz
 RUSTC_SHA256 = 77171ba2a0345fdf2abc4fedda55d6de078dae7a68527c28be8c77dcc9604bd5
 RUSTC_PATH = $(SRC_PATH)/rustc-$(RUST_VER)-$(RUST_HOST)
+RUST_STD_URL = $(RUST_DIST_BASE)/rust-std-$(RUST_VER)-$(RUST_HOST).tar.xz
 
 # Targets
 all:
