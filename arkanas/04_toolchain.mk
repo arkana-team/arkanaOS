@@ -463,3 +463,4 @@ download-rust: .rust-obtained
 	cd $(SRC_PATH) && tar xf rustc-$(RUST_VER)-$(RUST_HOST).tar.xz
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O rust-std-$(RUST_VER)-$(RUST_HOST).tar.xz $(RUST_STD_URL)
 	cd $(SRC_PATH) && echo '$(RUST_STD_SHA256)  rust-std-$(RUST_VER)-$(RUST_HOST).tar.xz' | sha256sum -c -
+	cd $(SRC_PATH) && tar xf rust-std-$(RUST_VER)-$(RUST_HOST).tar.xz
