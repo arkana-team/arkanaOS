@@ -457,3 +457,4 @@ git: pkgconf download-git .git-done
 .PHONY: download-rust rust
 # Download and verify the pinned Rust distribution components.
 download-rust: .rust-obtained
+.rust-obtained:
