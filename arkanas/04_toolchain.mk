@@ -133,6 +133,7 @@ PKGCONF_VER = 3.0.8
 PKGCONF_URL = https://github.com/pkgconf/pkgconf/releases/download/pkgconf-$(PKGCONF_VER)/pkgconf-$(PKGCONF_VER).tar.xz
 PKGCONF_PATH = $(SRC_PATH)/pkgconf-$(PKGCONF_VER)
 GDB_VER = 18.1
+GDB_URL = https://sourceware.org/pub/gdb/releases/gdb-$(GDB_VER).tar.xz
 
 # Targets
 all:
