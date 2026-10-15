@@ -6,10 +6,10 @@ SRC_PATH = $(shell realpath ./src)
 STAGING_PATH = $(shell realpath ./staging)
 OUTPUT_PATH = $(shell realpath ./output)
 
-ARKPKG_URL = https://github.com/debarkak/arkpkg/archive/refs/heads/main.tar.gz
+ARKPKG_URL = https://github.com/arkana-team/arkpkg/archive/refs/heads/main.tar.gz
 ARKPKG_VER = main
 ARKPKG_PATH = $(SRC_PATH)/arkpkg-$(ARKPKG_VER)
-ARKCFG_URL = https://github.com/debarkak/arkcfg/archive/refs/heads/main.tar.gz
+ARKCFG_URL = https://github.com/arkana-team/arkcfg/archive/refs/heads/main.tar.gz
 ARKCFG_VER = main
 ARKCFG_PATH = $(SRC_PATH)/arkcfg-$(ARKCFG_VER)
 
@@ -31,7 +31,7 @@ arkpkg: download-arkpkg .arkpkg-done
 	install -Dm755 $(ARKPKG_PATH)/target/release/arkpkg $(STAGING_PATH)/usr/bin/arkpkg
 	install -Dm755 $(ARKPKG_PATH)/target/release/arkpkg-build $(STAGING_PATH)/usr/bin/arkpkg-build
 	install -d $(STAGING_PATH)/etc/arkpkg/repos.d
-	printf '%s\n' '{"name":"arkanaos","url":"https://debarkak.github.io/arkpkg-repo"}' > $(STAGING_PATH)/etc/arkpkg/repos.d/arkanaos.json
+	printf '%s\n' '{"name":"arkanaos","url":"https://arkana-team.github.io/arkpkg-repo"}' > $(STAGING_PATH)/etc/arkpkg/repos.d/arkanaos.json
 	chmod 0644 $(STAGING_PATH)/etc/arkpkg/repos.d/arkanaos.json
 	touch .arkpkg-done
 
