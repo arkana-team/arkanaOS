@@ -717,8 +717,6 @@ iso:
 	cp -a genfstab $(STAGING_PATH)/usr/bin/genfstab
 	cp -a neofetch $(STAGING_PATH)/usr/bin/neofetch
 	chmod +x $(STAGING_PATH)/usr/bin/neofetch
-	cp -a arkcfg $(STAGING_PATH)/usr/bin/arkcfg
-	chmod +x $(STAGING_PATH)/usr/bin/arkcfg
 	cp -a xinitrc $(STAGING_PATH)/root/.xinitrc
 	mkdir -p $(STAGING_PATH)/etc/skel && cp -a xinitrc $(STAGING_PATH)/etc/skel/.xinitrc
 	mkdir -p $(STAGING_PATH)/root/.NsCDE/backer $(STAGING_PATH)/etc/skel/.NsCDE/backer
