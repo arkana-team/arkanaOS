@@ -772,6 +772,7 @@ iso:
 	  $(STAGING_PATH)/usr/share/man/man1/wmgenmenu.1 \
 	  $(STAGING_PATH)/usr/share/man/man1/wmiv.1 \
 	  $(STAGING_PATH)/usr/share/man/man1/wmmenugen.1 \
+	  $(STAGING_PATH)/usr/share/man/man8/wdctl.8 \
 	  $(STAGING_PATH)/usr/share/man/man1/wmsetbg.1
 	mkdir -p $(STAGING_PATH)/etc/X11/xorg.conf.d
 	printf 'Section "Device"\n    Identifier "Card0"\n    Option "SWcursor" "true"\n    Option "HWCursor" "false"\nEndSection\n' > $(STAGING_PATH)/etc/X11/xorg.conf.d/99-swcursor.conf
