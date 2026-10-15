@@ -33,7 +33,7 @@ jobs:
             echo "Invalid .buildnum value: $CURRENT" >&2
             exit 1
           fi
-          INCREMENT=$(shuf -i 1-250 -n 1)
+          INCREMENT=1
           BUILD_NUM=$((CURRENT + INCREMENT))
           TEMP_FILE=$(mktemp .buildnum.XXXXXX)
           printf '%s\n' "$BUILD_NUM" > "$TEMP_FILE"

@@ -5,7 +5,7 @@ THREADS = $(shell nproc)
 
 # Build the Arkana toolchain?
 BUILD_TOOLCHAIN = true
-TOOLCHAIN_TARGETS = gcc-compilers binutils meson ninja make autoconf cmake gc libarchive guile libuv libxml2 libtool expat gdbm sqlite3 python3 perl automake m4 bison patch pkgconf gdb git
+TOOLCHAIN_TARGETS = gcc-compilers binutils meson ninja make autoconf cmake gc libarchive guile libuv libxml2 libtool expat gdbm sqlite3 python3 perl automake m4 bison patch pkgconf gdb git rust
 
 # Paths used in the build
 SRC_PATH = $(shell realpath ./src)
@@ -138,6 +138,20 @@ GDB_PATH = $(SRC_PATH)/gdb-$(GDB_VER)
 GIT_VER = 2.56.0
 GIT_URL = https://www.kernel.org/pub/software/scm/git/git-$(GIT_VER).tar.xz
 GIT_PATH = $(SRC_PATH)/git-$(GIT_VER)
+# Pinned Rust compiler components for the native x86_64 GNU/Linux target.
+RUST_VER = 1.99.0
+RUST_DIST_DATE = 2026-10-01
+RUST_HOST = x86_64-unknown-linux-gnu
+RUST_DIST_BASE = https://static.rust-lang.org/dist/$(RUST_DIST_DATE)
+RUSTC_URL = $(RUST_DIST_BASE)/rustc-$(RUST_VER)-$(RUST_HOST).tar.xz
+RUSTC_SHA256 = 77171ba2a0345fdf2abc4fedda55d6de078dae7a68527c28be8c77dcc9604bd5
+RUSTC_PATH = $(SRC_PATH)/rustc-$(RUST_VER)-$(RUST_HOST)
+RUST_STD_URL = $(RUST_DIST_BASE)/rust-std-$(RUST_VER)-$(RUST_HOST).tar.xz
+RUST_STD_SHA256 = 3e58dff2d0b72196b5ea4e90536e174d400de88564a52694686b81e091169933
+RUST_STD_PATH = $(SRC_PATH)/rust-std-$(RUST_VER)-$(RUST_HOST)
+CARGO_URL = $(RUST_DIST_BASE)/cargo-$(RUST_VER)-$(RUST_HOST).tar.xz
+CARGO_SHA256 = d7674918d28093097614cd9728b6ca60db9ea3038f640f0bd1e9a4188c7568ce
+CARGO_PATH = $(SRC_PATH)/cargo-$(RUST_VER)-$(RUST_HOST)
 
 # Targets
 all:
@@ -440,3 +454,24 @@ git: pkgconf download-git .git-done
 	cd $(GIT_PATH) && $(MAKE) -j$(THREADS) prefix=/usr CURL_CONFIG=$(STAGING_PATH)/usr/bin/curl-config USE_LIBPCRE2=YesPlease NO_GETTEXT=YesPlease NO_TCLTK=YesPlease NO_PYTHON=YesPlease NO_RUST=YesPlease CFLAGS="-O2 -std=gnu17" LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" all && $(MAKE) prefix=/usr DESTDIR=$(STAGING_PATH) install
 	touch .git-done
 .PHONY: download-m4 m4 download-bison bison download-patch patch download-pkgconf pkgconf download-gdb gdb download-git git
+.PHONY: download-rust rust
+# Download and verify the pinned Rust distribution components.
+download-rust: .rust-obtained
+.rust-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O rustc-$(RUST_VER)-$(RUST_HOST).tar.xz $(RUSTC_URL)
+	cd $(SRC_PATH) && echo '$(RUSTC_SHA256)  rustc-$(RUST_VER)-$(RUST_HOST).tar.xz' | sha256sum -c -
+	cd $(SRC_PATH) && tar xf rustc-$(RUST_VER)-$(RUST_HOST).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O rust-std-$(RUST_VER)-$(RUST_HOST).tar.xz $(RUST_STD_URL)
+	cd $(SRC_PATH) && echo '$(RUST_STD_SHA256)  rust-std-$(RUST_VER)-$(RUST_HOST).tar.xz' | sha256sum -c -
+	cd $(SRC_PATH) && tar xf rust-std-$(RUST_VER)-$(RUST_HOST).tar.xz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O cargo-$(RUST_VER)-$(RUST_HOST).tar.xz $(CARGO_URL)
+	cd $(SRC_PATH) && echo '$(CARGO_SHA256)  cargo-$(RUST_VER)-$(RUST_HOST).tar.xz' | sha256sum -c -
+	cd $(SRC_PATH) && tar xf cargo-$(RUST_VER)-$(RUST_HOST).tar.xz
+	touch .rust-obtained
+# Install rustc, the native standard library, and Cargo into the target root.
+rust: download-rust .rust-done
+.rust-done: $(CURDIR)/arkanas/04_toolchain.mk
+	cd $(RUSTC_PATH) && ./install.sh --prefix=/usr --destdir=$(STAGING_PATH) --disable-ldconfig
+	cd $(RUST_STD_PATH) && ./install.sh --prefix=/usr --destdir=$(STAGING_PATH) --disable-ldconfig
+	cd $(CARGO_PATH) && ./install.sh --prefix=/usr --destdir=$(STAGING_PATH) --disable-ldconfig
+	touch .rust-done
