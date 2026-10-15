@@ -408,7 +408,7 @@ linux-firmware: .linux-firmware-done
 	  install -m 644 $(WIRELESS_REGDB_PATH)/$$firmware $(STAGING_PATH)/lib/firmware/; \
 	  install -m 644 $(WIRELESS_REGDB_PATH)/$$firmware $(CPIO_STAGING_PATH)/lib/firmware/; \
 	done
-	rm -rf $(CPIO_STAGING_PATH)/lib/firmware # Firmware is available from SquashFS after switch_root; keep it out of the RAM initramfs.
+	find $(CPIO_STAGING_PATH)/lib/firmware -mindepth 1 -maxdepth 1 ! -name regulatory.db ! -name regulatory.db.p7s -exec rm -rf {} + # Keep the tiny regulatory database for early wireless setup; bulk firmware stays in SquashFS.
 	cp -a $(LINUX_FIRMWARE_PATH)/LICENSES $(STAGING_PATH)/usr/share/licenses/linux-firmware/
 	install -m 644 $(WIRELESS_REGDB_PATH)/LICENSE $(STAGING_PATH)/usr/share/licenses/wireless-regdb/LICENSE
 	touch .linux-firmware-done
