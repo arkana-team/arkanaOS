@@ -738,8 +738,38 @@ iso:
 	sed -i -e 's/DejaVu Serif/Luxi Sans/g' -e 's/DejaVu Sans Mono/Luxi Mono/g' $(STAGING_PATH)/usr/share/NsCDE/fvwm/Font-*dpi.fvwmconf
 	mkdir -p $(STAGING_PATH)/etc/systemd/system/serial-getty@ttyS0.service.d
 	printf '[Service]\nExecStart=\nExecStart=-/sbin/agetty --autologin root --noclear --keep-baud 115200,38400,9600 %%I vt220\n' > $(STAGING_PATH)/etc/systemd/system/serial-getty@ttyS0.service.d/override.conf
-	rm -rf $(STAGING_PATH)/root/GNUstep $(STAGING_PATH)/etc/skel/GNUstep $(STAGING_PATH)/usr/share/WindowMaker
-	rm -f $(STAGING_PATH)/usr/bin/wmaker $(STAGING_PATH)/usr/bin/wmaker.inst $(STAGING_PATH)/usr/include/WMaker.h $(STAGING_PATH)/usr/lib/libWMaker.* $(STAGING_PATH)/usr/share/xsessions/wmaker.desktop $(STAGING_PATH)/usr/share/man/man1/WindowMaker.1 $(STAGING_PATH)/usr/share/man/man1/wmaker.1
+	rm -rf $(STAGING_PATH)/root/GNUstep $(STAGING_PATH)/etc/skel/GNUstep \
+	  $(STAGING_PATH)/usr/share/WindowMaker $(STAGING_PATH)/usr/share/WINGs \
+	  $(STAGING_PATH)/usr/share/WPrefs $(STAGING_PATH)/usr/include/WINGs \
+	  $(STAGING_PATH)/usr/include/WUtil
+	rm -f $(STAGING_PATH)/usr/bin/wmaker $(STAGING_PATH)/usr/bin/wmaker.inst \
+	  $(STAGING_PATH)/usr/bin/WPrefs $(STAGING_PATH)/usr/bin/getstyle \
+	  $(STAGING_PATH)/usr/bin/setstyle $(STAGING_PATH)/usr/bin/wdctl \
+	  $(STAGING_PATH)/usr/bin/wdread $(STAGING_PATH)/usr/bin/wdwrite \
+	  $(STAGING_PATH)/usr/bin/wm-oldmenu2new $(STAGING_PATH)/usr/bin/wmagnify \
+	  $(STAGING_PATH)/usr/bin/wmgenmenu $(STAGING_PATH)/usr/bin/wmiv \
+	  $(STAGING_PATH)/usr/bin/wmmenugen $(STAGING_PATH)/usr/bin/wmsetbg \
+	  $(STAGING_PATH)/usr/bin/twm $(STAGING_PATH)/usr/include/WMaker.h \
+	  $(STAGING_PATH)/usr/include/wraster.h $(STAGING_PATH)/usr/lib/libWMaker.* \
+	  $(STAGING_PATH)/usr/lib/libWINGs.* $(STAGING_PATH)/usr/lib/libWUtil.* \
+	  $(STAGING_PATH)/usr/lib/libwraster.* $(STAGING_PATH)/usr/lib/pkgconfig/WINGs.pc \
+	  $(STAGING_PATH)/usr/share/applications/WPrefs.desktop \
+	  $(STAGING_PATH)/usr/share/xsessions/wmaker.desktop \
+	  $(STAGING_PATH)/usr/share/xsessions/twm.desktop \
+	  $(STAGING_PATH)/usr/share/man/man1/WindowMaker.1 \
+	  $(STAGING_PATH)/usr/share/man/man1/wmaker.1 \
+	  $(STAGING_PATH)/usr/share/man/man1/WPrefs.1 \
+	  $(STAGING_PATH)/usr/share/man/man1/getstyle.1 \
+	  $(STAGING_PATH)/usr/share/man/man1/setstyle.1 \
+	  $(STAGING_PATH)/usr/share/man/man1/wdctl.1 \
+	  $(STAGING_PATH)/usr/share/man/man1/wdread.1 \
+	  $(STAGING_PATH)/usr/share/man/man1/wdwrite.1 \
+	  $(STAGING_PATH)/usr/share/man/man1/wm-oldmenu2new.1 \
+	  $(STAGING_PATH)/usr/share/man/man1/wmagnify.1 \
+	  $(STAGING_PATH)/usr/share/man/man1/wmgenmenu.1 \
+	  $(STAGING_PATH)/usr/share/man/man1/wmiv.1 \
+	  $(STAGING_PATH)/usr/share/man/man1/wmmenugen.1 \
+	  $(STAGING_PATH)/usr/share/man/man1/wmsetbg.1
 	mkdir -p $(STAGING_PATH)/etc/X11/xorg.conf.d
 	printf 'Section "Device"\n    Identifier "Card0"\n    Option "SWcursor" "true"\n    Option "HWCursor" "false"\nEndSection\n' > $(STAGING_PATH)/etc/X11/xorg.conf.d/99-swcursor.conf
 	sed -i 's/arkanaOS Dev/arkanaOS nightly/g' $(STAGING_PATH)/etc/os-release 2>/dev/null || true
