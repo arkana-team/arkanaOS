@@ -739,6 +739,7 @@ iso:
 	mkdir -p $(STAGING_PATH)/etc/systemd/system/serial-getty@ttyS0.service.d
 	printf '[Service]\nExecStart=\nExecStart=-/sbin/agetty --autologin root --noclear --keep-baud 115200,38400,9600 %%I vt220\n' > $(STAGING_PATH)/etc/systemd/system/serial-getty@ttyS0.service.d/override.conf
 	rm -rf $(STAGING_PATH)/root/GNUstep $(STAGING_PATH)/etc/skel/GNUstep \
+	  $(STAGING_PATH)/etc/WindowMaker \
 	  $(STAGING_PATH)/usr/share/WindowMaker $(STAGING_PATH)/usr/share/WINGs \
 	  $(STAGING_PATH)/usr/share/WPrefs $(STAGING_PATH)/usr/include/WINGs \
 	  $(STAGING_PATH)/usr/include/WUtil
@@ -753,6 +754,8 @@ iso:
 	  $(STAGING_PATH)/usr/include/wraster.h $(STAGING_PATH)/usr/lib/libWMaker.* \
 	  $(STAGING_PATH)/usr/lib/libWINGs.* $(STAGING_PATH)/usr/lib/libWUtil.* \
 	  $(STAGING_PATH)/usr/lib/libwraster.* $(STAGING_PATH)/usr/lib/pkgconfig/WINGs.pc \
+	  $(STAGING_PATH)/usr/lib/pkgconfig/WUtil.pc \
+	  $(STAGING_PATH)/usr/share/bash-completion/completions/wdctl \
 	  $(STAGING_PATH)/usr/share/applications/WPrefs.desktop \
 	  $(STAGING_PATH)/usr/share/xsessions/wmaker.desktop \
 	  $(STAGING_PATH)/usr/share/xsessions/twm.desktop \
