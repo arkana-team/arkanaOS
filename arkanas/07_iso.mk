@@ -729,6 +729,11 @@ iso:
 	  cp $(STAGING_PATH)/root/.NsCDE/backer/Desk$$desk-Solyaris.pm $(STAGING_PATH)/etc/skel/.NsCDE/backer/; \
 	done
 	chroot $(STAGING_PATH) /usr/lib/NsCDE/palette_colorgen -p /usr/share/NsCDE/palettes/Solyaris.dp -n 4 -f > $(STAGING_PATH)/usr/share/NsCDE/fvwm/Colorset.fvwmconf
+	sed -i \
+	  -e 's/^InfoStoreAdd nscde_use_xscreensaver 1$$/InfoStoreAdd nscde_use_xscreensaver 0/' \
+	  -e 's/^InfoStoreAdd nscde_use_stalonetray 1$$/InfoStoreAdd nscde_use_stalonetray 0/' \
+	  -e 's/^InfoStoreAdd nscde_use_dunst 1$$/InfoStoreAdd nscde_use_dunst 0/' \
+	  $(STAGING_PATH)/usr/share/NsCDE/fvwm/NsCDE.conf
 	sed -i 's|^Exec=/usr/bin/nscde$$|Exec=/usr/bin/env NSCDE_PALETTE=Solyaris NSCDE_PALETTE_NCOLORS=4 /usr/bin/nscde|' $(STAGING_PATH)/usr/share/xsessions/nscde.desktop
 	sed -i -e 's/DejaVu Serif/Luxi Sans/g' -e 's/DejaVu Sans Mono/Luxi Mono/g' $(STAGING_PATH)/usr/share/NsCDE/fvwm/Font-*dpi.fvwmconf
 	mkdir -p $(STAGING_PATH)/etc/systemd/system/serial-getty@ttyS0.service.d
