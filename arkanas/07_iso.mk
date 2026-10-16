@@ -191,6 +191,7 @@ download-firefox: .firefox-obtained
 .firefox-obtained:
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O firefox-$(FIREFOX_VER).tar.xz $(FIREFOX_URL)
 	cd $(SRC_PATH) && echo '$(FIREFOX_SHA512)  firefox-$(FIREFOX_VER).tar.xz' | sha512sum -c -
+	cd $(SRC_PATH) && tar xf firefox-$(FIREFOX_VER).tar.xz -C $(SRC_PATH)
 	touch .firefox-obtained
 
 firefox: download-firefox .firefox-done
