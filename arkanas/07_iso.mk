@@ -365,6 +365,7 @@ download-linux: .linux-$(LINUX_VER)-obtained
 
 .linux-$(LINUX_VER)-obtained: $(CURDIR)/arkanas/07_iso.mk
 	if [ ! -f $(LINUX_PATH)/Makefile ]; then cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O linux-$(LINUX_VER).tar.xz $(LINUX_URL) && echo '$(LINUX_SHA256)  linux-$(LINUX_VER).tar.xz' | sha256sum -c - && tar xf linux-$(LINUX_VER).tar.xz; fi
+	touch $@
 
 # Compile Linux kernel
 linux: download-linux .linux-done
