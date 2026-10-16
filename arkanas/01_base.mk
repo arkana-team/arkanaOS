@@ -290,6 +290,7 @@ KBD_PATH = $(SRC_PATH)/kbd-$(KBD_VER)
 # Kernel headers (only, no full build) - needed early for IPPROTO_AGGFRAG
 LINUX_HEADERS_URL = https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.18.57.tar.xz
 LINUX_HEADERS_VER = 6.18.57
+LINUX_HEADERS_SHA256 = 5bd9acdc82ec5efc3790ae840e5aaa40dfde7efff261cf6dde902dc570acf98c
 LINUX_HEADERS_PATH = $(SRC_PATH)/linux-$(LINUX_HEADERS_VER)
 
 # Targets
