@@ -52,7 +52,6 @@ BUSYBOX_PATH = $(SRC_PATH)/busybox-$(BUSYBOX_VER)
 
 # Linux kernel
 # URL: https://kernel.org/ (w/o instructions as LFS builds a rootfs)
-LINUX_VER = 6.17.6
 LINUX_PATH = $(SRC_PATH)/linux-$(LINUX_VER)
 
 # GRUB (bootloader)
