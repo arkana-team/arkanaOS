@@ -6146,6 +6146,7 @@ EOF
             set_colors 6 6 7 4
             read -rd '' ascii_data <<'EOF'
 ${c1}
+${c1}
 EOF
         ;;
 
