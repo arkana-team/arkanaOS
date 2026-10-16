@@ -61,6 +61,7 @@ for blkdev in "${BLOCK_DEVICES[@]}"; do
       FOUND_BLK=$((FOUND_BLK + 1))
       FOUND_DEVS+=("/dev/$blkdev")
     else
+      DISK_SIZE_MIB=$((DISK_SIZE_BYTES / 1048576))
     fi
   fi
 done
