@@ -363,6 +363,7 @@ busybox: download-busybox .busybox-done
 # Download Linux kernel
 download-linux: .linux-$(LINUX_VER)-obtained
 
+.linux-$(LINUX_VER)-obtained: $(CURDIR)/arkanas/07_iso.mk
 
 # Compile Linux kernel
 linux: download-linux .linux-done
