@@ -659,12 +659,12 @@ download-gmp: .gmp-obtained
 
 # Compile GMP
 .PHONY: gmp
-gmp: download-gmp .gmp-done
+gmp: download-gmp .gmp-fat-done
 
-.gmp-done:
-	cd $(GMP_PATH) && ./configure --prefix=/usr --enable-cxx --docdir=/usr/share/doc/gmp-$(GMP_VER) CFLAGS="-O2 -pedantic -fomit-frame-pointer -m64 -std=gnu17" && \
+.gmp-fat-done: $(CURDIR)/arkanas/01_base.mk
+	cd $(GMP_PATH) && { $(MAKE) distclean >/dev/null 2>&1 || true; } && ./configure --build=x86_64-pc-linux-gnu --prefix=/usr --enable-cxx --enable-fat --docdir=/usr/share/doc/gmp-$(GMP_VER) CFLAGS="-O2 -pedantic -fomit-frame-pointer -m64 -march=x86-64 -mtune=generic -std=gnu17" && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
-	touch .gmp-done
+	touch $@
 
 # Download libxcrypt
 .PHONY: download-libxcrypt
