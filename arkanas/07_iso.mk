@@ -736,6 +736,7 @@ iso:
 	  $(STAGING_PATH)/usr/share/man/man1/vim.1 \
 	  $(STAGING_PATH)/usr/share/man/man1/vimdiff.1 \
 	  $(STAGING_PATH)/usr/share/man/man1/vimtutor.1 \
+	  $(STAGING_PATH)/usr/share/bash-completion/completions/fastfetch \
 	cp -a arkana-install $(STAGING_PATH)/usr/bin/arkana-install
 	cp -a genfstab $(STAGING_PATH)/usr/bin/genfstab
 	cp -a neofetch $(STAGING_PATH)/usr/bin/neofetch
