@@ -54,6 +54,7 @@ BUSYBOX_PATH = $(SRC_PATH)/busybox-$(BUSYBOX_VER)
 # URL: https://kernel.org/ (w/o instructions as LFS builds a rootfs)
 LINUX_URL = https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.18.57.tar.xz
 LINUX_VER = 6.18.57
+LINUX_SHA256 = 5bd9acdc82ec5efc3790ae840e5aaa40dfde7efff261cf6dde902dc570acf98c
 LINUX_PATH = $(SRC_PATH)/linux-$(LINUX_VER)
 
 # GRUB (bootloader)
