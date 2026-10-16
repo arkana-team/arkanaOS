@@ -3,7 +3,16 @@ set -euo pipefail
 mkdir -p output src staging
 
 # Build process can be uncapped. This will be faster but will use up more resources.
-CPUS=$(nproc)
+HOST_CPUS=$(nproc)
+DEFAULT_CPUS=2
+if [ "$HOST_CPUS" -lt "$DEFAULT_CPUS" ]; then
+  DEFAULT_CPUS=$HOST_CPUS
+fi
+CPUS=${ARKANA_BUILD_CPUS:-$DEFAULT_CPUS}
+if ! [[ "$CPUS" =~ ^[0-9]+$ ]] || [ "$CPUS" -lt 1 ] || [ "$CPUS" -gt "$HOST_CPUS" ]; then
+  echo "ARKANA_BUILD_CPUS must be between 1 and $HOST_CPUS." >&2
+  exit 1
+fi
 RAM=$(($(awk '/MemTotal/ {print $2}' /proc/meminfo)/1048576+1))
 SWAP=$(($(awk '/SwapTotal/ {print $2}' /proc/meminfo)/1048576))
 
