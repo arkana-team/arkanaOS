@@ -729,6 +729,7 @@ iso:
 	  $(STAGING_PATH)/usr/share/doc/vim-*
 	rm -f $(STAGING_PATH)/usr/bin/firefox $(STAGING_PATH)/usr/bin/fastfetch \
 	  $(STAGING_PATH)/usr/bin/git* $(STAGING_PATH)/usr/bin/vim* \
+	  $(STAGING_PATH)/usr/bin/ex $(STAGING_PATH)/usr/bin/view \
 	cp -a arkana-install $(STAGING_PATH)/usr/bin/arkana-install
 	cp -a genfstab $(STAGING_PATH)/usr/bin/genfstab
 	cp -a neofetch $(STAGING_PATH)/usr/bin/neofetch
