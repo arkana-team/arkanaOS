@@ -6145,7 +6145,6 @@ EOF
         "arkana"* | "Arkana"*)
             set_colors 6 6 7 4
             read -rd '' ascii_data <<'EOF'
-                /  \
                /    \
               /      \
              /        \
