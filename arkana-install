@@ -34,6 +34,7 @@ fi
 
 MIB_BYTES=$((1024 * 1024))
 if [ -d /sys/firmware/efi ]; then
+  BOOT_PARTITION_END_MIB=120
 for blkdev in "${BLOCK_DEVICES[@]}"; do
   if [ -e "/dev/$blkdev" ]; then
     if [ "$(($(blockdev --getsize64 "/dev/$blkdev") / 1048576))" -gt 8192 ]; then
