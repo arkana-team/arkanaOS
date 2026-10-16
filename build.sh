@@ -14,9 +14,9 @@ if ! [[ "$CPUS" =~ ^[0-9]+$ ]] || [ "$CPUS" -lt 1 ] || [ "$CPUS" -gt "$HOST_CPUS
   exit 1
 fi
 AVAILABLE_RAM_GB=$(awk '/MemAvailable/ {print int($2/1048576)}' /proc/meminfo)
-SWAP=$(($(awk '/SwapTotal/ {print $2}' /proc/meminfo)/1048576))
+AVAILABLE_SWAP_GB=$(awk '/SwapFree/ {print int($2/1048576)}' /proc/meminfo)
 
-echo "The system reports $HOST_CPUS CPUs, $AVAILABLE_RAM_GB GiB of available RAM, and $SWAP GiB of total swap."
+echo "The system reports $HOST_CPUS CPUs, $AVAILABLE_RAM_GB GiB of available RAM, and $AVAILABLE_SWAP_GB GiB of free swap."
 
 if [ "$AVAILABLE_RAM_GB" -lt 2 ]; then
   echo "At least 2 GiB of available RAM is required to start the build safely." >&2
@@ -31,9 +31,14 @@ if ! [[ "$CONTAINER_RAM" =~ ^[0-9]+$ ]] || [ "$CONTAINER_RAM" -lt 1 ] || [ "$CON
   echo "ARKANA_BUILD_RAM_GB must be a positive integer no larger than available RAM ($AVAILABLE_RAM_GB GiB)." >&2
   exit 1
 fi
-CONTAINER_SWAP=$(( SWAP * 80 / 100 ))
-if [ "$CONTAINER_SWAP" -lt 4 ]; then
-  CONTAINER_SWAP=4
+DEFAULT_SWAP_GB=$(( AVAILABLE_SWAP_GB / 2 ))
+if [ "$DEFAULT_SWAP_GB" -gt 2 ]; then
+  DEFAULT_SWAP_GB=2
+fi
+CONTAINER_SWAP=${ARKANA_BUILD_SWAP_GB:-$DEFAULT_SWAP_GB}
+if ! [[ "$CONTAINER_SWAP" =~ ^[0-9]+$ ]] || [ "$CONTAINER_SWAP" -gt "$AVAILABLE_SWAP_GB" ]; then
+  echo "ARKANA_BUILD_SWAP_GB must be a non-negative integer no larger than free swap ($AVAILABLE_SWAP_GB GiB)." >&2
+  exit 1
 fi
 
 TOTAL_MEM_SWAP=$(( CONTAINER_RAM + CONTAINER_SWAP ))
