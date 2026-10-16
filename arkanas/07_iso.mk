@@ -169,7 +169,6 @@ EFIVAR_VER = 39
 EFIVAR_PATH = $(SRC_PATH)/efivar-$(EFIVAR_VER)
 
 # Firefox
-FIREFOX_VER = 135.0
 
 # Firefox runtime libraries omitted from the base package list
 ALSA_URL = https://www.alsa-project.org/files/pub/lib/alsa-lib-1.2.16.1.tar.bz2
