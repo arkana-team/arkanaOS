@@ -189,7 +189,6 @@ LIBXDAMAGE_PATH = $(SRC_PATH)/libXdamage-$(LIBXDAMAGE_VER)
 
 download-firefox: .firefox-obtained
 .firefox-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O firefox-$(FIREFOX_VER).tar.xz $(FIREFOX_URL) && tar xf firefox-$(FIREFOX_VER).tar.xz -C $(SRC_PATH)
 	touch .firefox-obtained
 
 firefox: download-firefox .firefox-done
