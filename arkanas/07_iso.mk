@@ -370,7 +370,6 @@ download-linux: .linux-$(LINUX_VER)-obtained
 # Compile Linux kernel
 linux: download-linux .linux-$(LINUX_VER)-done
 
-.linux-done: $(CURDIR)/linux.config
 	# Linus, you've fucked with the SBAT file config and my builder broke!
 	$(MAKE) -C $(LINUX_PATH) mrproper && cp $(CURDIR)/linux.config $(LINUX_PATH)/.config && cd $(LINUX_PATH) && $(MAKE) olddefconfig && \
 	$(MAKE) -j$(THREADS) KBUILD_BUILD_HOST="arkana" KBUILD_BUILD_USER="arkana" all && cp arch/x86/boot/bzImage $(STAGING_PATH)/boot/vmlinuz && \
