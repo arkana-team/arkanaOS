@@ -171,6 +171,7 @@ EFIVAR_PATH = $(SRC_PATH)/efivar-$(EFIVAR_VER)
 # Firefox
 FIREFOX_URL = https://archive.mozilla.org/pub/firefox/releases/158.0/linux-x86_64/en-US/firefox-158.0.tar.xz
 FIREFOX_VER = 158.0
+FIREFOX_SHA512 = da90b8c7c6f391935508f99a54d730e5141044c0ce0e915900ecb3f208e840f10a4cf8d38d76852335e6c436bbe2a16e1bf72945fe067340ad94d9ae98f41c59
 
 # Firefox runtime libraries omitted from the base package list
 ALSA_URL = https://www.alsa-project.org/files/pub/lib/alsa-lib-1.2.16.1.tar.bz2
