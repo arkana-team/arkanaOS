@@ -725,6 +725,7 @@ iso:
 	  $(STAGING_PATH)/usr/libexec/git-core $(STAGING_PATH)/usr/share/git-core \
 	  $(STAGING_PATH)/usr/share/fastfetch $(STAGING_PATH)/usr/share/vim \
 	  $(STAGING_PATH)/usr/share/NsCDE/integration/firefox \
+	  $(STAGING_PATH)/usr/share/licenses/fastfetch \
 	cp -a arkana-install $(STAGING_PATH)/usr/bin/arkana-install
 	cp -a genfstab $(STAGING_PATH)/usr/bin/genfstab
 	cp -a neofetch $(STAGING_PATH)/usr/bin/neofetch
