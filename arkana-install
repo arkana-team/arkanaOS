@@ -56,6 +56,7 @@ echo "Minimum disk size for this image: ${MIN_INSTALL_DISK_MIB} MiB (${BOOT_PART
 
 for blkdev in "${BLOCK_DEVICES[@]}"; do
   if [ -e "/dev/$blkdev" ]; then
+    DISK_SIZE_BYTES=$(blockdev --getsize64 "/dev/$blkdev")
       FOUND_BLK=$((FOUND_BLK + 1))
       FOUND_DEVS+=("/dev/$blkdev")
     else
