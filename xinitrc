@@ -10,5 +10,6 @@ export FVWM_IS_FVWM3=1
 if [ -f /run/initramfs/bootdev/boot/rootfs.sfs ]; then
   export NSCDE_SKIP_FIRST_RUN=1
 fi
+
 xsetroot -cursor_name left_ptr 2>/dev/null || true
 exec /usr/bin/nscde
