@@ -344,7 +344,6 @@ dirs: .dirs-done
 .PHONY: kernel-headers
 kernel-headers: .kernel-headers-$(LINUX_HEADERS_VER)-done
 
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O linux-$(LINUX_HEADERS_VER).tar.gz $(LINUX_HEADERS_URL) && tar xf linux-$(LINUX_HEADERS_VER).tar.gz
 	$(MAKE) -C $(LINUX_HEADERS_PATH) mrproper
 	cd $(LINUX_HEADERS_PATH) && $(MAKE) headers_install INSTALL_HDR_PATH=$(STAGING_PATH)/usr
 	sed -i '/IPPROTO_RAW\b/s/$$/\n#define IPPROTO_AGGFRAG 147/' $(STAGING_PATH)/usr/include/linux/in.h
