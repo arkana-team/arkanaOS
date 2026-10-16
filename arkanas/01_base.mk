@@ -349,7 +349,6 @@ kernel-headers: .kernel-headers-$(LINUX_HEADERS_VER)-done
 	$(MAKE) -C $(LINUX_HEADERS_PATH) mrproper
 	cd $(LINUX_HEADERS_PATH) && $(MAKE) headers_install INSTALL_HDR_PATH=$(STAGING_PATH)/usr
 	sed -i '/IPPROTO_RAW\b/s/$$/\n#define IPPROTO_AGGFRAG 147/' $(STAGING_PATH)/usr/include/linux/in.h
-	touch .kernel-headers-done
 	ln -sf usr/lib $(STAGING_PATH)/lib64
 	touch .dirs-done
 
