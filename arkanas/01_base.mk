@@ -342,7 +342,6 @@ dirs: .dirs-done
 
 # Kernel headers only (for IPPROTO_AGGFRAG etc.)
 .PHONY: kernel-headers
-kernel-headers: .kernel-headers-done
 
 .kernel-headers-done:
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O linux-$(LINUX_HEADERS_VER).tar.gz $(LINUX_HEADERS_URL) && tar xf linux-$(LINUX_HEADERS_VER).tar.gz
