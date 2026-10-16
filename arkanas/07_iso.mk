@@ -169,7 +169,6 @@ EFIVAR_VER = 39
 EFIVAR_PATH = $(SRC_PATH)/efivar-$(EFIVAR_VER)
 
 # Firefox
-FIREFOX_URL = https://archive.mozilla.org/pub/firefox/releases/135.0/linux-x86_64/en-US/firefox-135.0.tar.xz
 FIREFOX_VER = 135.0
 
 # Firefox runtime libraries omitted from the base package list
