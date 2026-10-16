@@ -30,6 +30,7 @@ if ! read -r INSTALL_ROOT_BYTES BOOT_PAYLOAD_BYTES < /etc/arkana-install-size \
   || [[ ! "$INSTALL_ROOT_BYTES" =~ ^[0-9]+$ || ! "$BOOT_PAYLOAD_BYTES" =~ ^[0-9]+$ || "$BOOT_PAYLOAD_BYTES" -eq 0 ]]; then
   echo "Error: this image is missing valid installer size metadata."
   exit 1
+fi
 for blkdev in "${BLOCK_DEVICES[@]}"; do
   if [ -e "/dev/$blkdev" ]; then
     if [ "$(($(blockdev --getsize64 "/dev/$blkdev") / 1048576))" -gt 8192 ]; then
