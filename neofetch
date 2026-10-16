@@ -6142,7 +6142,6 @@ ${c1}                    y:
 EOF
         ;;
 
-        "arkana"* | "Arkana"* | "arkanaOS"* | "arkanaOS nightly"* | "arkanaOS Dev"*)
             set_colors 6 6 7 4
             read -rd '' ascii_data <<'EOF'
 ${c1}                 /\
