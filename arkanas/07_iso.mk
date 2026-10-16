@@ -832,7 +832,6 @@ iso:
 	BOOT_PAYLOAD_BYTES=$$(( $$(stat -c '%s' "$(LINUX_PATH)/arch/x86/boot/bzImage") + $$(stat -c '%s' "$(STAGING_PATH)/boot/initramfs.img") )); \
 	printf '%s %s\n' "$$INSTALL_ROOT_BYTES" "$$BOOT_PAYLOAD_BYTES" > "$(STAGING_PATH)/etc/arkana-install-size"
 
-	mksquashfs $(STAGING_PATH) $(ISO_STAGING_PATH)/boot/rootfs.sfs -comp zstd -Xcompression-level 15 -b 1M -noappend -e boot/vmlinuz boot/initramfs.img
 	cp $(LINUX_PATH)/arch/x86/boot/bzImage $(ISO_STAGING_PATH)/boot/vmlinuz
 	cp $(STAGING_PATH)/boot/initramfs.img $(ISO_STAGING_PATH)/boot/boot-initramfs.img
 
