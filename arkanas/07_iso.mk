@@ -752,6 +752,7 @@ iso:
 	cp -a xinitrc $(STAGING_PATH)/root/.xinitrc
 	mkdir -p $(STAGING_PATH)/etc/skel && cp -a xinitrc $(STAGING_PATH)/etc/skel/.xinitrc
 	install -D -m 0755 xinitrc $(STAGING_PATH)/usr/bin/arkana-nscde-session
+	install -D -o 0 -g 0 -m 0644 bashrc $(STAGING_PATH)/root/.bashrc
 	mkdir -p $(STAGING_PATH)/root/.NsCDE/backer $(STAGING_PATH)/etc/skel/.NsCDE/backer
 	cp -a nscde-config/Backdrops.fvwmgen $(STAGING_PATH)/root/.NsCDE/
 	cp -a nscde-config/Backdrops.fvwmgen $(STAGING_PATH)/etc/skel/.NsCDE/
