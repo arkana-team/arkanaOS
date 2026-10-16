@@ -37,6 +37,7 @@ if [ -d /sys/firmware/efi ]; then
   BOOT_PARTITION_END_MIB=120
   ROOT_CONTENT_BYTES=$((INSTALL_ROOT_BYTES + BOOT_PAYLOAD_BYTES))
 else
+  # Size the legacy FAT boot partition from the kernel and initramfs payload.
 for blkdev in "${BLOCK_DEVICES[@]}"; do
   if [ -e "/dev/$blkdev" ]; then
     if [ "$(($(blockdev --getsize64 "/dev/$blkdev") / 1048576))" -gt 8192 ]; then
