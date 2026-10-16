@@ -53,6 +53,7 @@ MIN_INSTALL_DISK_MIB=$(((MIN_INSTALL_DISK_BYTES + MIB_BYTES - 1) / MIB_BYTES))
 MIN_INSTALL_DISK_BYTES=$((MIN_INSTALL_DISK_MIB * MIB_BYTES))
 
 echo "Minimum disk size for this image: ${MIN_INSTALL_DISK_MIB} MiB (${BOOT_PARTITION_SIZE_MIB} MiB boot partition, filesystem overhead, and 256 MiB free after install)."
+
 for blkdev in "${BLOCK_DEVICES[@]}"; do
   if [ -e "/dev/$blkdev" ]; then
     if [ "$(($(blockdev --getsize64 "/dev/$blkdev") / 1048576))" -gt 8192 ]; then
