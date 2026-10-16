@@ -6,3 +6,4 @@ case ${BASH_VERSION-} in
       *i*) PS1='\$ ' ;;
     esac
     ;;
+esac
