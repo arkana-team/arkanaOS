@@ -2,6 +2,7 @@
 SHELL = bash
 .DEFAULT_GOAL := all
 THREADS = $(shell nproc)
+MKSQUASHFS_THREADS ?= 2
 .NOTPARALLEL:
 
 # Paths used to build the ISO components
