@@ -826,6 +826,7 @@ iso:
 	chroot $(STAGING_PATH) glib-compile-schemas /usr/share/glib-2.0/schemas || true
 	rm -f $(STAGING_PATH)/etc/ld.so.cache
 	chroot $(STAGING_PATH) /usr/bin/ldconfig
+	rm -f $(STAGING_PATH)/etc/arkana-install-size
 
 	mksquashfs $(STAGING_PATH) $(ISO_STAGING_PATH)/boot/rootfs.sfs -comp zstd -Xcompression-level 15 -b 1M -noappend -e boot/vmlinuz boot/initramfs.img
 	cp $(LINUX_PATH)/arch/x86/boot/bzImage $(ISO_STAGING_PATH)/boot/vmlinuz
