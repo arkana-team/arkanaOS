@@ -720,6 +720,7 @@ boot-initramfs:
 # Create ISO file for booting
 .PHONY: iso
 iso:
+	# Keep the browser and optional development/diagnostic tools in ArkPkg packages.
 	cp -a arkana-install $(STAGING_PATH)/usr/bin/arkana-install
 	cp -a genfstab $(STAGING_PATH)/usr/bin/genfstab
 	cp -a neofetch $(STAGING_PATH)/usr/bin/neofetch
