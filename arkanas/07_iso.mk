@@ -744,6 +744,7 @@ iso:
 	  $(STAGING_PATH)/usr/share/zsh/site-functions/_git
 	find $(STAGING_PATH)/usr/share/locale -path '*/LC_MESSAGES/git.mo' -delete
 	# Retain Python itself and its build support, but omit upstream self-tests and test fixtures.
+	rm -rf $(STAGING_PATH)/usr/lib/python3.13/test $(STAGING_PATH)/usr/lib/installed-tests
 	cp -a arkana-install $(STAGING_PATH)/usr/bin/arkana-install
 	cp -a genfstab $(STAGING_PATH)/usr/bin/genfstab
 	cp -a neofetch $(STAGING_PATH)/usr/bin/neofetch
