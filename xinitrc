@@ -4,5 +4,6 @@
 export NSCDE_PALETTE=Solyaris
 export NSCDE_PALETTE_NCOLORS=4
 export FVWM_IS_FVWM3=1
+
 xsetroot -cursor_name left_ptr 2>/dev/null || true
 exec /usr/bin/nscde
