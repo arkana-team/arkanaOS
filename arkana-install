@@ -61,7 +61,6 @@ for blkdev in "${BLOCK_DEVICES[@]}"; do
       FOUND_BLK=$((FOUND_BLK + 1))
       FOUND_DEVS+=("/dev/$blkdev")
     else
-      echo "Disk /dev/$blkdev is too small or not a block device."
     fi
   fi
 done
