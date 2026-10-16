@@ -768,7 +768,6 @@ iso:
 	  -e 's/^InfoStoreAdd nscde_use_stalonetray 1$$/InfoStoreAdd nscde_use_stalonetray 0/' \
 	  -e 's/^InfoStoreAdd nscde_use_dunst 1$$/InfoStoreAdd nscde_use_dunst 0/' \
 	  $(STAGING_PATH)/usr/share/NsCDE/fvwm/NsCDE.conf
-	sed -i 's|^Exec=/usr/bin/nscde$$|Exec=/usr/bin/env NSCDE_PALETTE=Solyaris NSCDE_PALETTE_NCOLORS=4 /usr/bin/nscde|' $(STAGING_PATH)/usr/share/xsessions/nscde.desktop
 	sed -i -e 's/DejaVu Serif/Luxi Sans/g' -e 's/DejaVu Sans Mono/Luxi Mono/g' $(STAGING_PATH)/usr/share/NsCDE/fvwm/Font-*dpi.fvwmconf
 	mkdir -p $(STAGING_PATH)/etc/systemd/system/serial-getty@ttyS0.service.d
 	printf '[Service]\nExecStart=\nExecStart=-/sbin/agetty --autologin root --noclear --keep-baud 115200,38400,9600 %%I vt220\n' > $(STAGING_PATH)/etc/systemd/system/serial-getty@ttyS0.service.d/override.conf
