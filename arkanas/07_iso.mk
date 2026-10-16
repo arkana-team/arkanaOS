@@ -726,6 +726,7 @@ iso:
 	  $(STAGING_PATH)/usr/share/fastfetch $(STAGING_PATH)/usr/share/vim \
 	  $(STAGING_PATH)/usr/share/NsCDE/integration/firefox \
 	  $(STAGING_PATH)/usr/share/licenses/fastfetch \
+	  $(STAGING_PATH)/usr/share/doc/vim-*
 	cp -a arkana-install $(STAGING_PATH)/usr/bin/arkana-install
 	cp -a genfstab $(STAGING_PATH)/usr/bin/genfstab
 	cp -a neofetch $(STAGING_PATH)/usr/bin/neofetch
