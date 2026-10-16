@@ -368,7 +368,6 @@ download-linux: .linux-$(LINUX_VER)-obtained
 	touch $@
 
 # Compile Linux kernel
-linux: download-linux .linux-done
 
 .linux-done: $(CURDIR)/linux.config
 	# Linus, you've fucked with the SBAT file config and my builder broke!
