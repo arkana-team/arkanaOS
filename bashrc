@@ -3,3 +3,4 @@
 case ${BASH_VERSION-} in
   ?*)
     case $- in
+      *i*) PS1='\$ ' ;;
