@@ -7,5 +7,6 @@ export FVWM_IS_FVWM3=1
 
 # The live ISO keeps its boot medium mounted under /run/initramfs. Skip the
 # interactive first-run wizard only in that disposable live session.
+if [ -f /run/initramfs/bootdev/boot/rootfs.sfs ]; then
 xsetroot -cursor_name left_ptr 2>/dev/null || true
 exec /usr/bin/nscde
