@@ -738,6 +738,7 @@ iso:
 	  $(STAGING_PATH)/usr/share/man/man1/vimtutor.1 \
 	  $(STAGING_PATH)/usr/share/bash-completion/completions/fastfetch \
 	  $(STAGING_PATH)/usr/share/bash-completion/completions/git \
+	  $(STAGING_PATH)/usr/share/fish/vendor_completions.d/fastfetch.fish \
 	cp -a arkana-install $(STAGING_PATH)/usr/bin/arkana-install
 	cp -a genfstab $(STAGING_PATH)/usr/bin/genfstab
 	cp -a neofetch $(STAGING_PATH)/usr/bin/neofetch
