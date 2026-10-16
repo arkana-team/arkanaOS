@@ -62,6 +62,7 @@ for blkdev in "${BLOCK_DEVICES[@]}"; do
       FOUND_DEVS+=("/dev/$blkdev")
     else
       DISK_SIZE_MIB=$((DISK_SIZE_BYTES / 1048576))
+      echo "Disk /dev/$blkdev is ${DISK_SIZE_MIB} MiB; this image needs at least ${MIN_INSTALL_DISK_MIB} MiB."
     fi
   fi
 done
