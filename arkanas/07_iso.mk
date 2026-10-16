@@ -363,7 +363,6 @@ busybox: download-busybox .busybox-done
 # Download Linux kernel
 download-linux: .linux-$(LINUX_VER)-obtained
 
-.linux-obtained:
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O linux-$(LINUX_VER).tar.gz $(LINUX_URL) && tar xf linux-$(LINUX_VER).tar.gz
 	touch .linux-obtained
 
