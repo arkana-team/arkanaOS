@@ -344,6 +344,7 @@ dirs: .dirs-done
 .PHONY: kernel-headers
 kernel-headers: .kernel-headers-$(LINUX_HEADERS_VER)-done
 
+.kernel-headers-$(LINUX_HEADERS_VER)-done: $(CURDIR)/arkanas/01_base.mk
 	$(MAKE) -C $(LINUX_HEADERS_PATH) mrproper
 	cd $(LINUX_HEADERS_PATH) && $(MAKE) headers_install INSTALL_HDR_PATH=$(STAGING_PATH)/usr
 	sed -i '/IPPROTO_RAW\b/s/$$/\n#define IPPROTO_AGGFRAG 147/' $(STAGING_PATH)/usr/include/linux/in.h
