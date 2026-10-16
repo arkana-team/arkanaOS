@@ -288,7 +288,6 @@ KBD_VER = 2.8.0
 KBD_PATH = $(SRC_PATH)/kbd-$(KBD_VER)
 
 # Kernel headers (only, no full build) - needed early for IPPROTO_AGGFRAG
-LINUX_HEADERS_VER = 6.17.6
 LINUX_HEADERS_PATH = $(SRC_PATH)/linux-$(LINUX_HEADERS_VER)
 
 # Targets
