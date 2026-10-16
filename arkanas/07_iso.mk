@@ -363,7 +363,6 @@ busybox: download-busybox .busybox-done
 # Download Linux kernel
 download-linux: .linux-$(LINUX_VER)-obtained
 
-	touch .linux-obtained
 
 # Compile Linux kernel
 linux: download-linux .linux-done
