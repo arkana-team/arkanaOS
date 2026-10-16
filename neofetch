@@ -38,7 +38,7 @@ shopt -s eval_unsafe_arith &>/dev/null
 sys_locale=${LANG:-C}
 XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-${HOME}/.config}
 PATH=$PATH:/usr/xpg4/bin:/usr/sbin:/sbin:/usr/etc:/usr/libexec
-reset='\e[0m'
+reset=$'\e[0m'
 shopt -s nocasematch
 
 # Speed up script by not using unicode.
@@ -6142,21 +6142,29 @@ ${c1}                    y:
 EOF
         ;;
 
-        "arkana"* | "Arkana"* | "arkanaOS"* | "arkanaOS nightly"* | "arkanaOS Dev"*)
+        "arkana"* | "Arkana"*)
             set_colors 6 6 7 4
             read -rd '' ascii_data <<'EOF'
-${c1}                 /\
-                /  \
-               /    \
-              /      \
-             /        \
-            /          \
-           /            \
-          /              \
-         /                \
-        /                  \
-       /                    \
-      /______________________\
+${c1}
+${c1}
+${c1}
+${c1}
+${c1}
+${c1}
+${c1}       /\
+      /  \
+     /    \
+    /      \
+   /        \
+  /          \
+ /            \
+/______________\
+${c1}
+${c1}
+${c1}
+${c1}
+${c1}
+${c1}
 EOF
         ;;
 

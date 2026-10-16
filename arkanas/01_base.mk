@@ -288,8 +288,9 @@ KBD_VER = 2.8.0
 KBD_PATH = $(SRC_PATH)/kbd-$(KBD_VER)
 
 # Kernel headers (only, no full build) - needed early for IPPROTO_AGGFRAG
-LINUX_HEADERS_URL = https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.17.6.tar.gz
-LINUX_HEADERS_VER = 6.17.6
+LINUX_HEADERS_URL = https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.18.57.tar.xz
+LINUX_HEADERS_VER = 6.18.57
+LINUX_HEADERS_SHA256 = 5bd9acdc82ec5efc3790ae840e5aaa40dfde7efff261cf6dde902dc570acf98c
 LINUX_HEADERS_PATH = $(SRC_PATH)/linux-$(LINUX_HEADERS_VER)
 
 # Targets
@@ -341,14 +342,14 @@ dirs: .dirs-done
 
 # Kernel headers only (for IPPROTO_AGGFRAG etc.)
 .PHONY: kernel-headers
-kernel-headers: .kernel-headers-done
+kernel-headers: .kernel-headers-$(LINUX_HEADERS_VER)-done
 
-.kernel-headers-done:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O linux-$(LINUX_HEADERS_VER).tar.gz $(LINUX_HEADERS_URL) && tar xf linux-$(LINUX_HEADERS_VER).tar.gz
+.kernel-headers-$(LINUX_HEADERS_VER)-done: $(CURDIR)/arkanas/01_base.mk
+	if [ ! -f $(LINUX_HEADERS_PATH)/Makefile ]; then cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O linux-$(LINUX_HEADERS_VER).tar.xz $(LINUX_HEADERS_URL) && echo '$(LINUX_HEADERS_SHA256)  linux-$(LINUX_HEADERS_VER).tar.xz' | sha256sum -c - && tar xf linux-$(LINUX_HEADERS_VER).tar.xz; fi
 	$(MAKE) -C $(LINUX_HEADERS_PATH) mrproper
 	cd $(LINUX_HEADERS_PATH) && $(MAKE) headers_install INSTALL_HDR_PATH=$(STAGING_PATH)/usr
 	sed -i '/IPPROTO_RAW\b/s/$$/\n#define IPPROTO_AGGFRAG 147/' $(STAGING_PATH)/usr/include/linux/in.h
-	touch .kernel-headers-done
+	touch $@
 	ln -sf usr/lib $(STAGING_PATH)/lib64
 	touch .dirs-done
 

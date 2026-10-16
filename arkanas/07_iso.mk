@@ -2,6 +2,7 @@
 SHELL = bash
 .DEFAULT_GOAL := all
 THREADS = $(shell nproc)
+MKSQUASHFS_THREADS ?= 2
 .NOTPARALLEL:
 
 # Paths used to build the ISO components
@@ -51,8 +52,9 @@ BUSYBOX_PATH = $(SRC_PATH)/busybox-$(BUSYBOX_VER)
 
 # Linux kernel
 # URL: https://kernel.org/ (w/o instructions as LFS builds a rootfs)
-LINUX_URL = https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.17.6.tar.gz
-LINUX_VER = 6.17.6
+LINUX_URL = https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.18.57.tar.xz
+LINUX_VER = 6.18.57
+LINUX_SHA256 = 5bd9acdc82ec5efc3790ae840e5aaa40dfde7efff261cf6dde902dc570acf98c
 LINUX_PATH = $(SRC_PATH)/linux-$(LINUX_VER)
 
 # GRUB (bootloader)
@@ -167,8 +169,9 @@ EFIVAR_VER = 39
 EFIVAR_PATH = $(SRC_PATH)/efivar-$(EFIVAR_VER)
 
 # Firefox
-FIREFOX_URL = https://archive.mozilla.org/pub/firefox/releases/135.0/linux-x86_64/en-US/firefox-135.0.tar.xz
-FIREFOX_VER = 135.0
+FIREFOX_URL = https://archive.mozilla.org/pub/firefox/releases/158.0/linux-x86_64/en-US/firefox-158.0.tar.xz
+FIREFOX_VER = 158.0
+FIREFOX_SHA512 = da90b8c7c6f391935508f99a54d730e5141044c0ce0e915900ecb3f208e840f10a4cf8d38d76852335e6c436bbe2a16e1bf72945fe067340ad94d9ae98f41c59
 
 # Firefox runtime libraries omitted from the base package list
 ALSA_URL = https://www.alsa-project.org/files/pub/lib/alsa-lib-1.2.16.1.tar.bz2
@@ -186,7 +189,9 @@ LIBXDAMAGE_PATH = $(SRC_PATH)/libXdamage-$(LIBXDAMAGE_VER)
 
 download-firefox: .firefox-obtained
 .firefox-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O firefox-$(FIREFOX_VER).tar.xz $(FIREFOX_URL) && tar xf firefox-$(FIREFOX_VER).tar.xz -C $(SRC_PATH)
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O firefox-$(FIREFOX_VER).tar.xz $(FIREFOX_URL)
+	cd $(SRC_PATH) && echo '$(FIREFOX_SHA512)  firefox-$(FIREFOX_VER).tar.xz' | sha512sum -c -
+	cd $(SRC_PATH) && tar xf firefox-$(FIREFOX_VER).tar.xz -C $(SRC_PATH)
 	touch .firefox-obtained
 
 firefox: download-firefox .firefox-done
@@ -202,7 +207,7 @@ firefox: download-firefox .firefox-done
 # Targets
 all: build initramfs boot-initramfs iso
 
-build: cpio busybox linux linux-firmware grub freetype harfbuzz glib libffi elfutils brotli pcre2 cairo fontconfig expat graphite2 pixman libpng libisoburn libburn libisofs mtools squashfs-tools lzo efibootmgr efivar alsa-lib at-spi2-core libXdamage gtk3 firefox
+build: cpio busybox linux linux-firmware grub freetype harfbuzz glib libffi elfutils brotli pcre2 cairo fontconfig expat graphite2 pixman libpng libisoburn libburn libisofs mtools squashfs-tools lzo efibootmgr efivar alsa-lib at-spi2-core libXdamage gtk3
 
 download-alsa-lib: .alsa-lib-obtained
 .alsa-lib-obtained:
@@ -356,22 +361,23 @@ busybox: download-busybox .busybox-done
 	touch .busybox-done
 
 # Download Linux kernel
-download-linux: .linux-obtained
+download-linux: .linux-$(LINUX_VER)-obtained
 
-.linux-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O linux-$(LINUX_VER).tar.gz $(LINUX_URL) && tar xf linux-$(LINUX_VER).tar.gz
-	touch .linux-obtained
+.linux-$(LINUX_VER)-obtained: $(CURDIR)/arkanas/07_iso.mk
+	if [ ! -f $(LINUX_PATH)/Makefile ]; then cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O linux-$(LINUX_VER).tar.xz $(LINUX_URL) && echo '$(LINUX_SHA256)  linux-$(LINUX_VER).tar.xz' | sha256sum -c - && tar xf linux-$(LINUX_VER).tar.xz; fi
+	touch $@
 
 # Compile Linux kernel
-linux: download-linux .linux-done
+linux: download-linux .linux-$(LINUX_VER)-done
 
-.linux-done: $(CURDIR)/linux.config
+.linux-$(LINUX_VER)-done: $(CURDIR)/linux.config $(CURDIR)/arkanas/07_iso.mk
 	# Linus, you've fucked with the SBAT file config and my builder broke!
 	$(MAKE) -C $(LINUX_PATH) mrproper && cp $(CURDIR)/linux.config $(LINUX_PATH)/.config && cd $(LINUX_PATH) && $(MAKE) olddefconfig && \
 	$(MAKE) -j$(THREADS) KBUILD_BUILD_HOST="arkana" KBUILD_BUILD_USER="arkana" all && cp arch/x86/boot/bzImage $(STAGING_PATH)/boot/vmlinuz && \
 	$(MAKE) -C $(LINUX_PATH) headers_install INSTALL_HDR_PATH=$(STAGING_PATH)/usr
+	rm -rf $(STAGING_PATH)/lib/modules
 	$(MAKE) -C $(LINUX_PATH) INSTALL_MOD_PATH=$(STAGING_PATH) modules_install
-	touch .linux-done
+	touch $@
 
 # Pin host firmware so the live image and installed system support current hardware.
 LINUX_FIRMWARE_TAG = 20260916
@@ -702,6 +708,7 @@ efivar: download-efivar .efivar-done
 initramfs:
 	mkdir -p $(ISO_STAGING_PATH)/boot/grub
 	cp liveinit $(CPIO_STAGING_PATH)/init
+	rm -rf $(CPIO_STAGING_PATH)/lib/modules
 	$(MAKE) -C $(LINUX_PATH) INSTALL_MOD_PATH=$(CPIO_STAGING_PATH) modules_install
 	bash -o pipefail -c 'cd "$(CPIO_STAGING_PATH)" && find . | cpio -oH newc | gzip > "$(ISO_STAGING_PATH)/boot/initramfs.img"'
 
@@ -713,12 +720,41 @@ boot-initramfs:
 # Create ISO file for booting
 .PHONY: iso
 iso:
+	# Keep the browser and optional development/diagnostic tools in ArkPkg packages.
+	rm -rf $(STAGING_PATH)/opt/firefox $(STAGING_PATH)/usr/lib/git-core \
+	  $(STAGING_PATH)/usr/libexec/git-core $(STAGING_PATH)/usr/share/git-core \
+	  $(STAGING_PATH)/usr/share/fastfetch $(STAGING_PATH)/usr/share/vim \
+	  $(STAGING_PATH)/usr/share/NsCDE/integration/firefox \
+	  $(STAGING_PATH)/usr/share/licenses/fastfetch \
+	  $(STAGING_PATH)/usr/share/doc/vim-*
+	rm -f $(STAGING_PATH)/usr/bin/firefox $(STAGING_PATH)/usr/bin/fastfetch \
+	  $(STAGING_PATH)/usr/bin/git* $(STAGING_PATH)/usr/bin/vim* \
+	  $(STAGING_PATH)/usr/bin/ex $(STAGING_PATH)/usr/bin/view \
+	  $(STAGING_PATH)/usr/bin/rvim $(STAGING_PATH)/usr/bin/rview \
+	  $(STAGING_PATH)/usr/share/applications/firefox.desktop \
+	  $(STAGING_PATH)/usr/share/man/man1/fastfetch.1 \
+	  $(STAGING_PATH)/usr/share/man/man1/vim.1 \
+	  $(STAGING_PATH)/usr/share/man/man1/vimdiff.1 \
+	  $(STAGING_PATH)/usr/share/man/man1/vimtutor.1 \
+	  $(STAGING_PATH)/usr/share/bash-completion/completions/fastfetch \
+	  $(STAGING_PATH)/usr/share/bash-completion/completions/git \
+	  $(STAGING_PATH)/usr/share/fish/vendor_completions.d/fastfetch.fish \
+	  $(STAGING_PATH)/usr/share/fish/vendor_completions.d/git.fish \
+	  $(STAGING_PATH)/usr/share/zsh/site-functions/_fastfetch \
+	  $(STAGING_PATH)/usr/share/zsh/site-functions/_git
+	find $(STAGING_PATH)/usr/share/locale -path '*/LC_MESSAGES/git.mo' -delete
+	# Retain Python itself and its build support, but omit upstream self-tests and test fixtures.
+	rm -rf $(STAGING_PATH)/usr/lib/python3.13/test $(STAGING_PATH)/usr/lib/installed-tests
 	cp -a arkana-install $(STAGING_PATH)/usr/bin/arkana-install
 	cp -a genfstab $(STAGING_PATH)/usr/bin/genfstab
 	cp -a neofetch $(STAGING_PATH)/usr/bin/neofetch
 	chmod +x $(STAGING_PATH)/usr/bin/neofetch
 	cp -a xinitrc $(STAGING_PATH)/root/.xinitrc
 	mkdir -p $(STAGING_PATH)/etc/skel && cp -a xinitrc $(STAGING_PATH)/etc/skel/.xinitrc
+	install -D -m 0755 xinitrc $(STAGING_PATH)/usr/bin/arkana-nscde-session
+	install -D -o 0 -g 0 -m 0644 bashrc $(STAGING_PATH)/root/.bashrc
+	install -D -o 0 -g 0 -m 0644 bashrc $(STAGING_PATH)/etc/skel/.bashrc
+	install -D -o 0 -g 0 -m 0644 bashrc $(STAGING_PATH)/etc/profile.d/arkana-shell.sh
 	mkdir -p $(STAGING_PATH)/root/.NsCDE/backer $(STAGING_PATH)/etc/skel/.NsCDE/backer
 	cp -a nscde-config/Backdrops.fvwmgen $(STAGING_PATH)/root/.NsCDE/
 	cp -a nscde-config/Backdrops.fvwmgen $(STAGING_PATH)/etc/skel/.NsCDE/
@@ -732,7 +768,10 @@ iso:
 	  -e 's/^InfoStoreAdd nscde_use_stalonetray 1$$/InfoStoreAdd nscde_use_stalonetray 0/' \
 	  -e 's/^InfoStoreAdd nscde_use_dunst 1$$/InfoStoreAdd nscde_use_dunst 0/' \
 	  $(STAGING_PATH)/usr/share/NsCDE/fvwm/NsCDE.conf
-	sed -i 's|^Exec=/usr/bin/nscde$$|Exec=/usr/bin/env NSCDE_PALETTE=Solyaris NSCDE_PALETTE_NCOLORS=4 /usr/bin/nscde|' $(STAGING_PATH)/usr/share/xsessions/nscde.desktop
+	sed -i 's|^+ I Test (!f .*NsCDE[.]conf.*) f_FirstSetup$$|+ I Test (!EnvMatch NSCDE_SKIP_FIRST_RUN 1, !f "$$[FVWM_USERDIR]/NsCDE.conf") f_FirstSetup|' \
+	  $(STAGING_PATH)/usr/share/NsCDE/fvwm/Main.fvwmconf
+	test "$$(grep -Fc NSCDE_SKIP_FIRST_RUN $(STAGING_PATH)/usr/share/NsCDE/fvwm/Main.fvwmconf)" -eq 2
+	sed -i 's|^Exec=.*[/]nscde$$|Exec=/usr/bin/arkana-nscde-session|' $(STAGING_PATH)/usr/share/xsessions/nscde.desktop
 	sed -i -e 's/DejaVu Serif/Luxi Sans/g' -e 's/DejaVu Sans Mono/Luxi Mono/g' $(STAGING_PATH)/usr/share/NsCDE/fvwm/Font-*dpi.fvwmconf
 	mkdir -p $(STAGING_PATH)/etc/systemd/system/serial-getty@ttyS0.service.d
 	printf '[Service]\nExecStart=\nExecStart=-/sbin/agetty --autologin root --noclear --keep-baud 115200,38400,9600 %%I vt220\n' > $(STAGING_PATH)/etc/systemd/system/serial-getty@ttyS0.service.d/override.conf
@@ -787,8 +826,13 @@ iso:
 	chroot $(STAGING_PATH) glib-compile-schemas /usr/share/glib-2.0/schemas || true
 	rm -f $(STAGING_PATH)/etc/ld.so.cache
 	chroot $(STAGING_PATH) /usr/bin/ldconfig
+	rm -f $(STAGING_PATH)/etc/arkana-install-size
+	set -euo pipefail; \
+	INSTALL_ROOT_BYTES=$$(cd "$(STAGING_PATH)" && du -sx --apparent-size --block-size=1 --exclude='./boot/vmlinuz' --exclude='./boot/initramfs.img' . | awk '{print $$1}'); \
+	BOOT_PAYLOAD_BYTES=$$(( $$(stat -c '%s' "$(LINUX_PATH)/arch/x86/boot/bzImage") + $$(stat -c '%s' "$(STAGING_PATH)/boot/initramfs.img") )); \
+	printf '%s %s\n' "$$INSTALL_ROOT_BYTES" "$$BOOT_PAYLOAD_BYTES" > "$(STAGING_PATH)/etc/arkana-install-size"
 
-	mksquashfs $(STAGING_PATH) $(ISO_STAGING_PATH)/boot/rootfs.sfs -comp zstd -Xcompression-level 15 -b 1M -noappend -e boot/vmlinuz boot/initramfs.img
+	mksquashfs $(STAGING_PATH) $(ISO_STAGING_PATH)/boot/rootfs.sfs -comp zstd -Xcompression-level 15 -b 1M -processors $(MKSQUASHFS_THREADS) -noappend -e boot/vmlinuz boot/initramfs.img
 	cp $(LINUX_PATH)/arch/x86/boot/bzImage $(ISO_STAGING_PATH)/boot/vmlinuz
 	cp $(STAGING_PATH)/boot/initramfs.img $(ISO_STAGING_PATH)/boot/boot-initramfs.img
 
