@@ -160,6 +160,7 @@ echo "Copying system..."
 mkdir -p /mnt/{dev,proc,sys,run,mnt,tmp}
 
 rsync -axH --no-i-r --info=progress2 / /mnt
+rm -f /mnt/root/.NsCDE/NsCDE.conf
 cp /run/initramfs/bootdev/boot/vmlinuz /mnt/boot/vmlinuz
 cp /run/initramfs/bootdev/boot/boot-initramfs.img /mnt/boot/initramfs.img
 
