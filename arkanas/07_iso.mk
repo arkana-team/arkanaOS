@@ -708,6 +708,7 @@ efivar: download-efivar .efivar-done
 initramfs:
 	mkdir -p $(ISO_STAGING_PATH)/boot/grub
 	cp liveinit $(CPIO_STAGING_PATH)/init
+	rm -rf $(CPIO_STAGING_PATH)/lib/modules
 	$(MAKE) -C $(LINUX_PATH) INSTALL_MOD_PATH=$(CPIO_STAGING_PATH) modules_install
 	bash -o pipefail -c 'cd "$(CPIO_STAGING_PATH)" && find . | cpio -oH newc | gzip > "$(ISO_STAGING_PATH)/boot/initramfs.img"'
 
