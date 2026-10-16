@@ -732,6 +732,7 @@ iso:
 	  $(STAGING_PATH)/usr/bin/ex $(STAGING_PATH)/usr/bin/view \
 	  $(STAGING_PATH)/usr/bin/rvim $(STAGING_PATH)/usr/bin/rview \
 	  $(STAGING_PATH)/usr/share/applications/firefox.desktop \
+	  $(STAGING_PATH)/usr/share/man/man1/fastfetch.1 \
 	cp -a arkana-install $(STAGING_PATH)/usr/bin/arkana-install
 	cp -a genfstab $(STAGING_PATH)/usr/bin/genfstab
 	cp -a neofetch $(STAGING_PATH)/usr/bin/neofetch
