@@ -771,6 +771,7 @@ iso:
 	sed -i 's|^+ I Test (!f .*NsCDE[.]conf.*) f_FirstSetup$$|+ I Test (!EnvMatch NSCDE_SKIP_FIRST_RUN 1, !f "$$[FVWM_USERDIR]/NsCDE.conf") f_FirstSetup|' \
 	  $(STAGING_PATH)/usr/share/NsCDE/fvwm/Main.fvwmconf
 	test "$$(grep -Fc NSCDE_SKIP_FIRST_RUN $(STAGING_PATH)/usr/share/NsCDE/fvwm/Main.fvwmconf)" -eq 2
+	sed -i 's|^Exec=.*[/]nscde$$|Exec=/usr/bin/arkana-nscde-session|' $(STAGING_PATH)/usr/share/xsessions/nscde.desktop
 	sed -i -e 's/DejaVu Serif/Luxi Sans/g' -e 's/DejaVu Sans Mono/Luxi Mono/g' $(STAGING_PATH)/usr/share/NsCDE/fvwm/Font-*dpi.fvwmconf
 	mkdir -p $(STAGING_PATH)/etc/systemd/system/serial-getty@ttyS0.service.d
 	printf '[Service]\nExecStart=\nExecStart=-/sbin/agetty --autologin root --noclear --keep-baud 115200,38400,9600 %%I vt220\n' > $(STAGING_PATH)/etc/systemd/system/serial-getty@ttyS0.service.d/override.conf
