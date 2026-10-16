@@ -377,6 +377,7 @@ linux: download-linux .linux-$(LINUX_VER)-done
 	$(MAKE) -C $(LINUX_PATH) headers_install INSTALL_HDR_PATH=$(STAGING_PATH)/usr
 	rm -rf $(STAGING_PATH)/lib/modules
 	$(MAKE) -C $(LINUX_PATH) INSTALL_MOD_PATH=$(STAGING_PATH) modules_install
+	touch $@
 
 # Pin host firmware so the live image and installed system support current hardware.
 LINUX_FIRMWARE_TAG = 20260916
