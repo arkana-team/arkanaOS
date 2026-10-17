@@ -46,7 +46,9 @@ TOTAL_MEM_SWAP_MB=$(( CONTAINER_RAM_MB + CONTAINER_SWAP_MB ))
 echo "Will use $CONTAINER_RAM_MB MiB of memory, $CONTAINER_SWAP_MB MiB of swap ($TOTAL_MEM_SWAP_MB MiB total limit), and $CPUS CPUs to build arkanaOS."
 
 echo "Starting build process. This will take several hours."
-docker build --cpu-quota="$((CPUS * 100000))" -t arkana-builder .
+docker build --cpu-quota="$((CPUS * 100000))" \
+  --memory="${CONTAINER_RAM_MB}m" \
+  -t arkana-builder .
 docker run --rm -it --init \
   --cap-add=MKNOD \
   -v "$(pwd):/build/arkana" \
