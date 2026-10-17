@@ -752,6 +752,7 @@ iso:
 	cp -a xinitrc $(STAGING_PATH)/root/.xinitrc
 	mkdir -p $(STAGING_PATH)/etc/skel && cp -a xinitrc $(STAGING_PATH)/etc/skel/.xinitrc
 	install -D -m 0755 xinitrc $(STAGING_PATH)/usr/bin/arkana-nscde-session
+	install -D -o 0 -g 0 -m 0644 bash_profile $(STAGING_PATH)/root/.bash_profile
 	install -D -o 0 -g 0 -m 0644 bashrc $(STAGING_PATH)/root/.bashrc
 	install -D -o 0 -g 0 -m 0644 bashrc $(STAGING_PATH)/etc/skel/.bashrc
 	install -D -o 0 -g 0 -m 0644 bashrc $(STAGING_PATH)/etc/profile.d/arkana-shell.sh
