@@ -53,6 +53,7 @@ docker run --rm -it --init \
   -v "$(pwd)/.git:/build/arkana/.git:ro" \
   -e HOST_UID="$(id -u)" \
   -e HOST_GID="$(id -g)" \
+  -e ARKANA_BUILD_NUMBER \
   --memory=${CONTAINER_RAM_MB}m \
   --memory-swap=${TOTAL_MEM_SWAP_MB}m \
   --cpus="$CPUS" \
