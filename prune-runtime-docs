@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+"""Remove build documentation while retaining end-user help and license texts."""
+
+from pathlib import Path
+import shutil
+import sys
+
+
+def main() -> None:
+    if len(sys.argv) != 2:
+        raise SystemExit(f"usage: {sys.argv[0]} STAGING_ROOT")
+
+    root = Path(sys.argv[1]).resolve()
+    doc_root = root / "usr/share/doc"
+    if not doc_root.is_dir():
+        raise SystemExit(f"documentation directory not found: {doc_root}")
+
+    license_root = root / "usr/share/licenses/documentation"
+    license_prefixes = ("license", "copying", "copyright", "notice")
+    copied_licenses = 0
+
+    for source in doc_root.rglob("*"):
+        if not source.is_file() or source.is_symlink():
+            continue
+        if not source.name.lower().startswith(license_prefixes):
+            continue
+
+        destination = license_root / source.relative_to(doc_root)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
+        copied_licenses += 1
+
+    keep_docs = {"nscde", "rust", "cargo"}
+    removed_docs = 0
+    for entry in doc_root.iterdir():
+        if entry.name in keep_docs:
+            continue
+        if entry.is_dir() and not entry.is_symlink():
+            shutil.rmtree(entry)
+        else:
+            entry.unlink()
+        removed_docs += 1
+
+    removed_caches = 0
+    for python_root in (root / "usr/lib").glob("python*"):
+        caches = list(python_root.rglob("__pycache__"))
+        for cache in caches:
+            if cache.is_dir() and not cache.is_symlink():
+                shutil.rmtree(cache)
+                removed_caches += 1
+
+    print(
+        f"Removed {removed_docs} package documentation trees and "
+        f"{removed_caches} Python bytecode caches; preserved "
+        f"{copied_licenses} license notices, NsCDE help, and Rust/Cargo docs."
+    )
+
+
+if __name__ == "__main__":
+    main()
