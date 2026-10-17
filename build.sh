@@ -2,7 +2,7 @@
 set -euo pipefail
 mkdir -p output src staging
 
-# Build process can be uncapped. This will be faster but will use up more resources.
+# Keep builds resource-bounded by default; ARKANA_BUILD_* variables tune the limits.
 HOST_CPUS=$(nproc)
 DEFAULT_CPUS=2
 if [ "$HOST_CPUS" -lt "$DEFAULT_CPUS" ]; then
