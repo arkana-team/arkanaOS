@@ -711,7 +711,7 @@ download-linux-pam: .linux-pam-obtained
 
 # Compile Linux-PAM
 .PHONY: linux-pam
-linux-pam: download-linux-pam .linux-pam-done
+linux-pam: download-linux-pam .linux-pam-done .linux-pam-systemd-login-done
 
 .linux-pam-done:
 	rm -rf $(STAGING_PATH)/etc/security || true
@@ -724,6 +724,13 @@ linux-pam: download-linux-pam .linux-pam-done
 	chmod 4755 $(STAGING_PATH)/usr/sbin/unix_chkpwd && cp -a /etc/pam.d/* $(STAGING_PATH)/etc/pam.d/ && cp ../../../passwd $(STAGING_PATH)/etc/passwd && \
 	cp ../../../shadow $(STAGING_PATH)/etc/shadow && cp ../../../group $(STAGING_PATH)/etc/group
 	touch .linux-pam-done
+
+# The copied host PAM stack may omit logind registration for console sessions.
+.linux-pam-systemd-login-done: .linux-pam-done $(CURDIR)/arkanas/01_base.mk
+	@grep -qsE '^[[:space:]]*-?session[[:space:]].*pam_systemd\.so([[:space:]]|$$)' \
+	  $(STAGING_PATH)/etc/pam.d/login || \
+	  printf '\nsession optional pam_systemd.so\n' >> $(STAGING_PATH)/etc/pam.d/login
+	touch $@
 
 # Download shadow
 .PHONY: download-shadow
