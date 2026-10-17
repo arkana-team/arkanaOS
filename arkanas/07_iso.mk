@@ -832,6 +832,18 @@ iso:
 	BOOT_PAYLOAD_BYTES=$$(( $$(stat -c '%s' "$(LINUX_PATH)/arch/x86/boot/bzImage") + $$(stat -c '%s' "$(STAGING_PATH)/boot/initramfs.img") )); \
 	printf '%s %s\n' "$$INSTALL_ROOT_BYTES" "$$BOOT_PAYLOAD_BYTES" > "$(STAGING_PATH)/etc/arkana-install-size"
 
+	# Normalize privileged runtime ownership and modes after all package installs.
+	chmod 4755 \
+	  $(STAGING_PATH)/usr/bin/sudo $(STAGING_PATH)/usr/bin/passwd \
+	  $(STAGING_PATH)/usr/bin/chfn $(STAGING_PATH)/usr/bin/chsh \
+	  $(STAGING_PATH)/usr/bin/gpasswd $(STAGING_PATH)/usr/bin/newgrp \
+	  $(STAGING_PATH)/usr/bin/su $(STAGING_PATH)/usr/bin/fusermount3 \
+	  $(STAGING_PATH)/usr/sbin/unix_chkpwd
+	DBUS_GID=$$(awk -F: '$$1 == "messagebus" { print $$3 }' $(STAGING_PATH)/etc/group); \
+	  test -n "$$DBUS_GID" && \
+	  chown 0:"$$DBUS_GID" $(STAGING_PATH)/usr/lib/dbus-daemon-launch-helper && \
+	  chmod 4750 $(STAGING_PATH)/usr/lib/dbus-daemon-launch-helper
+
 	mksquashfs $(STAGING_PATH) $(ISO_STAGING_PATH)/boot/rootfs.sfs -comp zstd -Xcompression-level 15 -b 1M -processors $(MKSQUASHFS_THREADS) -noappend -e boot/vmlinuz boot/initramfs.img
 	cp $(LINUX_PATH)/arch/x86/boot/bzImage $(ISO_STAGING_PATH)/boot/vmlinuz
 	cp $(STAGING_PATH)/boot/initramfs.img $(ISO_STAGING_PATH)/boot/boot-initramfs.img
