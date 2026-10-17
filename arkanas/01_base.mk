@@ -727,8 +727,8 @@ linux-pam: download-linux-pam .linux-pam-done .linux-pam-systemd-login-done
 
 # The copied host PAM stack may omit logind registration for console sessions.
 .linux-pam-systemd-login-done: .linux-pam-done $(CURDIR)/arkanas/01_base.mk
-	@grep -RqsE '^[[:space:]]*-?session[[:space:]].*pam_systemd\.so([[:space:]]|$$)' \
-	  $(STAGING_PATH)/etc/pam.d || \
+	@grep -qsE '^[[:space:]]*-?session[[:space:]].*pam_systemd\.so([[:space:]]|$$)' \
+	  $(STAGING_PATH)/etc/pam.d/login || \
 	  printf '\nsession optional pam_systemd.so\n' >> $(STAGING_PATH)/etc/pam.d/login
 	touch $@
 
