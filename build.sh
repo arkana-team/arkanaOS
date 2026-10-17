@@ -48,6 +48,7 @@ echo "Will use $CONTAINER_RAM_MB MiB of memory, $CONTAINER_SWAP_MB MiB of swap (
 echo "Starting build process. This will take several hours."
 docker build --cpu-quota="$((CPUS * 100000))" \
   --memory="${CONTAINER_RAM_MB}m" \
+  --memory-swap="${TOTAL_MEM_SWAP_MB}m" \
   -t arkana-builder .
 docker run --rm -it --init \
   --cap-add=MKNOD \
