@@ -754,6 +754,7 @@ iso:
 	mkdir -p $(STAGING_PATH)/etc/skel && cp -a xinitrc $(STAGING_PATH)/etc/skel/.xinitrc
 	install -D -m 0755 xinitrc $(STAGING_PATH)/usr/bin/arkana-nscde-session
 	install -D -o 0 -g 0 -m 0644 bash_profile $(STAGING_PATH)/root/.bash_profile
+	install -D -o 0 -g 0 -m 0644 securetty $(STAGING_PATH)/etc/securetty
 	install -D -o 0 -g 0 -m 0644 bashrc $(STAGING_PATH)/root/.bashrc
 	install -D -o 0 -g 0 -m 0644 bashrc $(STAGING_PATH)/etc/skel/.bashrc
 	install -D -o 0 -g 0 -m 0644 bashrc $(STAGING_PATH)/etc/profile.d/arkana-shell.sh
@@ -791,7 +792,8 @@ iso:
 	  $(STAGING_PATH)/usr/bin/wmmenugen $(STAGING_PATH)/usr/bin/wmsetbg \
 	  $(STAGING_PATH)/usr/bin/twm $(STAGING_PATH)/usr/include/WMaker.h \
 	  $(STAGING_PATH)/usr/include/wraster.h $(STAGING_PATH)/usr/lib/libWMaker.* \
-	  $(STAGING_PATH)/usr/lib/libWINGs.* $(STAGING_PATH)/usr/lib/libWUtil.* \
+	  $(STAGING_PATH)/usr/lib/libWINGs.* $(STAGING_PATH)/usr/lib/libWUtil.a \
+	  $(STAGING_PATH)/usr/lib/libWUtil.la $(STAGING_PATH)/usr/lib/libWUtil.so \
 	  $(STAGING_PATH)/usr/lib/libwraster.* $(STAGING_PATH)/usr/lib/pkgconfig/WINGs.pc \
 	  $(STAGING_PATH)/usr/lib/pkgconfig/WUtil.pc \
 	  $(STAGING_PATH)/usr/share/bash-completion/completions/wdctl \
@@ -828,6 +830,8 @@ iso:
 	chroot $(STAGING_PATH) glib-compile-schemas /usr/share/glib-2.0/schemas || true
 	rm -f $(STAGING_PATH)/etc/ld.so.cache
 	chroot $(STAGING_PATH) /usr/bin/ldconfig
+	rm -f $(STAGING_PATH)/etc/udev/hwdb.bin
+	/usr/bin/systemd-hwdb --root=$(STAGING_PATH) --usr update
 	rm -f $(STAGING_PATH)/etc/arkana-install-size
 	set -euo pipefail; \
 	INSTALL_ROOT_BYTES=$$(cd "$(STAGING_PATH)" && du -sx --apparent-size --block-size=1 --exclude='./boot/vmlinuz' --exclude='./boot/initramfs.img' . | awk '{print $$1}'); \
@@ -856,7 +860,7 @@ iso:
 	echo 'terminal_input serial console' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
 	echo 'terminal_output serial console' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
 	echo 'menuentry "arkanaOS" {' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
-	echo '    linux /boot/vmlinuz console=ttyS0,115200 console=tty0' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
+	echo '    linux /boot/vmlinuz console=tty0' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
 	echo '    initrd /boot/initramfs.img' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
 	echo '}' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
 
