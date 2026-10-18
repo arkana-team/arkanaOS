@@ -1,9 +1,15 @@
 # shellcheck shell=bash
-# Keep Bash's prompt as spare as a traditional Unix shell.
+# Use the uncolored host% / host# prompt common on traditional Unix systems.
 case ${BASH_VERSION-} in
   ?*)
     case $- in
-      *i*) PS1='\$ ' ;;
+      *i*)
+        if (( EUID == 0 )); then
+          PS1='\h# '
+        else
+          PS1='\h% '
+        fi
+        ;;
     esac
     ;;
 esac

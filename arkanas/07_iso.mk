@@ -754,10 +754,12 @@ iso:
 	mkdir -p $(STAGING_PATH)/etc/skel && cp -a xinitrc $(STAGING_PATH)/etc/skel/.xinitrc
 	install -D -m 0755 xinitrc $(STAGING_PATH)/usr/bin/arkana-nscde-session
 	install -D -o 0 -g 0 -m 0644 bash_profile $(STAGING_PATH)/root/.bash_profile
+	install -D -o 0 -g 0 -m 0644 bash_profile $(STAGING_PATH)/etc/skel/.bash_profile
 	install -D -o 0 -g 0 -m 0644 securetty $(STAGING_PATH)/etc/securetty
 	install -D -o 0 -g 0 -m 0644 bashrc $(STAGING_PATH)/root/.bashrc
 	install -D -o 0 -g 0 -m 0644 bashrc $(STAGING_PATH)/etc/skel/.bashrc
 	install -D -o 0 -g 0 -m 0644 bashrc $(STAGING_PATH)/etc/profile.d/arkana-shell.sh
+	install -D -o 0 -g 0 -m 0644 nscde-config/Xresources $(STAGING_PATH)/etc/X11/Xresources.d/arkanaOS
 	mkdir -p $(STAGING_PATH)/root/.NsCDE/backer $(STAGING_PATH)/etc/skel/.NsCDE/backer
 	cp -a nscde-config/Backdrops.fvwmgen $(STAGING_PATH)/root/.NsCDE/
 	cp -a nscde-config/Backdrops.fvwmgen $(STAGING_PATH)/etc/skel/.NsCDE/
