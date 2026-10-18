@@ -180,10 +180,10 @@ if [ -d /sys/firmware/efi ]; then
     mkdir -p /mnt/sys/firmware/efi/efivars
     mount --bind /sys/firmware/efi/efivars /mnt/sys/firmware/efi/efivars
   fi
-  if ! chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ArkanaOS; then
+  if ! chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=arkanaOS; then
     echo "Could not create an EFI NVRAM entry; installing the removable-media fallback loader."
   fi
-  chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=ArkanaOS --no-nvram --removable
+  chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=arkanaOS --no-nvram --removable
 else
   USES_EFI=0
   chroot /mnt grub-install --target=i386-pc "$SELDEV"
