@@ -11,5 +11,14 @@ if [ -f /run/initramfs/bootdev/boot/rootfs.sfs ]; then
   export NSCDE_SKIP_FIRST_RUN=1
 fi
 
+if command -v xrdb >/dev/null 2>&1; then
+  if [ -r /etc/X11/Xresources.d/arkanaOS ]; then
+    xrdb -merge /etc/X11/Xresources.d/arkanaOS 2>/dev/null || true
+  fi
+  if [ -r "$HOME/.Xresources" ]; then
+    xrdb -merge "$HOME/.Xresources" 2>/dev/null || true
+  fi
+fi
+
 xsetroot -cursor_name left_ptr 2>/dev/null || true
 exec /usr/bin/nscde

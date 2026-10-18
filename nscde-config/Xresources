@@ -1,0 +1,14 @@
+! arkanaOS Solaris workstation defaults for xterm.
+XTerm*background: #ffffff
+XTerm*foreground: #111111
+XTerm*cursorColor: #111111
+XTerm*faceName: Luxi Mono
+XTerm*faceSize: 10
+XTerm*geometry: 80x24
+XTerm*title: Terminal
+XTerm*iconName: Terminal
+XTerm*loginShell: true
+XTerm*scrollBar: true
+XTerm*rightScrollBar: true
+XTerm*saveLines: 1000
+XTerm*boldColors: false
