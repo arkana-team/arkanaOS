@@ -161,6 +161,8 @@ mkdir -p /mnt/{dev,proc,sys,run,mnt,tmp}
 
 rsync -axH --no-i-r --info=progress2 / /mnt
 rm -f /mnt/root/.NsCDE/NsCDE.conf
+rm -f /mnt/etc/systemd/system/getty@tty1.service.d/override.conf
+rm -f /mnt/etc/systemd/system/serial-getty@ttyS0.service.d/override.conf
 cp /run/initramfs/bootdev/boot/vmlinuz /mnt/boot/vmlinuz
 cp /run/initramfs/bootdev/boot/boot-initramfs.img /mnt/boot/initramfs.img
 
@@ -205,7 +207,7 @@ cat >> /mnt/etc/grub.d/29_main << EOF
 #!/bin/sh
 exec tail -n +3 \$0
 menuentry "$PRETTY_NAME" {
-  linux $KERNEL_PATH root=UUID=$ROOT_UUID console=ttyS0,115200 console=tty0
+  linux $KERNEL_PATH root=UUID=$ROOT_UUID console=tty0
   initrd $INITRAMFS_PATH
 }
 EOF
