@@ -406,13 +406,8 @@ systemd: download-systemd kernel-headers .systemd-done
 
 	echo "arkana" > $(STAGING_PATH)/etc/hostname
 	
-	echo "NAME=arkanaOS" > $(STAGING_PATH)/etc/os-release
-	echo "VERSION=nightly" >> $(STAGING_PATH)/etc/os-release
-	echo "ID=arkana" >> $(STAGING_PATH)/etc/os-release
-	echo "ID_LIKE=lfs" >> $(STAGING_PATH)/etc/os-release
-	echo "VERSION_ID=nightly" >> $(STAGING_PATH)/etc/os-release
-	echo "PRETTY_NAME='arkanaOS nightly'" >> $(STAGING_PATH)/etc/os-release
-	echo "ANSI_COLOR='38;5;6'" >> $(STAGING_PATH)/etc/os-release
+	BUILD_NUM="$$(cat "$(BUILDNUM_FILE)")"; \
+	printf 'NAME=arkanaOS\nVERSION="Release 1 Alpha 1"\nID=arkana\nID_LIKE=lfs\nVERSION_ID=r1a1\nPRETTY_NAME="arkanaOS r1a1 (build %s)"\nANSI_COLOR="38;5;6"\n' "$$BUILD_NUM" > "$(STAGING_PATH)/etc/os-release"
 
 	mkdir -p $(STAGING_PATH)/etc/systemd/system/getty@tty1.service.d
 	echo "[Service]" > $(STAGING_PATH)/etc/systemd/system/getty@tty1.service.d/override.conf
@@ -444,7 +439,7 @@ timestamp:
 	  mv -f "$$TMP" "$(BUILDNUM_FILE)"; \
 	fi; \
 	mkdir -p "$(STAGING_PATH)/etc"; \
-	printf 'arkanaOS nightly (%s) (build %s)\n' "$$(date +%Y%m%d)" "$$BUILD" > "$(STAGING_PATH)/etc/issue"; \
+	printf 'arkanaOS r1a1 (build %s)\n' "$$BUILD" > "$(STAGING_PATH)/etc/issue"; \
 	printf '%s\n' "$$BUILD" > "$(STAGING_PATH)/etc/arkana-build-number"
 
 # Download coreutils
