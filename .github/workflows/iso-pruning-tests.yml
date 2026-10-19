@@ -1,0 +1,28 @@
+name: ISO pruning safety tests
+
+on:
+  pull_request:
+    paths:
+      - "prune-runtime-docs"
+      - "prune-optional-devel"
+      - "tests/**"
+      - ".github/workflows/iso-pruning-tests.yml"
+  push:
+    paths:
+      - "prune-runtime-docs"
+      - "prune-optional-devel"
+      - "tests/**"
+      - ".github/workflows/iso-pruning-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  pruning:
+    name: Check ISO pruning safety
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Run pruning regression tests
+        run: python3 -m unittest discover -s tests -v
