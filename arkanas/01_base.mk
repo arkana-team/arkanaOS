@@ -429,6 +429,19 @@ timestamp:
 	@set -euo pipefail; \
 	exec 9>"$(BUILDNUM_FILE).lock"; \
 	flock -x 9; \
+	PREFIX="$${ARKANA_RELEASE_PREFIX:-nightly}"; \
+	PRERELEASE=true; \
+	if [[ "$$PREFIX" == nightly ]]; then \
+	  VERSION=Nightly; \
+	elif [[ "$$PREFIX" =~ ^r([1-9][0-9]*)-a([1-9][0-9]*)$$ ]]; then \
+	  VERSION="Release $${BASH_REMATCH[1]} Alpha $${BASH_REMATCH[2]}"; \
+	elif [[ "$$PREFIX" =~ ^r([1-9][0-9]*)-b([1-9][0-9]*)$$ ]]; then \
+	  VERSION="Release $${BASH_REMATCH[1]} Beta $${BASH_REMATCH[2]}"; \
+	elif [[ "$$PREFIX" =~ ^r([1-9][0-9]*)-([1-9][0-9]*)$$ ]]; then \
+	  VERSION="Release $${BASH_REMATCH[1]}"; PRERELEASE=false; \
+	else \
+	  echo "Invalid ARKANA_RELEASE_PREFIX: $$PREFIX" >&2; exit 1; \
+	fi; \
 	if [ -n "$${ARKANA_BUILD_NUMBER:-}" ]; then \
 	  BUILD="$$ARKANA_BUILD_NUMBER"; \
 	  CURRENT="$$(cat "$(BUILDNUM_FILE)" 2>/dev/null || echo 0)"; \
@@ -445,19 +458,6 @@ timestamp:
 	  printf '%s\n' "$$BUILD" > "$$TMP"; \
 	  chmod --reference="$(BUILDNUM_FILE)" "$$TMP"; chown --reference="$(BUILDNUM_FILE)" "$$TMP"; \
 	  mv -f "$$TMP" "$(BUILDNUM_FILE)"; \
-	fi; \
-	PREFIX="$${ARKANA_RELEASE_PREFIX:-nightly}"; \
-	PRERELEASE=true; \
-	if [[ "$$PREFIX" == nightly ]]; then \
-	  VERSION=Nightly; \
-	elif [[ "$$PREFIX" =~ ^r([1-9][0-9]*)-a([1-9][0-9]*)$$ ]]; then \
-	  VERSION="Release $${BASH_REMATCH[1]} Alpha $${BASH_REMATCH[2]}"; \
-	elif [[ "$$PREFIX" =~ ^r([1-9][0-9]*)-b([1-9][0-9]*)$$ ]]; then \
-	  VERSION="Release $${BASH_REMATCH[1]} Beta $${BASH_REMATCH[2]}"; \
-	elif [[ "$$PREFIX" =~ ^r([1-9][0-9]*)-([1-9][0-9]*)$$ ]]; then \
-	  VERSION="Release $${BASH_REMATCH[1]}"; PRERELEASE=false; \
-	else \
-	  echo "Invalid ARKANA_RELEASE_PREFIX: $$PREFIX" >&2; exit 1; \
 	fi; \
 	RELEASE_ID="$$PREFIX-$$BUILD"; \
 	mkdir -p "$(STAGING_PATH)/etc"; \
