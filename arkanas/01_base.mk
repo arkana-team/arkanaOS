@@ -390,7 +390,7 @@ download-systemd: .systemd-obtained
 
 # Compile systemd
 .PHONY: systemd
-systemd: download-systemd kernel-headers .systemd-done
+systemd: timestamp download-systemd kernel-headers .systemd-done release-metadata
 
 .systemd-done:
 	rm -rf $(SYSTEMD_PATH)/build
@@ -405,9 +405,6 @@ systemd: download-systemd kernel-headers .systemd-done
 	-D docdir=/usr/share/doc/systemd-$(SYSTEMD_VER) && ninja && DESTDIR=$(STAGING_PATH) ninja install
 
 	echo "arkana" > $(STAGING_PATH)/etc/hostname
-	
-	BUILD_NUM="$$(cat "$(BUILDNUM_FILE)")"; \
-	printf 'NAME=arkanaOS\nVERSION="Release 1 Alpha 1"\nID=arkana\nID_LIKE=lfs\nVERSION_ID=r1a1\nPRETTY_NAME="arkanaOS r1a1 (build %s)"\nANSI_COLOR="38;5;6"\n' "$$BUILD_NUM" > "$(STAGING_PATH)/etc/os-release"
 
 	mkdir -p $(STAGING_PATH)/etc/systemd/system/getty@tty1.service.d
 	echo "[Service]" > $(STAGING_PATH)/etc/systemd/system/getty@tty1.service.d/override.conf
@@ -415,6 +412,17 @@ systemd: download-systemd kernel-headers .systemd-done
 	echo "ExecStart=-/sbin/agetty --autologin root --noclear %I $$TERM" >> $(STAGING_PATH)/etc/systemd/system/getty@tty1.service.d/override.conf
 	
 	touch .systemd-done
+
+.PHONY: release-metadata
+release-metadata: timestamp
+	@set -euo pipefail; \
+	BUILD="$$(cat "$(STAGING_PATH)/etc/arkana-build-number")"; \
+	RELEASE_ID="$$(cat "$(STAGING_PATH)/etc/arkana-release-id")"; \
+	VERSION="$$(cat "$(STAGING_PATH)/etc/arkana-release-version")"; \
+	mkdir -p "$(STAGING_PATH)/etc"; \
+	printf 'NAME=arkanaOS\nVERSION="%s"\nID=arkana\nID_LIKE=lfs\nVERSION_ID="%s"\nPRETTY_NAME="arkanaOS %s"\nANSI_COLOR="38;5;6"\n' \
+	  "$$VERSION" "$$RELEASE_ID" "$$RELEASE_ID" > "$(STAGING_PATH)/etc/os-release"; \
+	printf 'arkanaOS %s\n' "$$RELEASE_ID" > "$(STAGING_PATH)/etc/issue"
 
 .PHONY: timestamp
 timestamp:
@@ -438,9 +446,26 @@ timestamp:
 	  chmod --reference="$(BUILDNUM_FILE)" "$$TMP"; chown --reference="$(BUILDNUM_FILE)" "$$TMP"; \
 	  mv -f "$$TMP" "$(BUILDNUM_FILE)"; \
 	fi; \
+	PREFIX="$${ARKANA_RELEASE_PREFIX:-nightly}"; \
+	PRERELEASE=true; \
+	if [[ "$$PREFIX" == nightly ]]; then \
+	  VERSION=Nightly; \
+	elif [[ "$$PREFIX" =~ ^r([1-9][0-9]*)-a([1-9][0-9]*)$$ ]]; then \
+	  VERSION="Release $${BASH_REMATCH[1]} Alpha $${BASH_REMATCH[2]}"; \
+	elif [[ "$$PREFIX" =~ ^r([1-9][0-9]*)-b([1-9][0-9]*)$$ ]]; then \
+	  VERSION="Release $${BASH_REMATCH[1]} Beta $${BASH_REMATCH[2]}"; \
+	elif [[ "$$PREFIX" =~ ^r([1-9][0-9]*)-([1-9][0-9]*)$$ ]]; then \
+	  VERSION="Release $${BASH_REMATCH[1]}"; PRERELEASE=false; \
+	else \
+	  echo "Invalid ARKANA_RELEASE_PREFIX: $$PREFIX" >&2; exit 1; \
+	fi; \
+	RELEASE_ID="$$PREFIX-$$BUILD"; \
 	mkdir -p "$(STAGING_PATH)/etc"; \
-	printf 'arkanaOS r1a1 (build %s)\n' "$$BUILD" > "$(STAGING_PATH)/etc/issue"; \
-	printf '%s\n' "$$BUILD" > "$(STAGING_PATH)/etc/arkana-build-number"
+	printf '%s\n' "$$BUILD" > "$(STAGING_PATH)/etc/arkana-build-number"; \
+	printf '%s\n' "$$PREFIX" > "$(STAGING_PATH)/etc/arkana-release-prefix"; \
+	printf '%s\n' "$$RELEASE_ID" > "$(STAGING_PATH)/etc/arkana-release-id"; \
+	printf '%s\n' "$$VERSION" > "$(STAGING_PATH)/etc/arkana-release-version"; \
+	printf '%s\n' "$$PRERELEASE" > "$(STAGING_PATH)/etc/arkana-release-prerelease"
 
 # Download coreutils
 .PHONY: download-coreutils
