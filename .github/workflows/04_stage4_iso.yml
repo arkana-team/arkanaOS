@@ -108,29 +108,30 @@ jobs:
             -e CCACHE_DIR=/home/builder/.cache/ccache \
             arkana-builder bash -c "sudo --preserve-env make -f arkanas/07_iso.mk"
 
+      - name: Generate Release Notes & Tags from Template
+        run: |
+          BUILD_NUM=$(cat staging/etc/arkana-build-number 2>/dev/null || cat .buildnum 2>/dev/null || echo "0")
+          if ! [[ "$BUILD_NUM" =~ ^[0-9]+$ ]]; then
+            echo "Invalid arkanaOS build number: $BUILD_NUM" >&2
+            exit 1
+          fi
+          sed -i "s/BUILD_NUM/$BUILD_NUM/g" RELEASE_TEMPLATE.md
+          echo "BUILD_NUM=$BUILD_NUM" >> $GITHUB_ENV
+
       - name: Upload Final arkanaOS ISO Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: arkanaOS-nightly-iso
+          name: arkanaOS-r1a1-build-${{ env.BUILD_NUM }}-iso
           path: output/arkana.iso
           if-no-files-found: error
           retention-days: 14
-
-      - name: Generate Release Notes & Tags from Template
-        run: |
-          BUILD_DATE=$(date +%Y%m%d)
-          BUILD_NUM=$(cat staging/etc/arkana-build-number 2>/dev/null || cat .buildnum 2>/dev/null || echo "0")
-          sed -i "s/BUILD_DATE/$BUILD_DATE/g" RELEASE_TEMPLATE.md
-          sed -i "s/BUILD_NUM/$BUILD_NUM/g" RELEASE_TEMPLATE.md
-          echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
-          echo "BUILD_NUM=$BUILD_NUM" >> $GITHUB_ENV
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         if: success()
         with:
-          tag_name: nightly-${{ env.BUILD_DATE }}-build-${{ env.BUILD_NUM }}
-          name: arkanaOS Nightly Build (${{ env.BUILD_DATE }})
+          tag_name: arkanaOS-r1a1-build-${{ env.BUILD_NUM }}
+          name: arkanaOS r1a1 (build ${{ env.BUILD_NUM }})
           body_path: RELEASE_TEMPLATE.md
           files: output/arkana.iso
           prerelease: true
