@@ -1,6 +1,6 @@
-# arkanaOS r1a1
+# arkanaOS RELEASE_ID
 
-arkanaOS r1a1 (build BUILD_NUM)
+arkanaOS RELEASE_ID
 
 **Testing Results:**
 Testing is not done yet.

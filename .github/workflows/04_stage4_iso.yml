@@ -110,18 +110,39 @@ jobs:
 
       - name: Generate Release Notes & Tags from Template
         run: |
-          BUILD_NUM=$(cat staging/etc/arkana-build-number 2>/dev/null || cat .buildnum 2>/dev/null || echo "0")
+          BUILD_NUM=$(cat staging/etc/arkana-build-number)
+          RELEASE_PREFIX=$(cat staging/etc/arkana-release-prefix)
+          RELEASE_ID=$(cat staging/etc/arkana-release-id)
+          RELEASE_PRERELEASE=$(cat staging/etc/arkana-release-prerelease)
           if ! [[ "$BUILD_NUM" =~ ^[0-9]+$ ]]; then
             echo "Invalid arkanaOS build number: $BUILD_NUM" >&2
             exit 1
           fi
-          sed -i "s/BUILD_NUM/$BUILD_NUM/g" RELEASE_TEMPLATE.md
-          echo "BUILD_NUM=$BUILD_NUM" >> $GITHUB_ENV
+          if ! [[ "$RELEASE_PREFIX" =~ ^(nightly|r[1-9][0-9]*-(a[1-9][0-9]*|b[1-9][0-9]*|[1-9][0-9]*))$ ]]; then
+            echo "Invalid arkanaOS release prefix: $RELEASE_PREFIX" >&2
+            exit 1
+          fi
+          if [[ "$RELEASE_ID" != "${RELEASE_PREFIX}-${BUILD_NUM}" ]]; then
+            echo "Release ID does not match the staged build number." >&2
+            exit 1
+          fi
+          if [[ "$RELEASE_PREFIX" == nightly || "$RELEASE_PREFIX" =~ -[ab][1-9][0-9]*$ ]]; then
+            EXPECTED_PRERELEASE=true
+          else
+            EXPECTED_PRERELEASE=false
+          fi
+          if [[ "$RELEASE_PRERELEASE" != "$EXPECTED_PRERELEASE" ]]; then
+            echo "Release prerelease status does not match its prefix." >&2
+            exit 1
+          fi
+          sed -i "s/RELEASE_ID/$RELEASE_ID/g" RELEASE_TEMPLATE.md
+          echo "RELEASE_ID=$RELEASE_ID" >> "$GITHUB_ENV"
+          echo "RELEASE_PRERELEASE=$RELEASE_PRERELEASE" >> "$GITHUB_ENV"
 
       - name: Upload Final arkanaOS ISO Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: arkanaOS-r1a1-build-${{ env.BUILD_NUM }}-iso
+          name: arkanaOS-${{ env.RELEASE_ID }}-iso
           path: output/arkana.iso
           if-no-files-found: error
           retention-days: 14
@@ -130,11 +151,11 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: success()
         with:
-          tag_name: arkanaOS-r1a1-build-${{ env.BUILD_NUM }}
-          name: arkanaOS r1a1 (build ${{ env.BUILD_NUM }})
+          tag_name: ${{ env.RELEASE_ID }}
+          name: arkanaOS ${{ env.RELEASE_ID }}
           body_path: RELEASE_TEMPLATE.md
           files: output/arkana.iso
-          prerelease: true
+          prerelease: ${{ env.RELEASE_PRERELEASE }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
