@@ -2,7 +2,19 @@ name: 1. Build Base System
 
 on:
   workflow_dispatch:
+    inputs:
+      release_prefix:
+        description: "Release label before the automatic build number (nightly, r1-a1, r1-b1, r1-1)"
+        required: true
+        default: nightly
+        type: string
   workflow_call:
+    inputs:
+      release_prefix:
+        description: "Release label before the automatic build number"
+        required: false
+        default: nightly
+        type: string
 
 concurrency:
   group: arkana-build-number-${{ github.ref }}
@@ -71,6 +83,8 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Build Base Stage
+        env:
+          ARKANA_RELEASE_PREFIX: ${{ inputs.release_prefix }}
         run: |
           mkdir -p src staging output
           docker run --rm \
@@ -79,6 +93,7 @@ jobs:
             -v "$(pwd)/output:/build/arkana/output" \
             -v "$HOME/.cache/ccache:/home/builder/.cache/ccache" \
             -e ARKANA_BUILD_NUMBER="${{ steps.reserve_build_number.outputs.number }}" \
+            -e ARKANA_RELEASE_PREFIX="$ARKANA_RELEASE_PREFIX" \
             -e CCACHE_DIR=/home/builder/.cache/ccache \
             arkana-builder bash -c "sudo --preserve-env make -f arkanas/01_base.mk"
 

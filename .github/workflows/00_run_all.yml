@@ -2,6 +2,12 @@ name: Run All Pipeline Stages
 
 on:
   workflow_dispatch:
+    inputs:
+      release_prefix:
+        description: "Release label before the automatic build number (nightly, r1-a1, r1-b1, r1-1)"
+        required: true
+        default: nightly
+        type: string
 
 concurrency:
   group: run-all-${{ github.ref }}
@@ -14,6 +20,8 @@ permissions:
 jobs:
   stage1:
     uses: ./.github/workflows/01_stage1_base.yml
+    with:
+      release_prefix: ${{ inputs.release_prefix }}
     secrets: inherit
 
   stage2:
