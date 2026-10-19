@@ -381,7 +381,13 @@ PATTERNS = (
 )
 
 
-def remove_path(path: Path) -> bool:
+def remove_path(root: Path, path: Path) -> bool:
+    try:
+        path.relative_to(root)
+        path.parent.resolve(strict=False).relative_to(root)
+    except (OSError, RuntimeError, ValueError):
+        return False
+
     if path.is_symlink() or path.is_file():
         path.unlink()
         return True
@@ -405,10 +411,10 @@ def main() -> None:
 
     removed = 0
     for relative in (*DIRECTORIES, *FILES):
-        removed += remove_path(root / relative)
+        removed += remove_path(root, root / relative)
     for pattern in PATTERNS:
         for path in root.glob(pattern):
-            removed += remove_path(path)
+            removed += remove_path(root, path)
     marker.unlink()
     print(f"Removed {removed} optional development paths from {root}")
 
