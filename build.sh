@@ -57,6 +57,8 @@ docker run --rm -it --init \
   -e HOST_UID="$(id -u)" \
   -e HOST_GID="$(id -g)" \
   -e ARKANA_BUILD_NUMBER \
+  -e THREADS="$CPUS" \
+  -e NINJAJOBS="$CPUS" \
   --memory=${CONTAINER_RAM_MB}m \
   --memory-swap=${TOTAL_MEM_SWAP_MB}m \
   --cpus="$CPUS" \

@@ -435,7 +435,7 @@ download-pkgconf: .pkgconf-obtained
 	touch .pkgconf-obtained
 pkgconf: download-pkgconf .pkgconf-done
 .pkgconf-done:
-	cd $(PKGCONF_PATH) && meson setup --native-file $(SRC_PATH)/cross_file.txt build --prefix=/usr --buildtype=release --wrap-mode=nofallback -Dwith-pkg-config-dir=/usr/lib/pkgconfig:/usr/share/pkgconfig -Dwith-system-libdir=/usr/lib -Dwith-system-includedir=/usr/include && ninja -C build && DESTDIR=$(STAGING_PATH) ninja -C build install && ln -sf pkgconf $(STAGING_PATH)/usr/bin/pkg-config
+	cd $(PKGCONF_PATH) && meson setup --native-file $(SRC_PATH)/cross_file.txt build --prefix=/usr --buildtype=release --wrap-mode=nofallback -Dwith-pkg-config-dir=/usr/lib/pkgconfig:/usr/share/pkgconfig -Dwith-system-libdir=/usr/lib -Dwith-system-includedir=/usr/include && ninja -j$(THREADS) -C build && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) -C build install && ln -sf pkgconf $(STAGING_PATH)/usr/bin/pkg-config
 	touch .pkgconf-done
 download-gdb: .gdb-obtained
 .gdb-obtained:

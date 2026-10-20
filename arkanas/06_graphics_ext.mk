@@ -116,8 +116,8 @@ download-wayland: .wayland-obtained
 
 wayland: download-wayland .wayland-done
 .wayland-done:
-	mkdir -p $(WAYLAND_PATH)/build && cd $(WAYLAND_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D documentation=false && ninja && \
-	DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(WAYLAND_PATH)/build && cd $(WAYLAND_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D documentation=false && ninja -j$(THREADS) && \
+	DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .wayland-done
 
 download-wayland-protocols: .wayland-protocols-obtained
@@ -127,8 +127,8 @@ download-wayland-protocols: .wayland-protocols-obtained
 
 wayland-protocols: download-wayland-protocols .wayland-protocols-done
 .wayland-protocols-done:
-	mkdir -p $(WAYLAND_PROTOCOLS_PATH)/build && cd $(WAYLAND_PROTOCOLS_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -Dtests=false -Dc_args="-Wno-error" -Dcpp_args="-Wno-error" && ninja && \
-	DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(WAYLAND_PROTOCOLS_PATH)/build && cd $(WAYLAND_PROTOCOLS_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -Dtests=false -Dc_args="-Wno-error" -Dcpp_args="-Wno-error" && ninja -j$(THREADS) && \
+	DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .wayland-protocols-done
 
 download-weston: .weston-obtained
@@ -140,7 +140,7 @@ weston: download-weston libxkbcommon seatd .weston-done
 .weston-done:
     # Why are you using outdated FFmpeg syntax?
 	mkdir -p $(WESTON_PATH)/build && cd $(WESTON_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -Ddemo-clients=false -Dbackend-vnc=false -Dcolor-management-lcms=false -Dimage-webp=false -Dpipewire=false -Dbackend-pipewire=false -Dbackend-rdp=false -Dremoting=false -Dtests=false -Dshell-kiosk=false -Dshell-fullscreen=false -Dbackend-drm-screencast-vaapi=false -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lglib-2.0 -lgobject-2.0 -lpng16" && \
-	DESTDIR=$(STAGING_PATH) ninja install
+	DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .weston-done
 
 download-libxkbcommon: .libxkbcommon-obtained
@@ -150,8 +150,8 @@ download-libxkbcommon: .libxkbcommon-obtained
 
 libxkbcommon: download-libxkbcommon .libxkbcommon-done
 .libxkbcommon-done:
-	mkdir -p $(LIBXKBCOMMON_PATH)/build && cd $(LIBXKBCOMMON_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D enable-docs=false && ninja && \
-	DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(LIBXKBCOMMON_PATH)/build && cd $(LIBXKBCOMMON_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D enable-docs=false && ninja -j$(THREADS) && \
+	DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .libxkbcommon-done
 
 download-libunwind: .libunwind-obtained
@@ -196,7 +196,7 @@ download-libtiff: .libtiff-obtained
 libtiff: download-libtiff .libtiff-done
 .libtiff-done:
 	mkdir -p $(LIBTIFF_PATH)/build && cd $(LIBTIFF_PATH)/build && cmake -D CMAKE_INSTALL_PREFIX=/usr -D CMAKE_BUILD_TYPE=Release \
-	-W no-dev -G Ninja .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	-W no-dev -G Ninja .. && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .libtiff-done
 
 download-libdeflate: .libdeflate-obtained
@@ -233,7 +233,7 @@ download-xwayland: .xwayland-obtained
 xwayland: download-xwayland .xwayland-done
 .xwayland-done:
 	cd $(XWAYLAND_PATH) && sed -i '/install_man/,$$d' meson.build && mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -Dxkb_output_dir=/var/lib/xkb .. && \
-	ninja && DESTDIR=$(STAGING_PATH) ninja install
+	ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .xwayland-done
 
 download-libepoxy: .libepoxy-obtained
@@ -243,7 +243,7 @@ download-libepoxy: .libepoxy-obtained
 
 libepoxy: download-libepoxy .libepoxy-done
 .libepoxy-done:
-	cd $(LIBEPOXY_PATH) && mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	cd $(LIBEPOXY_PATH) && mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .libepoxy-done
 
 download-libdisplay-info: .libdisplay-info-obtained
@@ -253,7 +253,7 @@ download-libdisplay-info: .libdisplay-info-obtained
 
 libdisplay-info: download-libdisplay-info .libdisplay-info-done
 .libdisplay-info-done:
-	cd $(LIBDISPLAY_INFO_PATH) && mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	cd $(LIBDISPLAY_INFO_PATH) && mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .libdisplay-info-done
 
 HWDATA_URL = https://github.com/vcrhonek/hwdata/archive/refs/tags/v0.392.tar.gz
@@ -285,7 +285,7 @@ wlroots: download-wlroots libdisplay-info seatd hwdata .wlroots-done
 	meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -D backends=drm,libinput -D renderers=gles2 -D examples=false build .; fi && \
 	cd build && \
 	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
-	ninja && DESTDIR=$(STAGING_PATH) ninja install && \
+	ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install && \
 	sed -i 's|prefix=/usr|prefix=$(STAGING_PATH)/usr|g' $(STAGING_PATH)/usr/lib/pkgconfig/wlroots*.pc
 	touch .wlroots-done
 
@@ -307,7 +307,7 @@ download-libsfdo: .libsfdo-obtained
 
 libsfdo: download-libsfdo .libsfdo-done
 .libsfdo-done:
-	cd $(LIBSFDO_PATH) && mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install && \
+	cd $(LIBSFDO_PATH) && mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install && \
 	sed -i 's|prefix=/usr|prefix=$(STAGING_PATH)/usr|g' $(STAGING_PATH)/usr/lib/pkgconfig/libsfdo*.pc
 	touch .libsfdo-done
 
@@ -339,7 +339,7 @@ labwc: download-labwc wlroots xcb-util-wm libsfdo libxml2 .labwc-done
 	CFLAGS="-I$(STAGING_PATH)/usr/include/wlroots-0.19 -I$(STAGING_PATH)/usr/include -I$(STAGING_PATH)/usr/include/pixman-1" \
 	LDFLAGS="-L$(STAGING_PATH)/usr/lib -lwacom" \
 	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
-	meson setup --prefix=/usr --native-file $(SRC_PATH)/cross_file.txt -Dc_args="-Uunix" -Dc_link_args="-lpng16" --buildtype=release --wrap-mode=nodownload .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	meson setup --prefix=/usr --native-file $(SRC_PATH)/cross_file.txt -Dc_args="-Uunix" -Dc_link_args="-lpng16" --buildtype=release --wrap-mode=nodownload .. && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	# Why is pam_systemd.so not doing this for us?
 	echo >> $(STAGING_PATH)/etc/profile
 	echo '# Set XDG_RUNTIME_DIR if not already set by the system' >> $(STAGING_PATH)/etc/profile
@@ -363,7 +363,7 @@ download-seatd: .seatd-obtained
 
 seatd: download-seatd .seatd-done
 .seatd-done:
-	cd $(SEATD_PATH) && mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -Dc_args="-Uunix" -Dserver=enabled -Dlibseat-logind=disabled .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	cd $(SEATD_PATH) && mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -Dc_args="-Uunix" -Dserver=enabled -Dlibseat-logind=disabled .. && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 
 	# Generate a systemd service so that apps can obtain user sessions via it
 	echo '[Unit]' > $(STAGING_PATH)/usr/lib/systemd/system/seatd.service

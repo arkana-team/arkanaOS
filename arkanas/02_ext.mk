@@ -391,8 +391,8 @@ download-iputils: .iputils-obtained
 # Compile iputils
 iputils: download-iputils .iputils-done
 .iputils-done:
-	mkdir -p $(IPUTILS_PATH)/build && cd $(IPUTILS_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && \
-	DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(IPUTILS_PATH)/build && cd $(IPUTILS_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja -j$(THREADS) && \
+	DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .iputils-done
 
 # Download NetworkManager
@@ -405,7 +405,7 @@ download-networkmanager: .networkmanager-obtained
 networkmanager: download-networkmanager .networkmanager-done
 .networkmanager-done:
 	mkdir -p $(NETWORKMANAGER_PATH)/build && cd $(NETWORKMANAGER_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D nmtui=false -D ovs=false -D ppp=false -D selinux=false \
-	-D qt=false -D session_tracking=no -D modem_manager=false -D introspection=false -D crypto=gnutls -D polkit=false -D concheck=false -D nbft=false && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	-D qt=false -D session_tracking=no -D modem_manager=false -D introspection=false -D crypto=gnutls -D polkit=false -D concheck=false -D nbft=false && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	echo "[main]" > $(STAGING_PATH)/etc/NetworkManager/NetworkManager.conf
 	echo "plugins=keyfile" >> $(STAGING_PATH)/etc/NetworkManager/NetworkManager.conf && mkdir -p $(STAGING_PATH)/etc/systemd/system/multi-user.target.wants
 	ln -sf /usr/lib/systemd/system/NetworkManager.service $(STAGING_PATH)/etc/systemd/system/multi-user.target.wants/NetworkManager.service
@@ -484,7 +484,7 @@ download-libpsl: .libpsl-obtained
 # Compile libpsl
 libpsl: download-libpsl .libpsl-done
 .libpsl-done:
-	mkdir -p $(LIBPSL_PATH)/build && cd $(LIBPSL_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(LIBPSL_PATH)/build && cd $(LIBPSL_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .libpsl-done
 
 # Download newt
@@ -536,7 +536,7 @@ glib: download-glib .glib-done
 	sed -i 's/free_sized (mem, size)/free(mem)/' $(GLIB_PATH)/glib/gmem.c
 	sed -i 's/free_aligned_sized (mem, alignment, size)/free(mem)/' $(GLIB_PATH)/glib/gmem.c
 	cd $(GLIB_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release \
-	-D glib_debug=disabled -D sysprof=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	-D glib_debug=disabled -D sysprof=disabled && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .glib-done
 
 # Download GnuTLS
@@ -588,7 +588,7 @@ p11-kit: download-p11-kit .p11-kit-done
 .p11-kit-done:
 	cd $(P11_KIT_PATH) && sed '20,$$ d' -i trust/trust-extract-compat && echo "/usr/lib/make-ca/copy-trust-modifications" >> trust/trust-extract-compat && \
 	echo "/usr/sbin/make-ca -r" >> trust/trust-extract-compat && mkdir -p $(P11_KIT_PATH)/build && cd $(P11_KIT_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D trust_paths=/etc/pki/anchors && \
-	ninja && DESTDIR=$(STAGING_PATH) ninja install && ln -sf /usr/lib/p11-kit/trust-extract-compat $(STAGING_PATH)/usr/bin/update-ca-certificates && ln -sf /usr/lib/pkcs11/p11-kit-trust.so \
+	ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install && ln -sf /usr/lib/p11-kit/trust-extract-compat $(STAGING_PATH)/usr/bin/update-ca-certificates && ln -sf /usr/lib/pkcs11/p11-kit-trust.so \
 	$(STAGING_PATH)/usr/lib/libnssckbi.so
 	touch .p11-kit-done
 
@@ -703,8 +703,8 @@ download-libnvme: .libnvme-obtained
 # Compile libnvme
 libnvme: download-libnvme .libnvme-done
 .libnvme-done:
-	mkdir -p $(LIBNVME_PATH)/build && cd $(LIBNVME_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -D libdbus=auto .. && ninja && \
-	DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(LIBNVME_PATH)/build && cd $(LIBNVME_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -D libdbus=auto .. && ninja -j$(THREADS) && \
+	DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .libnvme-done
 
 # Download findutils
@@ -987,8 +987,8 @@ download-kmod: .kmod-obtained
 # Compile kmod (meson build; -Dmanpages=false skips the scdoc dependency)
 kmod: download-kmod .kmod-done
 .kmod-done:
-	mkdir -p $(KMOD_PATH)/build && cd $(KMOD_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -Dmanpages=false .. && ninja && \
-	DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(KMOD_PATH)/build && cd $(KMOD_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -Dmanpages=false .. && ninja -j$(THREADS) && \
+	DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .kmod-done
 
 # Download pciutils

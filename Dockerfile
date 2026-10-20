@@ -1,7 +1,6 @@
 FROM archlinux:latest
 
 ENV PACMAN_NOCONFIRM=1
-ENV NINJAFLAGS="-j$(nproc)"
 ENV CFLAGS="-O2 -pipe -std=gnu17"
 ENV CXXFLAGS="-O2 -pipe -std=gnu++17"
 ENV LDFLAGS="-fuse-ld=mold -Wl,-O1 -Wl,--as-needed"

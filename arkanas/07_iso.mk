@@ -231,7 +231,7 @@ at-spi2-core: download-at-spi2-core .at-spi2-core-done
 	PKG_CONFIG_LIBDIR="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_SYSROOT_DIR="$(STAGING_PATH)" \
 	CPPFLAGS="-I$(STAGING_PATH)/usr/include" CFLAGS="-O2 -pipe -I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" \
 	meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release --wrap-mode=nofallback \
-	-Ddocs=false -Dintrospection=disabled -Dgtk2_atk_adaptor=false -Dx11=enabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	-Ddocs=false -Dintrospection=disabled -Dgtk2_atk_adaptor=false -Dx11=enabled && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .at-spi2-core-done
 
 download-libXdamage: .libXdamage-obtained
@@ -262,7 +262,7 @@ gtk3: download-gtk3 alsa-lib at-spi2-core libXdamage .gtk3-done
 	meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release --wrap-mode=nofallback \
 	-Dx11_backend=true -Dwayland_backend=true -Dbroadway_backend=false -Dcolord=no -Dcloudproviders=false -Dtracker3=false \
 	-Dprint_backends=file -Dgtk_doc=false -Dman=false -Dintrospection=false -Ddemos=false -Dexamples=false -Dtests=false && \
-	ninja && DESTDIR=$(STAGING_PATH) ninja install
+	ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .gtk3-done
 
 # Download cpio
@@ -476,7 +476,7 @@ harfbuzz: download-harfbuzz .harfbuzz-done
 
 .harfbuzz-done:
 	mkdir -p $(HARFBUZZ_PATH)/build	&& cd $(HARFBUZZ_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release \
-	-D graphite2=enabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	-D graphite2=enabled && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .harfbuzz-done
 
 # Download glib
@@ -494,7 +494,7 @@ glib: download-glib .glib-done
 	sed -i 's/free_sized (mem, size)/free(mem)/' $(GLIB_PATH)/glib/gmem.c
 	sed -i 's/free_aligned_sized (mem, alignment, size)/free(mem)/' $(GLIB_PATH)/glib/gmem.c
 	cd $(GLIB_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release \
-	-D glib_debug=disabled -D sysprof=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	-D glib_debug=disabled -D sysprof=disabled && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .glib-done
 
 # Download libffi
@@ -571,8 +571,8 @@ download-cairo: .cairo-obtained
 cairo: download-cairo .cairo-done
 
 .cairo-done:
-	mkdir -p $(CAIRO_PATH)/build && cd $(CAIRO_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && \
-	DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(CAIRO_PATH)/build && cd $(CAIRO_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja -j$(THREADS) && \
+	DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .cairo-done
 
 # Download fontconfig
@@ -632,8 +632,8 @@ download-pixman: .pixman-obtained
 pixman: download-pixman .pixman-done
 
 .pixman-done:
-	mkdir -p $(PIXMAN_PATH)/build && cd $(PIXMAN_PATH)/build && meson setup --prefix=/usr --native-file $(SRC_PATH)/cross_file.txt --buildtype=release .. && ninja && \
-	DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(PIXMAN_PATH)/build && cd $(PIXMAN_PATH)/build && meson setup --prefix=/usr --native-file $(SRC_PATH)/cross_file.txt --buildtype=release .. && ninja -j$(THREADS) && \
+	DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .pixman-done
 
 # Download libpng

@@ -402,7 +402,7 @@ systemd: download-systemd kernel-headers .systemd-done
 	-D man=auto -D sysusers=false -D rpmmacrosdir=no -D homed=disabled \
 	-D userdb=false -D mode=release -D pam=enabled -D pamconfdir=/etc/pam.d \
 	-D dev-kvm-mode=0660 -D nobody-group=nogroup -D sysupdate=disabled -D ukify=disabled -D dbus-interfaces-dir=no \
-	-D docdir=/usr/share/doc/systemd-$(SYSTEMD_VER) && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	-D docdir=/usr/share/doc/systemd-$(SYSTEMD_VER) && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 
 	echo "arkana" > $(STAGING_PATH)/etc/hostname
 	
@@ -720,7 +720,7 @@ linux-pam: download-linux-pam .linux-pam-done .linux-pam-systemd-login-done
 	mkdir -p $(LINUX_PAM_PATH)/build && cd $(LINUX_PAM_PATH)/build && \
 	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
 	CFLAGS="-I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib" \
-	meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -Ddocs=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install && \
+	meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -Ddocs=disabled && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install && \
 	chmod 4755 $(STAGING_PATH)/usr/sbin/unix_chkpwd && cp -a /etc/pam.d/* $(STAGING_PATH)/etc/pam.d/ && cp ../../../passwd $(STAGING_PATH)/etc/passwd && \
 	cp ../../../shadow $(STAGING_PATH)/etc/shadow && cp ../../../group $(STAGING_PATH)/etc/group
 	touch .linux-pam-done
@@ -1162,8 +1162,8 @@ download-libfuse: .libfuse-obtained
 libfuse: download-libfuse .libfuse-done
 
 .libfuse-done:
-	mkdir -p $(LIBFUSE_PATH)/build && cd $(LIBFUSE_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && \
-	DESTDIR=$(STAGING_PATH) ninja install && chmod u+s $(STAGING_PATH)/usr/bin/fusermount3 && cd .. && \
+	mkdir -p $(LIBFUSE_PATH)/build && cd $(LIBFUSE_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja -j$(THREADS) && \
+	DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install && chmod u+s $(STAGING_PATH)/usr/bin/fusermount3 && cd .. && \
 	cp -R doc/html -T $(STAGING_PATH)/usr/share/doc/fuse-$(LIBFUSE_VER) && install -v -m644 doc/{README.NFS,kernel.txt} $(STAGING_PATH)/usr/share/doc/fuse-$(LIBFUSE_VER)
 	touch .libfuse-done
 
@@ -1178,8 +1178,8 @@ download-dbus: .dbus-obtained
 # Compile D-Bus
 dbus: download-dbus .dbus-done
 .dbus-done:
-	mkdir -p $(DBUS_PATH)/build && cd $(DBUS_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release --wrap-mode=nofallback .. && ninja && \
-	DESTDIR=$(STAGING_PATH) ninja install || exit 1 && chown 0:18 $(STAGING_PATH)/usr/lib/dbus-daemon-launch-helper || true && \
+	mkdir -p $(DBUS_PATH)/build && cd $(DBUS_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release --wrap-mode=nofallback .. && ninja -j$(THREADS) && \
+	DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install || exit 1 && chown 0:18 $(STAGING_PATH)/usr/lib/dbus-daemon-launch-helper || true && \
 	chmod 4750 $(STAGING_PATH)/usr/lib/dbus-daemon-launch-helper || true && if [ -e $(STAGING_PATH)/usr/share/doc/dbus ]; then rm -rf $(STAGING_PATH)/usr/share/doc/dbus-$(DBUS_VER) && \
 	mv $(STAGING_PATH)/usr/share/doc/dbus{,-$(DBUS_VER)}; fi && rm -rf $(STAGING_PATH)/usr/bin/dbus-launch
 	touch .dbus-done
@@ -1196,7 +1196,7 @@ download-dbus-broker: .dbus-broker-obtained
 dbus-broker: download-dbus-broker .dbus-broker-done
 .dbus-broker-done:
 	mkdir -p $(DBUS_BROKER_PATH)/build && cd $(DBUS_BROKER_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && \
-	ninja && DESTDIR=$(STAGING_PATH) ninja install && mv $(STAGING_PATH)/usr/lib/systemd/system/dbus-broker.service $(STAGING_PATH)/usr/lib/systemd/system/dbus.service 
+	ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install && mv $(STAGING_PATH)/usr/lib/systemd/system/dbus-broker.service $(STAGING_PATH)/usr/lib/systemd/system/dbus.service
 	touch .dbus-broker-done
 
 # Download Kbd
