@@ -758,6 +758,8 @@ linux-pam: download-linux-pam .linux-pam-done .linux-pam-systemd-login-done
 	@grep -qsE '^[[:space:]]*-?session[[:space:]].*pam_systemd\.so([[:space:]]|$$)' \
 	  $(STAGING_PATH)/etc/pam.d/login || \
 	  printf '\nsession optional pam_systemd.so\n' >> $(STAGING_PATH)/etc/pam.d/login
+	chmod 0644 $(STAGING_PATH)/etc/passwd $(STAGING_PATH)/etc/group
+	chmod 0640 $(STAGING_PATH)/etc/shadow
 	touch $@
 
 # Download shadow
