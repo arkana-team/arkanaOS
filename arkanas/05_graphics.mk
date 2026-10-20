@@ -238,7 +238,7 @@ download-xorgproto: .xorgproto-obtained
 
 xorgproto: download-xorgproto .xorgproto-done
 .xorgproto-done:
-	mkdir -p $(XORGPROTO_PATH)/build && cd $(XORGPROTO_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(XORGPROTO_PATH)/build && cd $(XORGPROTO_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .xorgproto-done
 
 XTRANS_URL = https://xorg.freedesktop.org/releases/individual/lib/xtrans-1.5.1.tar.xz
@@ -266,8 +266,8 @@ download-pixman: .pixman-obtained
 
 pixman: download-pixman .pixman-done
 .pixman-done:
-	mkdir -p $(PIXMAN_PATH)/build && cd $(PIXMAN_PATH)/build && meson setup --prefix=/usr --native-file $(SRC_PATH)/cross_file.txt --buildtype=release .. && ninja && \
-	DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(PIXMAN_PATH)/build && cd $(PIXMAN_PATH)/build && meson setup --prefix=/usr --native-file $(SRC_PATH)/cross_file.txt --buildtype=release .. && ninja -j$(THREADS) && \
+	DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .pixman-done
 
 FREETYPE_URL = https://downloads.sourceforge.net/freetype/freetype-2.13.3.tar.xz
@@ -348,14 +348,14 @@ download-libepoxy: .libepoxy-obtained
 
 libepoxy: download-libepoxy .libepoxy-done
 .libepoxy-done:
-	cd $(LIBEPOXY_PATH) && mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	cd $(LIBEPOXY_PATH) && mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .libepoxy-done
 
 # Compile Xorg server
 xorg-server: download-xorg-server libepoxy mesa .xorg-server-done
 .xorg-server-done:
 	mkdir -p $(XORG_SERVER_PATH)/build && cd $(XORG_SERVER_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --localstatedir=/var -D glamor=true -D \
-	xkb_output_dir=/var/lib/xkb && ninja && DESTDIR=$(STAGING_PATH) ninja install && mkdir -p $(STAGING_PATH)/etc/X11/xorg.conf.d
+	xkb_output_dir=/var/lib/xkb && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install && mkdir -p $(STAGING_PATH)/etc/X11/xorg.conf.d
 	touch .xorg-server-done
 
 # Download Xorg libraries
@@ -377,7 +377,7 @@ xorg-libs: download-xorg-libs fontconfig .xorg-libs-done
 	  ver=$${pair##*/}; \
 	  if [ -f $(SRC_PATH)/lib$$lib-$$ver/meson.build ]; then \
 	    LIBDIR=$(SRC_PATH)/lib$$lib-$$ver; [ -d "$$LIBDIR" ] || LIBDIR=$(SRC_PATH)/$$lib-$$ver; mkdir -p "$$LIBDIR/build" && cd "$$LIBDIR/build" && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release && \
-	    ninja && DESTDIR=$(STAGING_PATH) ninja install || exit 1; \
+	    ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install || exit 1; \
 	  else \
 	    LIBDIR=$(SRC_PATH)/lib$$lib-$$ver; [ -d "$$LIBDIR" ] || LIBDIR=$(SRC_PATH)/$$lib-$$ver; cd "$$LIBDIR" && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install || exit 1; \
 	  fi; \
@@ -474,8 +474,8 @@ download-libdrm: .libdrm-obtained
 # Compile libdrm
 libdrm: download-libdrm .libdrm-done
 .libdrm-done:
-	mkdir -p $(LIBDRM_PATH)/build && cd $(LIBDRM_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -D udev=true -D valgrind=disabled .. && ninja && \
-	DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(LIBDRM_PATH)/build && cd $(LIBDRM_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -D udev=true -D valgrind=disabled .. && ninja -j$(THREADS) && \
+	DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .libdrm-done
 
 # Download Mesa
@@ -491,7 +491,7 @@ mesa: download-mesa .mesa-done
 	sed -i '/#include <clang\/Config\/config.h>/i #undef UNUSED' src/compiler/clc/clc_helpers.cpp && \
 	sed -i '/#include "clc_helpers.h"/a #undef UNUSED\n#define UNUSED __attribute__((unused))' src/compiler/clc/clc_helpers.cpp && \
 	rm -rf build && mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D platforms=x11 -D gallium-drivers=softpipe,virgl,nouveau,radeonsi,crocus \
-	-D valgrind=disabled -D video-codecs=all -D libunwind=disabled -D glvnd=disabled -D llvm=disabled -D werror=false -D vulkan-drivers="" && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	-D valgrind=disabled -D video-codecs=all -D libunwind=disabled -D glvnd=disabled -D llvm=disabled -D werror=false -D vulkan-drivers="" && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .mesa-done
 
 # Download lm-sensors
@@ -518,7 +518,7 @@ llvm: download-llvm .llvm-done
 	mkdir -p $(LLVM_PATH)/build && cd $(LLVM_PATH)/build && cmake -D CMAKE_INSTALL_PREFIX=/usr -D CMAKE_SKIP_INSTALL_RPATH=ON -D CMAKE_ASM_COMPILER=/usr/bin/gcc \
 	-D LLVM_ENABLE_FFI=ON -D CMAKE_BUILD_TYPE=Release -D LLVM_BUILD_LLVM_DYLIB=ON -D LLVM_LINK_LLVM_DYLIB=ON -D LLVM_ENABLE_RTTI=ON \
 	-D LLVM_TARGETS_TO_BUILD="host;AMDGPU" -D LLVM_BINUTILS_INCDIR=/usr/include -D LLVM_INCLUDE_BENCHMARKS=OFF -D CLANG_DEFAULT_PIE_ON_LINUX=ON \
-	-D CLANG_CONFIG_FILE_SYSTEM_DIR=/etc/clang -W no-dev -G Ninja .. && ninja LLVM && cp lib/libLLVM.so $(STAGING_PATH)/usr/lib/libLLVM.so && \
+	-D CLANG_CONFIG_FILE_SYSTEM_DIR=/etc/clang -W no-dev -G Ninja .. && ninja -j$(THREADS) LLVM && cp lib/libLLVM.so $(STAGING_PATH)/usr/lib/libLLVM.so && \
 	ln -sf libLLVM.so $(STAGING_PATH)/usr/lib/libLLVM.so.21.1
 	touch .llvm-done
 
@@ -546,7 +546,7 @@ download-spirv-tools: .spirv-tools-obtained
 spirv-tools: download-spirv-tools .spirv-tools-done
 .spirv-tools-done:
 	mkdir -p $(SPIRV_TOOLS_PATH)/build && cd $(SPIRV_TOOLS_PATH)/build && cmake -D CMAKE_INSTALL_PREFIX=/usr -D CMAKE_BUILD_TYPE=Release -D SPIRV_WERROR=OFF \
-	-D BUILD_SHARED_LIBS=ON -G Ninja .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	-D BUILD_SHARED_LIBS=ON -G Ninja .. && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	ln -sf /usr/lib/libSPIRV-Tools-shared.so $(STAGING_PATH)/usr/lib/libSPIRV-Tools.so
 	touch .spirv-tools-done
 
@@ -571,7 +571,7 @@ download-xorg-xkeyboard-config: .xorg-xkeyboard-config-obtained
 # Compile xorg-xkeyboard-config
 xorg-xkeyboard-config: download-xorg-xkeyboard-config .xorg-xkeyboard-config-done
 .xorg-xkeyboard-config-done:
-	mkdir -p $(XORG_XKEYBOARD_CONFIG_PATH)/build && cd $(XORG_XKEYBOARD_CONFIG_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(XORG_XKEYBOARD_CONFIG_PATH)/build && cd $(XORG_XKEYBOARD_CONFIG_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .xorg-xkeyboard-config-done
 
 # Download xf86-input-evdev
@@ -608,7 +608,7 @@ download-fribidi: .fribidi-obtained
 # Compile fribidi
 fribidi: download-fribidi .fribidi-done
 .fribidi-done:
-	mkdir -p $(FRIBIDI_PATH)/build && cd $(FRIBIDI_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -Dc_args="-Wno-error" .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(FRIBIDI_PATH)/build && cd $(FRIBIDI_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -Dc_args="-Wno-error" .. && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .fribidi-done
 
 # Download xterm
@@ -645,7 +645,7 @@ download-libinput: .libinput-obtained
 # Compile libinput
 libinput: download-libinput libevdev libwacom .libinput-done
 .libinput-done:
-	mkdir -p $(LIBINPUT_PATH)/build && cd $(LIBINPUT_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D debug-gui=false -D documentation=false -D tests=false -Dc_args="-Wno-error" -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lglib-2.0 -lgobject-2.0" && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(LIBINPUT_PATH)/build && cd $(LIBINPUT_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D debug-gui=false -D documentation=false -D tests=false -Dc_args="-Wno-error" -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lglib-2.0 -lgobject-2.0" && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .libinput-done
 
 # Download libevdev
@@ -657,7 +657,7 @@ download-libevdev: .libevdev-obtained
 # Compile libevdev
 libevdev: download-libevdev .libevdev-done
 .libevdev-done:
-	mkdir -p $(LIBEVDEV_PATH)/build && cd $(LIBEVDEV_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D documentation=disabled -D tests=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(LIBEVDEV_PATH)/build && cd $(LIBEVDEV_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D documentation=disabled -D tests=disabled && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .libevdev-done
 
 # Download mtdev
@@ -689,7 +689,7 @@ libwacom: download-libwacom libgudev .libwacom-done
 	      *) sed -i '/#include <glib.h>/a #include "../libwacom-glib-compat.h"' "$$file" ;; \
 	    esac; \
 	  fi; \
-	done && rm -rf $(LIBWACOM_PATH)/build && mkdir -p $(LIBWACOM_PATH)/build && cd $(LIBWACOM_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D tests=disabled && ninja && DESTDIR=$(STAGING_PATH) ninja install && \
+	done && rm -rf $(LIBWACOM_PATH)/build && mkdir -p $(LIBWACOM_PATH)/build && cd $(LIBWACOM_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D tests=disabled && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install && \
 	sed -i 's|prefix=/usr|prefix=$(STAGING_PATH)/usr|g' $(STAGING_PATH)/usr/lib/pkgconfig/libwacom.pc
 	touch .libwacom-done
 
@@ -703,7 +703,7 @@ download-libgudev: .libgudev-obtained
 libgudev: download-libgudev .libgudev-done
 .libgudev-done:
 	# Reconfigure against the staged GLib ABI; stale Meson state may reference the host GLib.
-	rm -rf $(LIBGUDEV_PATH)/build && mkdir -p $(LIBGUDEV_PATH)/build && cd $(LIBGUDEV_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -D introspection=disabled -Dc_args="-Wno-error" .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	rm -rf $(LIBGUDEV_PATH)/build && mkdir -p $(LIBGUDEV_PATH)/build && cd $(LIBGUDEV_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -D introspection=disabled -Dc_args="-Wno-error" .. && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .libgudev-done
 
 # Download feh
@@ -761,14 +761,14 @@ download-harfbuzz: .harfbuzz-obtained
 harfbuzz: download-harfbuzz .harfbuzz-done
 .harfbuzz-done:
 	cd $(HARFBUZZ_PATH) && sed -i '/#pragma GCC diagnostic error   "-Wredundant-decls"/d' src/hb.hh && \
-	rm -rf build && mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -Dicu=disabled -D tests=disabled -D docs=disabled -D introspection=disabled -Dc_args="-Wno-error=redundant-decls -Wno-error" -Dcpp_args="-Wno-error=redundant-decls -Wno-error" -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16" -Dcpp_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16" && ninja && DESTDIR=$(STAGING_PATH) ninja install && \
+	rm -rf build && mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -Dicu=disabled -D tests=disabled -D docs=disabled -D introspection=disabled -Dc_args="-Wno-error=redundant-decls -Wno-error" -Dcpp_args="-Wno-error=redundant-decls -Wno-error" -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16" -Dcpp_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16" && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install && \
 	rm -f $(STAGING_PATH)/usr/lib/libharfbuzz-icu.so* $(STAGING_PATH)/usr/lib/pkgconfig/harfbuzz-icu.pc
 	touch .harfbuzz-done
 
 # Compile cairo
 cairo: download-cairo .cairo-done
 .cairo-done:
-	mkdir -p $(CAIRO_PATH)/build && cd $(CAIRO_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -D tests=disabled -D png=enabled -D fontconfig=enabled -D freetype=enabled -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16 -lm" .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(CAIRO_PATH)/build && cd $(CAIRO_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -D tests=disabled -D png=enabled -D fontconfig=enabled -D freetype=enabled -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16 -lm" .. && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .cairo-done
 
 # Compile pango
@@ -781,7 +781,7 @@ pango: download-pango libthai harfbuzz cairo .pango-done
 	if ! grep -qF "'-Wno-error=redundant-decls'" meson.build; then \
 	  sed -i "s/'-Werror=redundant-decls'/'-Wno-error=redundant-decls'/g" meson.build; \
 	fi && \
-	mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release --wrap-mode=nofallback -D introspection=disabled -Dc_args="-Wno-error" -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16 -lm" .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p build && cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release --wrap-mode=nofallback -D introspection=disabled -Dc_args="-Wno-error" -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16 -lm" .. && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .pango-done
 
 # Download libthai
@@ -824,7 +824,7 @@ download-librsvg: .librsvg-obtained
 librsvg: download-librsvg pango gdk-pixbuf .librsvg-done
 .librsvg-done:
 	mkdir -p $(LIBRSVG_PATH)/build && cd $(LIBRSVG_PATH) && sed -e "/OUTDIR/s|,| / 'librsvg-2.60.0', '--no-namespace-dir',|" -e '/output/s|Rsvg-2.0|librsvg-2.60.0|' -i doc/meson.build && \
-	cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	cd build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .librsvg-done
 
 # Download libdav1d
@@ -836,7 +836,7 @@ download-libdav1d: .libdav1d-obtained
 # Compile libdav1d
 libdav1d: download-libdav1d .libdav1d-done
 .libdav1d-done:
-	mkdir -p $(LIBDAV1D_PATH)/build && cd $(LIBDAV1D_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja && DESTDIR=$(STAGING_PATH) ninja install
+	mkdir -p $(LIBDAV1D_PATH)/build && cd $(LIBDAV1D_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .libdav1d-done
 
 # Download gdk-pixbuf
@@ -849,7 +849,7 @@ download-gdk-pixbuf: .gdk-pixbuf-obtained
 gdk-pixbuf: download-gdk-pixbuf libjpeg-turbo .gdk-pixbuf-done
 .gdk-pixbuf-done:
 	mkdir -p $(GDK_PIXBUF_PATH)/build && cd $(GDK_PIXBUF_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D others=enabled -D png=enabled -D gio_sniffing=false -D introspection=disabled --wrap-mode=nofallback -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16" && \
-	ninja && DESTDIR=$(STAGING_PATH) ninja install
+	ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .gdk-pixbuf-done
 
 # Download libjpeg-turbo
@@ -960,7 +960,7 @@ download-fvwm3: .fvwm3-obtained
 
 fvwm3: .fvwm3-done
 .fvwm3-done: $(CURDIR)/arkanas/05_graphics.mk .fvwm3-obtained .libevent-done .xorg-libs-done
-	cd $(FVWM3_PATH) && rm -rf meson-build && PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_LIBDIR="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_SYSROOT_DIR="$(STAGING_PATH)" meson setup --native-file $(SRC_PATH)/cross_file.txt meson-build --prefix=/usr --sysconfdir=/etc --buildtype=release -Dmandoc=false -Dhtmldoc=false -Dnls=disabled -Dgolang=disabled -Dpython=/usr/bin/python3 && ninja -C meson-build && DESTDIR=$(STAGING_PATH) ninja -C meson-build install
+	cd $(FVWM3_PATH) && rm -rf meson-build && PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_LIBDIR="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_SYSROOT_DIR="$(STAGING_PATH)" meson setup --native-file $(SRC_PATH)/cross_file.txt meson-build --prefix=/usr --sysconfdir=/etc --buildtype=release -Dmandoc=false -Dhtmldoc=false -Dnls=disabled -Dgolang=disabled -Dpython=/usr/bin/python3 && ninja -j$(THREADS) -C meson-build && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) -C meson-build install
 	touch .fvwm3-done
 
 # Install NsCDE and its display-manager session entry.

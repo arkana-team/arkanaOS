@@ -1,20 +1,11 @@
 # Enable multi-threaded Bash operation
 SHELL = bash
-THREADS = $(shell nproc)
+THREADS ?= $(shell nproc)
 .NOTPARALLEL:
-DOCKER = $(shell \
-	if [ -f /.dockerenv ]; then echo true; \
-	elif [ -n "$$container" ]; then echo true; \
-	elif grep -qaE '(docker|containerd)' /proc/1/cgroup 2>/dev/null; then echo true; \
-	elif grep -qx '0::/' /proc/1/cgroup 2>/dev/null; then echo true; \
-	else echo false; fi)
+IN_CONTAINER = $(shell ./scripts/detect-container.sh)
 
-ifeq ($(DOCKER),false)
-ifeq ($(FORCE),1)
-$(warning forcing Makefile build outside Docker container - problems may occur)
-else
-$(error must run in Docker container - use ./build.sh to start build)
-endif
+ifneq ($(IN_CONTAINER),true)
+$(error refusing to build outside a detected container - use ./build.sh to start build)
 endif
 
 
