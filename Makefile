@@ -50,7 +50,7 @@ all: arkanas
 .PHONY: arkanas
 arkanas: $(SRC_PATH)/cross_file.txt
 	mkdir -p $(SRC_PATH) $(STAGING_PATH) $(ISO_STAGING_PATH) $(CPIO_STAGING_PATH) $(OUTPUT_PATH)
-	for arkana in arkanas/*.mk; do \
+	for arkana in arkanas/[0-9][0-9]_*.mk; do \
 		if [ "$$arkana" = "arkanas/05_graphics.mk" ]; then \
 			$(MAKE) -f arkanas/07_iso.mk libpng || { echo "fatal: failed to make libpng"; exit 1; }; \
 		fi; \

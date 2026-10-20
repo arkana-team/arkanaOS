@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -19,6 +20,13 @@ class ReleaseMetadataTests(unittest.TestCase):
         build_number = root / ".buildnum"
         build_number.write_text("232\n", encoding="ascii")
         build_number.chmod(0o644)
+        isolated_arkanas = root / "arkanas"
+        isolated_arkanas.mkdir()
+        shutil.copy2(MAKEFILE, isolated_arkanas / MAKEFILE.name)
+        shutil.copy2(
+            MAKEFILE.with_name("staging-guard.mk"),
+            isolated_arkanas / "staging-guard.mk",
+        )
         environment = os.environ.copy()
         environment.pop("ARKANA_BUILD_NUMBER", None)
         environment["ARKANA_RELEASE_PREFIX"] = prefix
@@ -26,12 +34,10 @@ class ReleaseMetadataTests(unittest.TestCase):
             [
                 "make",
                 "-f",
-                str(MAKEFILE),
+                "arkanas/01_base.mk",
                 "release-metadata",
-                f"BUILDNUM_FILE={build_number}",
-                f"STAGING_PATH={root / 'staging'}",
             ],
-            cwd=REPOSITORY,
+            cwd=root,
             env=environment,
             capture_output=True,
             text=True,
