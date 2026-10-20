@@ -2,18 +2,13 @@
 SHELL = bash
 THREADS = $(shell nproc)
 .NOTPARALLEL:
-DOCKER = $(shell \
-	if [ -f /.dockerenv ]; then echo true; \
-	elif [ -n "$$container" ]; then echo true; \
-	elif grep -qaE '(docker|containerd)' /proc/1/cgroup 2>/dev/null; then echo true; \
-	elif grep -qx '0::/' /proc/1/cgroup 2>/dev/null; then echo true; \
-	else echo false; fi)
+IN_CONTAINER = $(shell ./scripts/detect-container.sh)
 
-ifeq ($(DOCKER),false)
+ifneq ($(IN_CONTAINER),true)
 ifeq ($(FORCE),1)
-$(warning forcing Makefile build outside Docker container - problems may occur)
+$(warning forcing Makefile build outside a detected container - problems may occur)
 else
-$(error must run in Docker container - use ./build.sh to start build)
+$(error must run in a detected container - use ./build.sh to start build)
 endif
 endif
 

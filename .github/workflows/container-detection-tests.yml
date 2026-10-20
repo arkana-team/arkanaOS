@@ -1,0 +1,29 @@
+name: Container detection tests
+
+on:
+  push:
+    paths:
+      - Makefile
+      - scripts/detect-container.sh
+      - tests/test_container_detection.py
+      - .github/workflows/container-detection-tests.yml
+  pull_request:
+    paths:
+      - Makefile
+      - scripts/detect-container.sh
+      - tests/test_container_detection.py
+      - .github/workflows/container-detection-tests.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out arkanaOS
+        uses: actions/checkout@v4
+      - name: Test build container detection
+        run: python3 -m unittest discover -s tests -p 'test_container_detection.py'
