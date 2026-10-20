@@ -1,0 +1,26 @@
+name: Release metadata tests
+
+on:
+  pull_request:
+    paths:
+      - "arkanas/01_base.mk"
+      - "tests/test_release_metadata.py"
+      - ".github/workflows/release-metadata-tests.yml"
+  push:
+    paths:
+      - "arkanas/01_base.mk"
+      - "tests/test_release_metadata.py"
+      - ".github/workflows/release-metadata-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  release-metadata:
+    name: Check release labels and build-number safety
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Run release metadata tests
+        run: python3 -m unittest discover -s tests -p 'test_release_metadata.py' -v

@@ -1,6 +1,6 @@
-# Initial Release
+# RELEASE_NAME
 
-arkanaOS nightly (BUILD_DATE) (build BUILD_NUM)
+RELEASE_NAME
 
 **Testing Results:**
 Testing is not done yet.

@@ -390,7 +390,7 @@ download-systemd: .systemd-obtained
 
 # Compile systemd
 .PHONY: systemd
-systemd: download-systemd kernel-headers .systemd-done
+systemd: timestamp download-systemd kernel-headers .systemd-done release-metadata
 
 .systemd-done:
 	rm -rf $(SYSTEMD_PATH)/build
@@ -405,14 +405,6 @@ systemd: download-systemd kernel-headers .systemd-done
 	-D docdir=/usr/share/doc/systemd-$(SYSTEMD_VER) && ninja && DESTDIR=$(STAGING_PATH) ninja install
 
 	echo "arkana" > $(STAGING_PATH)/etc/hostname
-	
-	echo "NAME=arkanaOS" > $(STAGING_PATH)/etc/os-release
-	echo "VERSION=nightly" >> $(STAGING_PATH)/etc/os-release
-	echo "ID=arkana" >> $(STAGING_PATH)/etc/os-release
-	echo "ID_LIKE=lfs" >> $(STAGING_PATH)/etc/os-release
-	echo "VERSION_ID=nightly" >> $(STAGING_PATH)/etc/os-release
-	echo "PRETTY_NAME='arkanaOS nightly'" >> $(STAGING_PATH)/etc/os-release
-	echo "ANSI_COLOR='38;5;6'" >> $(STAGING_PATH)/etc/os-release
 
 	mkdir -p $(STAGING_PATH)/etc/systemd/system/getty@tty1.service.d
 	echo "[Service]" > $(STAGING_PATH)/etc/systemd/system/getty@tty1.service.d/override.conf
@@ -421,11 +413,41 @@ systemd: download-systemd kernel-headers .systemd-done
 	
 	touch .systemd-done
 
+.PHONY: release-metadata
+release-metadata: timestamp
+	@set -euo pipefail; \
+	BUILD="$$(cat "$(STAGING_PATH)/etc/arkana-build-number")"; \
+	VERSION_ID="$$(cat "$(STAGING_PATH)/etc/arkana-release-version-id")"; \
+	RELEASE_VERSION="$$(cat "$(STAGING_PATH)/etc/arkana-release-version")"; \
+	mkdir -p "$(STAGING_PATH)/etc"; \
+	VERSION="$$RELEASE_VERSION build $$BUILD"; \
+	printf 'NAME=arkanaOS\nVERSION="%s"\nID=arkana\nID_LIKE=lfs\nVERSION_ID="%s"\nPRETTY_NAME="arkanaOS %s"\nANSI_COLOR="38;5;6"\n' \
+	  "$$VERSION" "$$VERSION_ID" "$$VERSION" > "$(STAGING_PATH)/etc/os-release"; \
+	printf 'arkanaOS %s\n' "$$VERSION" > "$(STAGING_PATH)/etc/issue"
+
 .PHONY: timestamp
 timestamp:
 	@set -euo pipefail; \
 	exec 9>"$(BUILDNUM_FILE).lock"; \
 	flock -x 9; \
+	PREFIX="$${ARKANA_RELEASE_PREFIX:-nightly}"; \
+	PRERELEASE=true; \
+	if [[ "$$PREFIX" == nightly ]]; then \
+	  RELEASE_VERSION=nightly; VERSION_ID=nightly; TAG_PREFIX=nightly; \
+	elif [[ "$$PREFIX" =~ ^r([1-9][0-9]*)-a([1-9][0-9]*)$$ ]]; then \
+	  RELEASE_VERSION="$${BASH_REMATCH[1]}.0 (alpha $${BASH_REMATCH[2]})"; \
+	  VERSION_ID="$${BASH_REMATCH[1]}.0-alpha$${BASH_REMATCH[2]}"; \
+	  TAG_PREFIX="v$${BASH_REMATCH[1]}.0-alpha$${BASH_REMATCH[2]}"; \
+	elif [[ "$$PREFIX" =~ ^r([1-9][0-9]*)-b([1-9][0-9]*)$$ ]]; then \
+	  RELEASE_VERSION="$${BASH_REMATCH[1]}.0 (beta $${BASH_REMATCH[2]})"; \
+	  VERSION_ID="$${BASH_REMATCH[1]}.0-beta$${BASH_REMATCH[2]}"; \
+	  TAG_PREFIX="v$${BASH_REMATCH[1]}.0-beta$${BASH_REMATCH[2]}"; \
+	elif [[ "$$PREFIX" =~ ^r([1-9][0-9]*)-([1-9][0-9]*)$$ ]]; then \
+	  RELEASE_VERSION="$${BASH_REMATCH[1]}.0"; \
+	  VERSION_ID="$$RELEASE_VERSION"; TAG_PREFIX="v$$RELEASE_VERSION"; PRERELEASE=false; \
+	else \
+	  echo "Invalid ARKANA_RELEASE_PREFIX: $$PREFIX" >&2; exit 1; \
+	fi; \
 	if [ -n "$${ARKANA_BUILD_NUMBER:-}" ]; then \
 	  BUILD="$$ARKANA_BUILD_NUMBER"; \
 	  CURRENT="$$(cat "$(BUILDNUM_FILE)" 2>/dev/null || echo 0)"; \
@@ -443,9 +465,14 @@ timestamp:
 	  chmod --reference="$(BUILDNUM_FILE)" "$$TMP"; chown --reference="$(BUILDNUM_FILE)" "$$TMP"; \
 	  mv -f "$$TMP" "$(BUILDNUM_FILE)"; \
 	fi; \
+	RELEASE_ID="$$TAG_PREFIX-build-$$BUILD"; \
 	mkdir -p "$(STAGING_PATH)/etc"; \
-	printf 'arkanaOS nightly (%s) (build %s)\n' "$$(date +%Y%m%d)" "$$BUILD" > "$(STAGING_PATH)/etc/issue"; \
-	printf '%s\n' "$$BUILD" > "$(STAGING_PATH)/etc/arkana-build-number"
+	printf '%s\n' "$$BUILD" > "$(STAGING_PATH)/etc/arkana-build-number"; \
+	printf '%s\n' "$$PREFIX" > "$(STAGING_PATH)/etc/arkana-release-prefix"; \
+	printf '%s\n' "$$RELEASE_ID" > "$(STAGING_PATH)/etc/arkana-release-id"; \
+	printf '%s\n' "$$RELEASE_VERSION" > "$(STAGING_PATH)/etc/arkana-release-version"; \
+	printf '%s\n' "$$VERSION_ID" > "$(STAGING_PATH)/etc/arkana-release-version-id"; \
+	printf '%s\n' "$$PRERELEASE" > "$(STAGING_PATH)/etc/arkana-release-prerelease"
 
 # Download coreutils
 .PHONY: download-coreutils

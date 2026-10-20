@@ -108,32 +108,72 @@ jobs:
             -e CCACHE_DIR=/home/builder/.cache/ccache \
             arkana-builder bash -c "sudo --preserve-env make -f arkanas/07_iso.mk"
 
+      - name: Generate Release Notes & Tags from Template
+        run: |
+          BUILD_NUM=$(cat staging/etc/arkana-build-number)
+          RELEASE_PREFIX=$(cat staging/etc/arkana-release-prefix)
+          RELEASE_ID=$(cat staging/etc/arkana-release-id)
+          RELEASE_VERSION=$(cat staging/etc/arkana-release-version)
+          RELEASE_PRERELEASE=$(cat staging/etc/arkana-release-prerelease)
+          if ! [[ "$BUILD_NUM" =~ ^[0-9]+$ ]]; then
+            echo "Invalid arkanaOS build number: $BUILD_NUM" >&2
+            exit 1
+          fi
+          if ! [[ "$RELEASE_PREFIX" =~ ^(nightly|r[1-9][0-9]*-(a[1-9][0-9]*|b[1-9][0-9]*|[1-9][0-9]*))$ ]]; then
+            echo "Invalid arkanaOS release prefix: $RELEASE_PREFIX" >&2
+            exit 1
+          fi
+          if [[ "$RELEASE_PREFIX" == nightly ]]; then
+            EXPECTED_RELEASE_ID="nightly-build-${BUILD_NUM}"
+          elif [[ "$RELEASE_PREFIX" =~ ^r([1-9][0-9]*)-a([1-9][0-9]*)$ ]]; then
+            EXPECTED_RELEASE_ID="v${BASH_REMATCH[1]}.0-alpha${BASH_REMATCH[2]}-build-${BUILD_NUM}"
+          elif [[ "$RELEASE_PREFIX" =~ ^r([1-9][0-9]*)-b([1-9][0-9]*)$ ]]; then
+            EXPECTED_RELEASE_ID="v${BASH_REMATCH[1]}.0-beta${BASH_REMATCH[2]}-build-${BUILD_NUM}"
+          elif [[ "$RELEASE_PREFIX" =~ ^r([1-9][0-9]*)-([1-9][0-9]*)$ ]]; then
+            EXPECTED_RELEASE_ID="v${BASH_REMATCH[1]}.0-build-${BUILD_NUM}"
+          else
+            echo "Invalid arkanaOS release prefix: $RELEASE_PREFIX" >&2
+            exit 1
+          fi
+          if [[ "$RELEASE_ID" != "$EXPECTED_RELEASE_ID" ]]; then
+            echo "Release ID does not match the staged build number." >&2
+            exit 1
+          fi
+          if [[ "$RELEASE_PREFIX" == nightly || "$RELEASE_PREFIX" =~ -[ab][1-9][0-9]*$ ]]; then
+            EXPECTED_PRERELEASE=true
+          else
+            EXPECTED_PRERELEASE=false
+          fi
+          if [[ "$RELEASE_PRERELEASE" != "$EXPECTED_PRERELEASE" ]]; then
+            echo "Release prerelease status does not match its prefix." >&2
+            exit 1
+          fi
+          RELEASE_NAME="arkanaOS ${RELEASE_VERSION} build ${BUILD_NUM}"
+          sed -i "s/RELEASE_NAME/$RELEASE_NAME/g" RELEASE_TEMPLATE.md
+          {
+            echo "RELEASE_ID=$RELEASE_ID"
+            echo "RELEASE_NAME=$RELEASE_NAME"
+            echo "RELEASE_ARTIFACT_NAME=arkanaOS-${RELEASE_ID#v}-iso"
+            echo "RELEASE_PRERELEASE=$RELEASE_PRERELEASE"
+          } >> "$GITHUB_ENV"
+
       - name: Upload Final arkanaOS ISO Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: arkanaOS-nightly-iso
+          name: ${{ env.RELEASE_ARTIFACT_NAME }}
           path: output/arkana.iso
           if-no-files-found: error
           retention-days: 14
-
-      - name: Generate Release Notes & Tags from Template
-        run: |
-          BUILD_DATE=$(date +%Y%m%d)
-          BUILD_NUM=$(cat staging/etc/arkana-build-number 2>/dev/null || cat .buildnum 2>/dev/null || echo "0")
-          sed -i "s/BUILD_DATE/$BUILD_DATE/g" RELEASE_TEMPLATE.md
-          sed -i "s/BUILD_NUM/$BUILD_NUM/g" RELEASE_TEMPLATE.md
-          echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_ENV
-          echo "BUILD_NUM=$BUILD_NUM" >> $GITHUB_ENV
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         if: success()
         with:
-          tag_name: nightly-${{ env.BUILD_DATE }}-build-${{ env.BUILD_NUM }}
-          name: arkanaOS Nightly Build (${{ env.BUILD_DATE }})
+          tag_name: ${{ env.RELEASE_ID }}
+          name: ${{ env.RELEASE_NAME }}
           body_path: RELEASE_TEMPLATE.md
           files: output/arkana.iso
-          prerelease: true
+          prerelease: ${{ env.RELEASE_PRERELEASE }}
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
