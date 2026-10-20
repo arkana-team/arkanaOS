@@ -1,6 +1,6 @@
-# arkanaOS RELEASE_ID
+# RELEASE_NAME
 
-arkanaOS RELEASE_ID
+RELEASE_NAME
 
 **Testing Results:**
 Testing is not done yet.

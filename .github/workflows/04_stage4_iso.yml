@@ -113,6 +113,7 @@ jobs:
           BUILD_NUM=$(cat staging/etc/arkana-build-number)
           RELEASE_PREFIX=$(cat staging/etc/arkana-release-prefix)
           RELEASE_ID=$(cat staging/etc/arkana-release-id)
+          RELEASE_VERSION=$(cat staging/etc/arkana-release-version)
           RELEASE_PRERELEASE=$(cat staging/etc/arkana-release-prerelease)
           if ! [[ "$BUILD_NUM" =~ ^[0-9]+$ ]]; then
             echo "Invalid arkanaOS build number: $BUILD_NUM" >&2
@@ -122,7 +123,19 @@ jobs:
             echo "Invalid arkanaOS release prefix: $RELEASE_PREFIX" >&2
             exit 1
           fi
-          if [[ "$RELEASE_ID" != "${RELEASE_PREFIX}-${BUILD_NUM}" ]]; then
+          if [[ "$RELEASE_PREFIX" == nightly ]]; then
+            EXPECTED_RELEASE_ID="nightly-build-${BUILD_NUM}"
+          elif [[ "$RELEASE_PREFIX" =~ ^r([1-9][0-9]*)-a([1-9][0-9]*)$ ]]; then
+            EXPECTED_RELEASE_ID="v${BASH_REMATCH[1]}.0-alpha${BASH_REMATCH[2]}-build-${BUILD_NUM}"
+          elif [[ "$RELEASE_PREFIX" =~ ^r([1-9][0-9]*)-b([1-9][0-9]*)$ ]]; then
+            EXPECTED_RELEASE_ID="v${BASH_REMATCH[1]}.0-beta${BASH_REMATCH[2]}-build-${BUILD_NUM}"
+          elif [[ "$RELEASE_PREFIX" =~ ^r([1-9][0-9]*)-([1-9][0-9]*)$ ]]; then
+            EXPECTED_RELEASE_ID="v${BASH_REMATCH[1]}.0-build-${BUILD_NUM}"
+          else
+            echo "Invalid arkanaOS release prefix: $RELEASE_PREFIX" >&2
+            exit 1
+          fi
+          if [[ "$RELEASE_ID" != "$EXPECTED_RELEASE_ID" ]]; then
             echo "Release ID does not match the staged build number." >&2
             exit 1
           fi
@@ -135,14 +148,19 @@ jobs:
             echo "Release prerelease status does not match its prefix." >&2
             exit 1
           fi
-          sed -i "s/RELEASE_ID/$RELEASE_ID/g" RELEASE_TEMPLATE.md
-          echo "RELEASE_ID=$RELEASE_ID" >> "$GITHUB_ENV"
-          echo "RELEASE_PRERELEASE=$RELEASE_PRERELEASE" >> "$GITHUB_ENV"
+          RELEASE_NAME="arkanaOS ${RELEASE_VERSION} build ${BUILD_NUM}"
+          sed -i "s/RELEASE_NAME/$RELEASE_NAME/g" RELEASE_TEMPLATE.md
+          {
+            echo "RELEASE_ID=$RELEASE_ID"
+            echo "RELEASE_NAME=$RELEASE_NAME"
+            echo "RELEASE_ARTIFACT_NAME=arkanaOS-${RELEASE_ID#v}-iso"
+            echo "RELEASE_PRERELEASE=$RELEASE_PRERELEASE"
+          } >> "$GITHUB_ENV"
 
       - name: Upload Final arkanaOS ISO Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: arkanaOS-${{ env.RELEASE_ID }}-iso
+          name: ${{ env.RELEASE_ARTIFACT_NAME }}
           path: output/arkana.iso
           if-no-files-found: error
           retention-days: 14
@@ -152,7 +170,7 @@ jobs:
         if: success()
         with:
           tag_name: ${{ env.RELEASE_ID }}
-          name: arkanaOS ${{ env.RELEASE_ID }}
+          name: ${{ env.RELEASE_NAME }}
           body_path: RELEASE_TEMPLATE.md
           files: output/arkana.iso
           prerelease: ${{ env.RELEASE_PRERELEASE }}
