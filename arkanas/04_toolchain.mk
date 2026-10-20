@@ -9,6 +9,7 @@ TOOLCHAIN_TARGETS = gcc-compilers binutils meson ninja make autoconf cmake gc li
 
 # Paths used in the build
 SRC_PATH = $(shell realpath ./src)
+include arkanas/staging-guard.mk
 STAGING_PATH = $(shell realpath ./staging)
 OUTPUT_PATH = $(shell realpath ./output)
 

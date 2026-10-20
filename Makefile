@@ -17,6 +17,7 @@ $(error must run in Docker container - use ./build.sh to start build)
 endif
 endif
 
+include arkanas/staging-guard.mk
 
 # Enable ccache to be used in the build
 ifneq ($(shell which ccache 2>/dev/null),)

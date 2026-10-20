@@ -6,6 +6,7 @@ export CFLAGS ?= -O2 -std=gnu17
 
 # Paths used in the build
 SRC_PATH = $(shell realpath ./src)
+include arkanas/staging-guard.mk
 STAGING_PATH = $(shell realpath ./staging)
 OUTPUT_PATH = $(shell realpath ./output)
 
