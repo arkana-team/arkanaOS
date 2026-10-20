@@ -5,6 +5,7 @@ THREADS = $(shell nproc)
 
 # Paths used to build the ISO components
 SRC_PATH = $(shell realpath ./src)
+include arkanas/staging-guard.mk
 STAGING_PATH = $(shell realpath ./staging)
 CPIO_STAGING_PATH = $(shell realpath ./cpio-staging)
 ISO_STAGING_PATH = $(shell realpath ./iso-staging)

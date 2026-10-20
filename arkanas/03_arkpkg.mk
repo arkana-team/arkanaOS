@@ -3,6 +3,7 @@ THREADS = $(shell nproc)
 .NOTPARALLEL:
 
 SRC_PATH = $(shell realpath ./src)
+include arkanas/staging-guard.mk
 STAGING_PATH = $(shell realpath ./staging)
 OUTPUT_PATH = $(shell realpath ./output)
 

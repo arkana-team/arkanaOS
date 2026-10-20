@@ -8,6 +8,7 @@ ifneq ($(IN_CONTAINER),true)
 $(error refusing to build outside a detected container - use ./build.sh to start build)
 endif
 
+include arkanas/staging-guard.mk
 
 # Enable ccache to be used in the build
 ifneq ($(shell which ccache 2>/dev/null),)

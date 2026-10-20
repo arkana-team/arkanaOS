@@ -5,6 +5,7 @@ THREADS = $(shell nproc)
 
 # Set working paths
 SRC_PATH = $(shell realpath -m ./src)
+include arkanas/staging-guard.mk
 STAGING_PATH = $(shell realpath -m ./staging)
 OUTPUT_PATH = $(shell realpath -m ./output)
 
