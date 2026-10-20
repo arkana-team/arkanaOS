@@ -6,26 +6,51 @@ import shutil
 import sys
 
 
+def is_within_root(root: Path, path: Path) -> bool:
+    try:
+        path.relative_to(root)
+        path.resolve(strict=False).relative_to(root)
+    except (OSError, RuntimeError, ValueError):
+        return False
+    return True
+
+
 def main() -> None:
     if len(sys.argv) != 2:
         raise SystemExit(f"usage: {sys.argv[0]} STAGING_ROOT")
 
     root = Path(sys.argv[1]).resolve()
+    marker = root / ".arkana-iso-root"
+    if root == Path("/") or marker.is_symlink() or not marker.is_file():
+        raise SystemExit(f"refusing to prune an unmarked ISO root: {root}")
+    if marker.read_text(encoding="utf-8") != "arkanaOS ISO root\n":
+        raise SystemExit(f"refusing to prune an unrecognized ISO root: {root}")
+
     doc_root = root / "usr/share/doc"
-    if not doc_root.is_dir():
+    if not is_within_root(root, doc_root) or not doc_root.is_dir():
         raise SystemExit(f"documentation directory not found: {doc_root}")
 
     license_root = root / "usr/share/licenses/documentation"
+    if not is_within_root(root, license_root):
+        raise SystemExit(f"refusing to write licenses outside ISO root: {license_root}")
     license_prefixes = ("license", "copying", "copyright", "notice")
     copied_licenses = 0
 
     for source in doc_root.rglob("*"):
-        if not source.is_file() or source.is_symlink():
+        if (
+            not is_within_root(root, source)
+            or not source.is_file()
+            or source.is_symlink()
+        ):
             continue
         if not source.name.lower().startswith(license_prefixes):
             continue
 
         destination = license_root / source.relative_to(doc_root)
+        if not is_within_root(root, destination.parent) or not is_within_root(
+            root, destination
+        ):
+            continue
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, destination)
         copied_licenses += 1
@@ -33,6 +58,8 @@ def main() -> None:
     keep_docs = {"nscde", "rust", "cargo"}
     removed_docs = 0
     for entry in doc_root.iterdir():
+        if not is_within_root(root, entry):
+            continue
         if entry.name in keep_docs:
             continue
         if entry.is_dir() and not entry.is_symlink():
@@ -42,10 +69,21 @@ def main() -> None:
         removed_docs += 1
 
     removed_caches = 0
-    for python_root in (root / "usr/lib").glob("python*"):
+    python_lib_root = root / "usr/lib"
+    if not is_within_root(root, python_lib_root):
+        python_roots = ()
+    else:
+        python_roots = python_lib_root.glob("python*")
+    for python_root in python_roots:
+        if not is_within_root(root, python_root):
+            continue
         caches = list(python_root.rglob("__pycache__"))
         for cache in caches:
-            if cache.is_dir() and not cache.is_symlink():
+            if (
+                is_within_root(root, cache)
+                and cache.is_dir()
+                and not cache.is_symlink()
+            ):
                 shutil.rmtree(cache)
                 removed_caches += 1
 

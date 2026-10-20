@@ -11,6 +11,7 @@ STAGING_PATH = $(shell realpath -m ./staging)
 CPIO_STAGING_PATH = $(shell realpath -m ./cpio-staging)
 ISO_STAGING_PATH = $(shell realpath -m ./iso-staging)
 OUTPUT_PATH = $(shell realpath -m ./output)
+ISO_ROOT_PATH = $(OUTPUT_PATH)/iso-root
 
 # Cpio
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/cpio.html
@@ -295,10 +296,17 @@ download-libisoburn: .libisoburn-obtained
 	touch .libisoburn-obtained
 
 # Compile libisoburn
-libisoburn: download-libisoburn .libisoburn-done
+libisoburn: libburn libisofs download-libisoburn .libisoburn-done
 
 .libisoburn-done:
-	cd $(LIBISOBURN_PATH) && ./configure CFLAGS="-O2 -std=gnu17 -fno-stack-protector" --prefix=/usr --enable-pkg-check-modules && $(MAKE) -j$(THREADS) && \
+	cd $(LIBISOBURN_PATH) && \
+	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
+	PKG_CONFIG_LIBDIR="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
+	PKG_CONFIG_SYSROOT_DIR="$(STAGING_PATH)" \
+	CPPFLAGS="-I$(STAGING_PATH)/usr/include" \
+	LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" \
+	./configure CFLAGS="-O2 -std=gnu17 -fno-stack-protector" --prefix=/usr --enable-pkg-check-modules --disable-ldconfig-at-install && \
+	$(MAKE) clean && $(MAKE) -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libisoburn-done
 
@@ -720,141 +728,289 @@ boot-initramfs:
 # Create ISO file for booting
 .PHONY: iso
 iso:
-	# Keep the browser and optional development/diagnostic tools in ArkPkg packages.
-	rm -rf $(STAGING_PATH)/opt/firefox $(STAGING_PATH)/usr/lib/git-core \
-	  $(STAGING_PATH)/usr/libexec/git-core $(STAGING_PATH)/usr/share/git-core \
-	  $(STAGING_PATH)/usr/share/fastfetch $(STAGING_PATH)/usr/share/vim \
-	  $(STAGING_PATH)/usr/share/NsCDE/integration/firefox \
-	  $(STAGING_PATH)/usr/share/licenses/fastfetch \
-	  $(STAGING_PATH)/usr/share/doc/vim-*
-	rm -f $(STAGING_PATH)/usr/bin/firefox $(STAGING_PATH)/usr/bin/fastfetch \
-	  $(STAGING_PATH)/usr/bin/git* $(STAGING_PATH)/usr/bin/vim* \
-	  $(STAGING_PATH)/usr/bin/ex $(STAGING_PATH)/usr/bin/view \
-	  $(STAGING_PATH)/usr/bin/rvim $(STAGING_PATH)/usr/bin/rview \
-	  $(STAGING_PATH)/usr/share/applications/firefox.desktop \
-	  $(STAGING_PATH)/usr/share/man/man1/fastfetch.1 \
-	  $(STAGING_PATH)/usr/share/man/man1/vim.1 \
-	  $(STAGING_PATH)/usr/share/man/man1/vimdiff.1 \
-	  $(STAGING_PATH)/usr/share/man/man1/vimtutor.1 \
-	  $(STAGING_PATH)/usr/share/bash-completion/completions/fastfetch \
-	  $(STAGING_PATH)/usr/share/bash-completion/completions/git \
-	  $(STAGING_PATH)/usr/share/fish/vendor_completions.d/fastfetch.fish \
-	  $(STAGING_PATH)/usr/share/fish/vendor_completions.d/git.fish \
-	  $(STAGING_PATH)/usr/share/zsh/site-functions/_fastfetch \
-	  $(STAGING_PATH)/usr/share/zsh/site-functions/_git
-	find $(STAGING_PATH)/usr/share/locale -path '*/LC_MESSAGES/git.mo' -delete
+	rm -rf $(ISO_ROOT_PATH)
+	mkdir -p $(ISO_ROOT_PATH)
+	cp -a $(STAGING_PATH)/. $(ISO_ROOT_PATH)/
+	printf 'arkanaOS ISO root\n' > $(ISO_ROOT_PATH)/.arkana-iso-root
+	# Keep the browser and optional development/diagnostic tools in arkpkg packages.
+	rm -rf $(ISO_ROOT_PATH)/opt/firefox $(ISO_ROOT_PATH)/usr/lib/git-core \
+	  $(ISO_ROOT_PATH)/usr/libexec/git-core $(ISO_ROOT_PATH)/usr/share/git-core \
+	  $(ISO_ROOT_PATH)/usr/share/fastfetch $(ISO_ROOT_PATH)/usr/share/vim \
+	  $(ISO_ROOT_PATH)/usr/share/NsCDE/integration/firefox \
+	  $(ISO_ROOT_PATH)/usr/share/licenses/fastfetch \
+	  $(ISO_ROOT_PATH)/usr/share/doc/vim-*
+	rm -f $(ISO_ROOT_PATH)/usr/bin/firefox $(ISO_ROOT_PATH)/usr/bin/fastfetch \
+	  $(ISO_ROOT_PATH)/usr/bin/git* $(ISO_ROOT_PATH)/usr/bin/vim* \
+	  $(ISO_ROOT_PATH)/usr/bin/ex $(ISO_ROOT_PATH)/usr/bin/view \
+	  $(ISO_ROOT_PATH)/usr/bin/rvim $(ISO_ROOT_PATH)/usr/bin/rview \
+	  $(ISO_ROOT_PATH)/usr/share/applications/firefox.desktop \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/fastfetch.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/vim.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/vimdiff.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/vimtutor.1 \
+	  $(ISO_ROOT_PATH)/usr/share/bash-completion/completions/fastfetch \
+	  $(ISO_ROOT_PATH)/usr/share/bash-completion/completions/git \
+	  $(ISO_ROOT_PATH)/usr/share/fish/vendor_completions.d/fastfetch.fish \
+	  $(ISO_ROOT_PATH)/usr/share/fish/vendor_completions.d/git.fish \
+	  $(ISO_ROOT_PATH)/usr/share/zsh/site-functions/_fastfetch \
+	  $(ISO_ROOT_PATH)/usr/share/zsh/site-functions/_git
+	find $(ISO_ROOT_PATH)/usr/share/locale -path '*/LC_MESSAGES/git.mo' -delete
+	# Move optional image, debugger, ISO authoring, and nested X servers into arkpkg packages.
+	rm -rf $(ISO_ROOT_PATH)/usr/lib/ImageMagick-7.1.2 \
+	  $(ISO_ROOT_PATH)/usr/share/ImageMagick-7 $(ISO_ROOT_PATH)/usr/share/gdb
+	rm -f $(ISO_ROOT_PATH)/usr/bin/animate $(ISO_ROOT_PATH)/usr/bin/compare \
+	  $(ISO_ROOT_PATH)/usr/bin/composite $(ISO_ROOT_PATH)/usr/bin/conjure \
+	  $(ISO_ROOT_PATH)/usr/bin/convert $(ISO_ROOT_PATH)/usr/bin/display \
+	  $(ISO_ROOT_PATH)/usr/bin/identify $(ISO_ROOT_PATH)/usr/bin/import \
+	  $(ISO_ROOT_PATH)/usr/bin/magick $(ISO_ROOT_PATH)/usr/bin/magick-script \
+	  $(ISO_ROOT_PATH)/usr/bin/mogrify $(ISO_ROOT_PATH)/usr/bin/montage \
+	  $(ISO_ROOT_PATH)/usr/bin/stream $(ISO_ROOT_PATH)/usr/bin/gdb \
+	  $(ISO_ROOT_PATH)/usr/bin/gdb-add-index $(ISO_ROOT_PATH)/usr/bin/gdbserver \
+	  $(ISO_ROOT_PATH)/usr/bin/xorriso $(ISO_ROOT_PATH)/usr/bin/xorriso-dd-target \
+	  $(ISO_ROOT_PATH)/usr/bin/xorriso-tcltk $(ISO_ROOT_PATH)/usr/bin/xorrisofs \
+	  $(ISO_ROOT_PATH)/usr/bin/Xnest $(ISO_ROOT_PATH)/usr/bin/Xvfb \
+	  $(ISO_ROOT_PATH)/usr/bin/gdbm_dump $(ISO_ROOT_PATH)/usr/bin/gdbm_load \
+	  $(ISO_ROOT_PATH)/usr/bin/gdbmtool $(ISO_ROOT_PATH)/usr/bin/xmlcatalog \
+	  $(ISO_ROOT_PATH)/usr/bin/xml2-config $(ISO_ROOT_PATH)/usr/bin/xmllint \
+	  $(ISO_ROOT_PATH)/usr/bin/xmlwf $(ISO_ROOT_PATH)/usr/bin/cjpeg \
+	  $(ISO_ROOT_PATH)/usr/bin/djpeg $(ISO_ROOT_PATH)/usr/bin/jpegtran \
+	  $(ISO_ROOT_PATH)/usr/bin/rdjpgcom $(ISO_ROOT_PATH)/usr/bin/wrjpgcom \
+	  $(ISO_ROOT_PATH)/usr/bin/cwebp $(ISO_ROOT_PATH)/usr/bin/dwebp \
+	  $(ISO_ROOT_PATH)/usr/bin/gif2webp $(ISO_ROOT_PATH)/usr/bin/img2webp \
+	  $(ISO_ROOT_PATH)/usr/bin/webpinfo $(ISO_ROOT_PATH)/usr/bin/webpmux \
+	  $(ISO_ROOT_PATH)/usr/bin/openssl \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/gdb.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/gdb-add-index.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/gdbserver.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/xorriso.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/xorriso-dd-target.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/xorriso-tcltk.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/xorrisofs.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/Xnest.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/Xvfb.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/gdbm_dump.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/gdbm_load.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/gdbmtool.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/xmlcatalog.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/xmllint.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/xmlwf.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/cjpeg.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/djpeg.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/jpegtran.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/rdjpgcom.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/wrjpgcom.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/cwebp.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/gif2webp.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/img2webp.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/webpinfo.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/webpmux.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/openssl*.1ssl \
+	  $(ISO_ROOT_PATH)/usr/share/man/man5/openssl*.5ssl \
+	  $(ISO_ROOT_PATH)/usr/share/man/man7/openssl*.7ssl
+	# FAT image helpers are available as an optional arkpkg package.
+	rm -f $(ISO_ROOT_PATH)/usr/bin/mattrib $(ISO_ROOT_PATH)/usr/bin/mcopy \
+	  $(ISO_ROOT_PATH)/usr/bin/mdel $(ISO_ROOT_PATH)/usr/bin/mdeltree \
+	  $(ISO_ROOT_PATH)/usr/bin/mdir $(ISO_ROOT_PATH)/usr/bin/mdoctorfat \
+	  $(ISO_ROOT_PATH)/usr/bin/mformat $(ISO_ROOT_PATH)/usr/bin/mlabel \
+	  $(ISO_ROOT_PATH)/usr/bin/mmd $(ISO_ROOT_PATH)/usr/bin/mmove \
+	  $(ISO_ROOT_PATH)/usr/bin/mpartition $(ISO_ROOT_PATH)/usr/bin/mrd \
+	  $(ISO_ROOT_PATH)/usr/bin/mren $(ISO_ROOT_PATH)/usr/bin/mshowfat \
+	  $(ISO_ROOT_PATH)/usr/bin/mtools $(ISO_ROOT_PATH)/usr/bin/mtoolstest \
+	  $(ISO_ROOT_PATH)/usr/bin/mtype $(ISO_ROOT_PATH)/usr/bin/mzip \
+	  $(ISO_ROOT_PATH)/usr/share/info/mtools.info \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/mattrib.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/mcopy.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/mdel.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/mdeltree.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/mdir.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/mdoctorfat.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/mformat.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/mlabel.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/mmd.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/mmove.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/mpartition.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/mrd.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/mren.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/mshowfat.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/mtools.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/mtoolstest.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/mtype.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/mzip.1
 	# Retain Python itself and its build support, but omit upstream self-tests and test fixtures.
-	rm -rf $(STAGING_PATH)/usr/lib/python3.13/test $(STAGING_PATH)/usr/lib/installed-tests
-	python3 prune-runtime-docs $(STAGING_PATH)
-	cp -a arkana-install $(STAGING_PATH)/usr/bin/arkana-install
-	cp -a genfstab $(STAGING_PATH)/usr/bin/genfstab
-	cp -a neofetch $(STAGING_PATH)/usr/bin/neofetch
-	chmod +x $(STAGING_PATH)/usr/bin/neofetch
-	cp -a xinitrc $(STAGING_PATH)/root/.xinitrc
-	mkdir -p $(STAGING_PATH)/etc/skel && cp -a xinitrc $(STAGING_PATH)/etc/skel/.xinitrc
-	install -D -m 0755 xinitrc $(STAGING_PATH)/usr/bin/arkana-nscde-session
-	install -D -o 0 -g 0 -m 0644 bash_profile $(STAGING_PATH)/root/.bash_profile
-	install -D -o 0 -g 0 -m 0644 bash_profile $(STAGING_PATH)/etc/skel/.bash_profile
-	install -D -o 0 -g 0 -m 0644 securetty $(STAGING_PATH)/etc/securetty
-	install -D -o 0 -g 0 -m 0644 bashrc $(STAGING_PATH)/root/.bashrc
-	install -D -o 0 -g 0 -m 0644 bashrc $(STAGING_PATH)/etc/skel/.bashrc
-	install -D -o 0 -g 0 -m 0644 bashrc $(STAGING_PATH)/etc/profile.d/arkana-shell.sh
-	install -D -o 0 -g 0 -m 0644 nscde-config/Xresources $(STAGING_PATH)/etc/X11/Xresources.d/arkanaOS
-	mkdir -p $(STAGING_PATH)/root/.NsCDE/backer $(STAGING_PATH)/etc/skel/.NsCDE/backer
-	cp -a nscde-config/Backdrops.fvwmgen $(STAGING_PATH)/root/.NsCDE/
-	cp -a nscde-config/Backdrops.fvwmgen $(STAGING_PATH)/etc/skel/.NsCDE/
+	rm -rf $(ISO_ROOT_PATH)/usr/lib/python3.13/test $(ISO_ROOT_PATH)/usr/lib/installed-tests
+	python3 prune-runtime-docs $(ISO_ROOT_PATH)
+	python3 prune-optional-devel $(ISO_ROOT_PATH)
+	# Keep the default image focused on NsCDE; optional window managers and SDKs are packages.
+	rm -rf $(ISO_ROOT_PATH)/etc/xdg/openbox $(ISO_ROOT_PATH)/usr/include/openbox \
+	  $(ISO_ROOT_PATH)/usr/lib/openbox-* $(ISO_ROOT_PATH)/usr/share/themes/*/openbox-3 \
+	  $(ISO_ROOT_PATH)/usr/share/gnome-session/sessions/openbox* \
+	  $(ISO_ROOT_PATH)/usr/share/wayland-protocols $(ISO_ROOT_PATH)/usr/include/wayland-protocols \
+	  $(ISO_ROOT_PATH)/usr/share/wayland $(ISO_ROOT_PATH)/usr/include/libweston-14 \
+	  $(ISO_ROOT_PATH)/usr/include/weston $(ISO_ROOT_PATH)/usr/include/wlroots-0.19 \
+	  $(ISO_ROOT_PATH)/usr/include/sfdo-*.h $(ISO_ROOT_PATH)/usr/include/libseat.h \
+	  $(ISO_ROOT_PATH)/usr/include/xkbcommon $(ISO_ROOT_PATH)/usr/include/X11/extensions/xwaylandproto.h \
+	  $(ISO_ROOT_PATH)/usr/lib/libweston-14 $(ISO_ROOT_PATH)/usr/lib/weston \
+	  $(ISO_ROOT_PATH)/usr/lib/weston-* $(ISO_ROOT_PATH)/usr/lib/xkbcommon \
+	  $(ISO_ROOT_PATH)/usr/share/weston $(ISO_ROOT_PATH)/usr/share/libweston-14 \
+	  $(ISO_ROOT_PATH)/usr/share/wayland-sessions/labwc.desktop \
+	  $(ISO_ROOT_PATH)/usr/share/wayland-sessions/weston.desktop \
+	  $(ISO_ROOT_PATH)/usr/share/xdg-desktop-portal/labwc-portals.conf \
+	  $(ISO_ROOT_PATH)/usr/share/applications/openbox.desktop \
+	  $(ISO_ROOT_PATH)/usr/share/applications/org.freedesktop.Xwayland.desktop \
+	  $(ISO_ROOT_PATH)/usr/share/xsessions/openbox*.desktop \
+	  $(ISO_ROOT_PATH)/usr/share/gnome/wm-properties/openbox.desktop \
+	  $(ISO_ROOT_PATH)/usr/share/pixmaps/openbox.png \
+	  $(ISO_ROOT_PATH)/usr/share/locale/*/LC_MESSAGES/openbox.mo \
+	  $(ISO_ROOT_PATH)/usr/share/locale/*/LC_MESSAGES/labwc.mo \
+	  $(ISO_ROOT_PATH)/usr/share/licenses/documentation/openbox-3.6.1 \
+	  $(ISO_ROOT_PATH)/usr/share/licenses/documentation/labwc* \
+	  $(ISO_ROOT_PATH)/usr/share/licenses/documentation/wlroots* \
+	  $(ISO_ROOT_PATH)/usr/share/licenses/documentation/weston* \
+	  $(ISO_ROOT_PATH)/usr/share/licenses/documentation/seatd* \
+	  $(ISO_ROOT_PATH)/usr/share/licenses/documentation/wayland-* \
+	  $(ISO_ROOT_PATH)/usr/share/licenses/documentation/xwayland* \
+	  $(ISO_ROOT_PATH)/usr/share/licenses/documentation/libxkbcommon*
+	rm -f $(ISO_ROOT_PATH)/usr/bin/openbox* $(ISO_ROOT_PATH)/usr/bin/labwc \
+	  $(ISO_ROOT_PATH)/usr/bin/weston* $(ISO_ROOT_PATH)/usr/bin/Xwayland \
+	  $(ISO_ROOT_PATH)/usr/bin/seatd $(ISO_ROOT_PATH)/usr/bin/seatd-launch \
+	  $(ISO_ROOT_PATH)/usr/bin/wayland-scanner $(ISO_ROOT_PATH)/usr/bin/xkbcli \
+	  $(ISO_ROOT_PATH)/usr/lib/libobrender.* $(ISO_ROOT_PATH)/usr/lib/libobt.* \
+	  $(ISO_ROOT_PATH)/usr/lib/libweston-14.so* $(ISO_ROOT_PATH)/usr/lib/libwlroots-0.19.so \
+	  $(ISO_ROOT_PATH)/usr/lib/libsfdo-* $(ISO_ROOT_PATH)/usr/lib/libseat.so* \
+	  $(ISO_ROOT_PATH)/usr/lib/pkgconfig/obrender-3.5.pc \
+	  $(ISO_ROOT_PATH)/usr/lib/pkgconfig/obt-3.5.pc \
+	  $(ISO_ROOT_PATH)/usr/lib/pkgconfig/wlroots-0.19.pc \
+	  $(ISO_ROOT_PATH)/usr/lib/pkgconfig/libsfdo-*.pc \
+	  $(ISO_ROOT_PATH)/usr/lib/pkgconfig/libseat.pc \
+	  $(ISO_ROOT_PATH)/usr/lib/pkgconfig/libweston-14.pc \
+	  $(ISO_ROOT_PATH)/usr/lib/pkgconfig/weston.pc \
+	  $(ISO_ROOT_PATH)/usr/lib/pkgconfig/wayland-*.pc \
+	  $(ISO_ROOT_PATH)/usr/lib/pkgconfig/xkbcommon*.pc \
+	  $(ISO_ROOT_PATH)/usr/share/pkgconfig/libweston-14-protocols.pc \
+	  $(ISO_ROOT_PATH)/usr/share/pkgconfig/wayland-protocols.pc \
+	  $(ISO_ROOT_PATH)/usr/share/pkgconfig/xwaylandproto.pc \
+	  $(ISO_ROOT_PATH)/usr/share/aclocal/wayland-scanner.m4 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/openbox*.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/labwc*.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/weston*.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/seatd*.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/Xwayland.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/wayland-scanner.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/xkbcli*.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man5/weston*.5 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man7/weston*.7 \
+	  $(ISO_ROOT_PATH)/usr/lib/systemd/system/seatd.service \
+	  $(ISO_ROOT_PATH)/etc/systemd/system/multi-user.target.wants/seatd.service \
+	  $(ISO_ROOT_PATH)/usr/include/wayland-*.h \
+	  $(ISO_ROOT_PATH)/usr/include/wayland-version.h
+	cp -a arkana-install $(ISO_ROOT_PATH)/usr/bin/arkana-install
+	cp -a genfstab $(ISO_ROOT_PATH)/usr/bin/genfstab
+	cp -a neofetch $(ISO_ROOT_PATH)/usr/bin/neofetch
+	chmod +x $(ISO_ROOT_PATH)/usr/bin/neofetch
+	cp -a xinitrc $(ISO_ROOT_PATH)/root/.xinitrc
+	mkdir -p $(ISO_ROOT_PATH)/etc/skel && cp -a xinitrc $(ISO_ROOT_PATH)/etc/skel/.xinitrc
+	install -D -m 0755 xinitrc $(ISO_ROOT_PATH)/usr/bin/arkana-nscde-session
+	install -D -o 0 -g 0 -m 0644 bash_profile $(ISO_ROOT_PATH)/root/.bash_profile
+	install -D -o 0 -g 0 -m 0644 securetty $(ISO_ROOT_PATH)/etc/securetty
+	install -D -o 0 -g 0 -m 0644 nscde-config/Xresources $(ISO_ROOT_PATH)/etc/X11/Xresources.d/arkanaOS
+	install -D -o 0 -g 0 -m 0644 bashrc $(ISO_ROOT_PATH)/root/.bashrc
+	install -D -o 0 -g 0 -m 0644 bashrc $(ISO_ROOT_PATH)/etc/skel/.bashrc
+	install -D -o 0 -g 0 -m 0644 bashrc $(ISO_ROOT_PATH)/etc/profile.d/arkana-shell.sh
+	mkdir -p $(ISO_ROOT_PATH)/root/.NsCDE/backer $(ISO_ROOT_PATH)/etc/skel/.NsCDE/backer
+	cp -a nscde-config/Backdrops.fvwmgen $(ISO_ROOT_PATH)/root/.NsCDE/
+	cp -a nscde-config/Backdrops.fvwmgen $(ISO_ROOT_PATH)/etc/skel/.NsCDE/
 	for desk in 1 2 3 4 5 6 7 8; do \
-	  chroot $(STAGING_PATH) /usr/lib/NsCDE/palette_colorgen -p /usr/share/NsCDE/palettes/Solyaris.dp -n 4 -i /usr/share/NsCDE/backdrops/Solyaris.pm -P 3 -b > $(STAGING_PATH)/root/.NsCDE/backer/Desk$$desk-Solyaris.pm || exit 1; \
-	  cp $(STAGING_PATH)/root/.NsCDE/backer/Desk$$desk-Solyaris.pm $(STAGING_PATH)/etc/skel/.NsCDE/backer/; \
+	  chroot $(ISO_ROOT_PATH) /usr/lib/NsCDE/palette_colorgen -p /usr/share/NsCDE/palettes/Solyaris.dp -n 4 -i /usr/share/NsCDE/backdrops/Solyaris.pm -P 3 -b > $(ISO_ROOT_PATH)/root/.NsCDE/backer/Desk$$desk-Solyaris.pm || exit 1; \
+	  cp $(ISO_ROOT_PATH)/root/.NsCDE/backer/Desk$$desk-Solyaris.pm $(ISO_ROOT_PATH)/etc/skel/.NsCDE/backer/; \
 	done
-	chroot $(STAGING_PATH) /usr/lib/NsCDE/palette_colorgen -p /usr/share/NsCDE/palettes/Solyaris.dp -n 4 -f > $(STAGING_PATH)/usr/share/NsCDE/fvwm/Colorset.fvwmconf
+	chroot $(ISO_ROOT_PATH) /usr/lib/NsCDE/palette_colorgen -p /usr/share/NsCDE/palettes/Solyaris.dp -n 4 -f > $(ISO_ROOT_PATH)/usr/share/NsCDE/fvwm/Colorset.fvwmconf
 	sed -i \
 	  -e 's/^InfoStoreAdd nscde_use_xscreensaver 1$$/InfoStoreAdd nscde_use_xscreensaver 0/' \
 	  -e 's/^InfoStoreAdd nscde_use_stalonetray 1$$/InfoStoreAdd nscde_use_stalonetray 0/' \
 	  -e 's/^InfoStoreAdd nscde_use_dunst 1$$/InfoStoreAdd nscde_use_dunst 0/' \
-	  $(STAGING_PATH)/usr/share/NsCDE/fvwm/NsCDE.conf
+	  $(ISO_ROOT_PATH)/usr/share/NsCDE/fvwm/NsCDE.conf
 	sed -i 's|^+ I Test (!f .*NsCDE[.]conf.*) f_FirstSetup$$|+ I Test (!EnvMatch NSCDE_SKIP_FIRST_RUN 1, !f "$$[FVWM_USERDIR]/NsCDE.conf") f_FirstSetup|' \
-	  $(STAGING_PATH)/usr/share/NsCDE/fvwm/Main.fvwmconf
-	test "$$(grep -Fc NSCDE_SKIP_FIRST_RUN $(STAGING_PATH)/usr/share/NsCDE/fvwm/Main.fvwmconf)" -eq 2
-	sed -i 's|^Exec=.*[/]nscde$$|Exec=/usr/bin/arkana-nscde-session|' $(STAGING_PATH)/usr/share/xsessions/nscde.desktop
-	sed -i -e 's/DejaVu Serif/Luxi Sans/g' -e 's/DejaVu Sans Mono/Luxi Mono/g' $(STAGING_PATH)/usr/share/NsCDE/fvwm/Font-*dpi.fvwmconf
-	mkdir -p $(STAGING_PATH)/etc/systemd/system/serial-getty@ttyS0.service.d
-	printf '[Service]\nExecStart=\nExecStart=-/sbin/agetty --autologin root --noclear --keep-baud 115200,38400,9600 %%I vt220\n' > $(STAGING_PATH)/etc/systemd/system/serial-getty@ttyS0.service.d/override.conf
-	rm -rf $(STAGING_PATH)/root/GNUstep $(STAGING_PATH)/etc/skel/GNUstep \
-	  $(STAGING_PATH)/etc/WindowMaker \
-	  $(STAGING_PATH)/usr/share/WindowMaker $(STAGING_PATH)/usr/share/WINGs \
-	  $(STAGING_PATH)/usr/share/WPrefs $(STAGING_PATH)/usr/include/WINGs \
-	  $(STAGING_PATH)/usr/include/WUtil
-	rm -f $(STAGING_PATH)/usr/bin/wmaker $(STAGING_PATH)/usr/bin/wmaker.inst \
-	  $(STAGING_PATH)/usr/bin/WPrefs $(STAGING_PATH)/usr/bin/getstyle \
-	  $(STAGING_PATH)/usr/bin/setstyle $(STAGING_PATH)/usr/bin/wdctl \
-	  $(STAGING_PATH)/usr/bin/wdread $(STAGING_PATH)/usr/bin/wdwrite \
-	  $(STAGING_PATH)/usr/bin/wm-oldmenu2new $(STAGING_PATH)/usr/bin/wmagnify \
-	  $(STAGING_PATH)/usr/bin/wmgenmenu $(STAGING_PATH)/usr/bin/wmiv \
-	  $(STAGING_PATH)/usr/bin/wmmenugen $(STAGING_PATH)/usr/bin/wmsetbg \
-	  $(STAGING_PATH)/usr/bin/twm $(STAGING_PATH)/usr/include/WMaker.h \
-	  $(STAGING_PATH)/usr/include/wraster.h $(STAGING_PATH)/usr/lib/libWMaker.* \
-	  $(STAGING_PATH)/usr/lib/libWINGs.* $(STAGING_PATH)/usr/lib/libWUtil.a \
-	  $(STAGING_PATH)/usr/lib/libWUtil.la $(STAGING_PATH)/usr/lib/libWUtil.so \
-	  $(STAGING_PATH)/usr/lib/libwraster.* $(STAGING_PATH)/usr/lib/pkgconfig/WINGs.pc \
-	  $(STAGING_PATH)/usr/lib/pkgconfig/WUtil.pc \
-	  $(STAGING_PATH)/usr/share/bash-completion/completions/wdctl \
-	  $(STAGING_PATH)/usr/share/applications/WPrefs.desktop \
-	  $(STAGING_PATH)/usr/share/xsessions/wmaker.desktop \
-	  $(STAGING_PATH)/usr/share/xsessions/twm.desktop \
-	  $(STAGING_PATH)/usr/share/man/man1/WindowMaker.1 \
-	  $(STAGING_PATH)/usr/share/man/man1/wmaker.1 \
-	  $(STAGING_PATH)/usr/share/man/man1/WPrefs.1 \
-	  $(STAGING_PATH)/usr/share/man/man1/getstyle.1 \
-	  $(STAGING_PATH)/usr/share/man/man1/setstyle.1 \
-	  $(STAGING_PATH)/usr/share/man/man1/wdctl.1 \
-	  $(STAGING_PATH)/usr/share/man/man1/wdread.1 \
-	  $(STAGING_PATH)/usr/share/man/man1/wdwrite.1 \
-	  $(STAGING_PATH)/usr/share/man/man1/wm-oldmenu2new.1 \
-	  $(STAGING_PATH)/usr/share/man/man1/wmagnify.1 \
-	  $(STAGING_PATH)/usr/share/man/man1/wmgenmenu.1 \
-	  $(STAGING_PATH)/usr/share/man/man1/wmiv.1 \
-	  $(STAGING_PATH)/usr/share/man/man1/wmmenugen.1 \
-	  $(STAGING_PATH)/usr/share/man/man8/wdctl.8 \
-	  $(STAGING_PATH)/usr/share/man/man1/wmsetbg.1
-	mkdir -p $(STAGING_PATH)/etc/X11/xorg.conf.d
-	printf 'Section "Device"\n    Identifier "Card0"\n    Option "SWcursor" "true"\n    Option "HWCursor" "false"\nEndSection\n' > $(STAGING_PATH)/etc/X11/xorg.conf.d/99-swcursor.conf
-	sed -i 's/arkanaOS Dev/arkanaOS nightly/g' $(STAGING_PATH)/etc/os-release 2>/dev/null || true
-	sed -i 's/arkanaOS Dev/arkanaOS nightly/g' $(STAGING_PATH)/etc/issue 2>/dev/null || true
+	  $(ISO_ROOT_PATH)/usr/share/NsCDE/fvwm/Main.fvwmconf
+	test "$$(grep -Fc NSCDE_SKIP_FIRST_RUN $(ISO_ROOT_PATH)/usr/share/NsCDE/fvwm/Main.fvwmconf)" -eq 2
+	sed -i 's|^Exec=.*[/]nscde$$|Exec=/usr/bin/arkana-nscde-session|' $(ISO_ROOT_PATH)/usr/share/xsessions/nscde.desktop
+	sed -i -e 's/DejaVu Serif/Luxi Sans/g' -e 's/DejaVu Sans Mono/Luxi Mono/g' $(ISO_ROOT_PATH)/usr/share/NsCDE/fvwm/Font-*dpi.fvwmconf
+	mkdir -p $(ISO_ROOT_PATH)/etc/systemd/system/serial-getty@ttyS0.service.d
+	printf '[Service]\nExecStart=\nExecStart=-/sbin/agetty --autologin root --noclear --keep-baud 115200,38400,9600 %%I vt220\n' > $(ISO_ROOT_PATH)/etc/systemd/system/serial-getty@ttyS0.service.d/override.conf
+	rm -rf $(ISO_ROOT_PATH)/root/GNUstep $(ISO_ROOT_PATH)/etc/skel/GNUstep \
+	  $(ISO_ROOT_PATH)/etc/WindowMaker \
+	  $(ISO_ROOT_PATH)/usr/share/WindowMaker $(ISO_ROOT_PATH)/usr/share/WINGs \
+	  $(ISO_ROOT_PATH)/usr/share/WPrefs $(ISO_ROOT_PATH)/usr/include/WINGs \
+	  $(ISO_ROOT_PATH)/usr/include/WUtil
+	rm -f $(ISO_ROOT_PATH)/usr/bin/wmaker $(ISO_ROOT_PATH)/usr/bin/wmaker.inst \
+	  $(ISO_ROOT_PATH)/usr/bin/WPrefs $(ISO_ROOT_PATH)/usr/bin/getstyle \
+	  $(ISO_ROOT_PATH)/usr/bin/setstyle $(ISO_ROOT_PATH)/usr/bin/wdctl \
+	  $(ISO_ROOT_PATH)/usr/bin/wdread $(ISO_ROOT_PATH)/usr/bin/wdwrite \
+	  $(ISO_ROOT_PATH)/usr/bin/wm-oldmenu2new $(ISO_ROOT_PATH)/usr/bin/wmagnify \
+	  $(ISO_ROOT_PATH)/usr/bin/wmgenmenu $(ISO_ROOT_PATH)/usr/bin/wmiv \
+	  $(ISO_ROOT_PATH)/usr/bin/wmmenugen $(ISO_ROOT_PATH)/usr/bin/wmsetbg \
+	  $(ISO_ROOT_PATH)/usr/bin/twm $(ISO_ROOT_PATH)/usr/include/WMaker.h \
+	  $(ISO_ROOT_PATH)/usr/include/wraster.h $(ISO_ROOT_PATH)/usr/lib/libWMaker.* \
+	  $(ISO_ROOT_PATH)/usr/lib/libWINGs.* $(ISO_ROOT_PATH)/usr/lib/libWUtil.a \
+	  $(ISO_ROOT_PATH)/usr/lib/libWUtil.la $(ISO_ROOT_PATH)/usr/lib/libWUtil.so \
+	  $(ISO_ROOT_PATH)/usr/lib/libwraster.* $(ISO_ROOT_PATH)/usr/lib/pkgconfig/WINGs.pc \
+	  $(ISO_ROOT_PATH)/usr/lib/pkgconfig/WUtil.pc \
+	  $(ISO_ROOT_PATH)/usr/share/bash-completion/completions/wdctl \
+	  $(ISO_ROOT_PATH)/usr/share/applications/WPrefs.desktop \
+	  $(ISO_ROOT_PATH)/usr/share/xsessions/wmaker.desktop \
+	  $(ISO_ROOT_PATH)/usr/share/xsessions/twm.desktop \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/WindowMaker.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/wmaker.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/WPrefs.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/getstyle.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/setstyle.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/wdctl.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/wdread.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/wdwrite.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/wm-oldmenu2new.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/wmagnify.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/wmgenmenu.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/wmiv.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/wmmenugen.1 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man8/wdctl.8 \
+	  $(ISO_ROOT_PATH)/usr/share/man/man1/wmsetbg.1
+	mkdir -p $(ISO_ROOT_PATH)/etc/X11/xorg.conf.d
+	printf 'Section "Device"\n    Identifier "Card0"\n    Option "SWcursor" "true"\n    Option "HWCursor" "false"\nEndSection\n' > $(ISO_ROOT_PATH)/etc/X11/xorg.conf.d/99-swcursor.conf
+	sed -i 's/arkanaOS Dev/arkanaOS nightly/g' $(ISO_ROOT_PATH)/etc/os-release 2>/dev/null || true
+	sed -i 's/arkanaOS Dev/arkanaOS nightly/g' $(ISO_ROOT_PATH)/etc/issue 2>/dev/null || true
     
-	ln -sf /usr/bin/bzdiff $(STAGING_PATH)/usr/bin/bzcmp
-	ln -sf /usr/bin/bzgrep $(STAGING_PATH)/usr/bin/bzegrep
-	ln -sf /usr/bin/bzgrep $(STAGING_PATH)/usr/bin/bzfgrep
-	ln -sf /usr/bin/bzmore $(STAGING_PATH)/usr/bin/bzless
-	ln -sf /usr/lib/p11-kit/trust-extract-compat $(STAGING_PATH)/usr/bin/update-ca-certificates
+	ln -sf /usr/bin/bzdiff $(ISO_ROOT_PATH)/usr/bin/bzcmp
+	ln -sf /usr/bin/bzgrep $(ISO_ROOT_PATH)/usr/bin/bzegrep
+	ln -sf /usr/bin/bzgrep $(ISO_ROOT_PATH)/usr/bin/bzfgrep
+	ln -sf /usr/bin/bzmore $(ISO_ROOT_PATH)/usr/bin/bzless
+	ln -sf /usr/lib/p11-kit/trust-extract-compat $(ISO_ROOT_PATH)/usr/bin/update-ca-certificates
 
-	chroot $(STAGING_PATH) fc-cache -fv || true
-	chroot $(STAGING_PATH) glib-compile-schemas /usr/share/glib-2.0/schemas || true
-	rm -f $(STAGING_PATH)/etc/ld.so.cache
-	chroot $(STAGING_PATH) /usr/bin/ldconfig
-	rm -f $(STAGING_PATH)/etc/udev/hwdb.bin
-	/usr/bin/systemd-hwdb --root=$(STAGING_PATH) --usr update
-	rm -f $(STAGING_PATH)/etc/arkana-install-size
+	chroot $(ISO_ROOT_PATH) fc-cache -fv || true
+	chroot $(ISO_ROOT_PATH) glib-compile-schemas /usr/share/glib-2.0/schemas || true
+	rm -f $(ISO_ROOT_PATH)/etc/ld.so.cache
+	chroot $(ISO_ROOT_PATH) /usr/bin/ldconfig
+	rm -f $(ISO_ROOT_PATH)/etc/udev/hwdb.bin
+	/usr/bin/systemd-hwdb --root=$(ISO_ROOT_PATH) --usr update
+	rm -f $(ISO_ROOT_PATH)/etc/arkana-install-size
 	set -euo pipefail; \
-	INSTALL_ROOT_BYTES=$$(cd "$(STAGING_PATH)" && du -sx --apparent-size --block-size=1 --exclude='./boot/vmlinuz' --exclude='./boot/initramfs.img' . | awk '{print $$1}'); \
-	BOOT_PAYLOAD_BYTES=$$(( $$(stat -c '%s' "$(LINUX_PATH)/arch/x86/boot/bzImage") + $$(stat -c '%s' "$(STAGING_PATH)/boot/initramfs.img") )); \
-	printf '%s %s\n' "$$INSTALL_ROOT_BYTES" "$$BOOT_PAYLOAD_BYTES" > "$(STAGING_PATH)/etc/arkana-install-size"
+	INSTALL_ROOT_BYTES=$$(cd "$(ISO_ROOT_PATH)" && du -sx --apparent-size --block-size=1 --exclude='./boot/vmlinuz' --exclude='./boot/initramfs.img' . | awk '{print $$1}'); \
+	BOOT_PAYLOAD_BYTES=$$(( $$(stat -c '%s' "$(LINUX_PATH)/arch/x86/boot/bzImage") + $$(stat -c '%s' "$(ISO_ROOT_PATH)/boot/initramfs.img") )); \
+	printf '%s %s\n' "$$INSTALL_ROOT_BYTES" "$$BOOT_PAYLOAD_BYTES" > "$(ISO_ROOT_PATH)/etc/arkana-install-size"
 
 	# Normalize privileged runtime ownership and modes after all package installs.
 	chmod 4755 \
-	  $(STAGING_PATH)/usr/bin/sudo $(STAGING_PATH)/usr/bin/passwd \
-	  $(STAGING_PATH)/usr/bin/chfn $(STAGING_PATH)/usr/bin/chsh \
-	  $(STAGING_PATH)/usr/bin/gpasswd $(STAGING_PATH)/usr/bin/newgrp \
-	  $(STAGING_PATH)/usr/bin/su $(STAGING_PATH)/usr/bin/fusermount3 \
-	  $(STAGING_PATH)/usr/sbin/unix_chkpwd
-	DBUS_GID=$$(awk -F: '$$1 == "messagebus" { print $$3 }' $(STAGING_PATH)/etc/group); \
+	  $(ISO_ROOT_PATH)/usr/bin/sudo $(ISO_ROOT_PATH)/usr/bin/passwd \
+	  $(ISO_ROOT_PATH)/usr/bin/chfn $(ISO_ROOT_PATH)/usr/bin/chsh \
+	  $(ISO_ROOT_PATH)/usr/bin/gpasswd $(ISO_ROOT_PATH)/usr/bin/newgrp \
+	  $(ISO_ROOT_PATH)/usr/bin/su $(ISO_ROOT_PATH)/usr/bin/fusermount3 \
+	  $(ISO_ROOT_PATH)/usr/sbin/unix_chkpwd
+	DBUS_GID=$$(awk -F: '$$1 == "messagebus" { print $$3 }' $(ISO_ROOT_PATH)/etc/group); \
 	  test -n "$$DBUS_GID" && \
-	  chown 0:"$$DBUS_GID" $(STAGING_PATH)/usr/lib/dbus-daemon-launch-helper && \
-	  chmod 4750 $(STAGING_PATH)/usr/lib/dbus-daemon-launch-helper
+	  chown 0:"$$DBUS_GID" $(ISO_ROOT_PATH)/usr/lib/dbus-daemon-launch-helper && \
+	  chmod 4750 $(ISO_ROOT_PATH)/usr/lib/dbus-daemon-launch-helper
 
-	mksquashfs $(STAGING_PATH) $(ISO_STAGING_PATH)/boot/rootfs.sfs -comp zstd -Xcompression-level 15 -b 1M -processors $(MKSQUASHFS_THREADS) -noappend -e boot/vmlinuz boot/initramfs.img
+	mksquashfs $(ISO_ROOT_PATH) $(ISO_STAGING_PATH)/boot/rootfs.sfs -comp zstd -Xcompression-level 15 -b 1M -processors $(MKSQUASHFS_THREADS) -noappend -e boot/vmlinuz boot/initramfs.img
 	cp $(LINUX_PATH)/arch/x86/boot/bzImage $(ISO_STAGING_PATH)/boot/vmlinuz
-	cp $(STAGING_PATH)/boot/initramfs.img $(ISO_STAGING_PATH)/boot/boot-initramfs.img
+	cp $(ISO_ROOT_PATH)/boot/initramfs.img $(ISO_STAGING_PATH)/boot/boot-initramfs.img
 
 	echo 'set timeout=5' > $(ISO_STAGING_PATH)/boot/grub/grub.cfg
 	echo 'set default=0' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
