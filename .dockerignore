@@ -8,3 +8,6 @@ output/
 iso-staging/
 cpio-staging/
 logs/
+# Keep repository-private contributor guidance out of the builder image.
+AGENTS.md
+**/AGENTS.md

@@ -731,7 +731,8 @@ boot-initramfs:
 iso:
 	rm -rf $(ISO_ROOT_PATH)
 	mkdir -p $(ISO_ROOT_PATH)
-	cp -a $(STAGING_PATH)/. $(ISO_ROOT_PATH)/
+	# Rootless builds cannot preserve foreign UID/ACL metadata or copy static device nodes.
+	rsync -a --no-owner --no-group --exclude='/dev/fuse' $(STAGING_PATH)/ $(ISO_ROOT_PATH)/
 	printf 'arkanaOS ISO root\n' > $(ISO_ROOT_PATH)/.arkana-iso-root
 	# Keep the browser and optional development/diagnostic tools in arkpkg packages.
 	rm -rf $(ISO_ROOT_PATH)/opt/firefox $(ISO_ROOT_PATH)/usr/lib/git-core \

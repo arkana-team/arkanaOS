@@ -4,7 +4,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MAKEFILES = [
     "Makefile",
@@ -46,6 +45,7 @@ class StagingRootSafetyTests(unittest.TestCase):
                         makefile,
                         "STAGING_PATH=/",
                     ],
+                    check=False,
                     cwd=REPO_ROOT,
                     env=self.env,
                     capture_output=True,
@@ -54,11 +54,18 @@ class StagingRootSafetyTests(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("refusing STAGING_PATH override", result.stderr)
 
-    def test_iso_makefile_rejects_environment_staging_override(self):
+    def test_glibc_makefile_rejects_environment_staging_override(self):
         env = self.env.copy()
-        env["STAGING_PATH"] = "/"
+        env["STAGING_PATH"] = "/tmp/arkana-host-staging-override"
         result = subprocess.run(
-            ["make", "--no-print-directory", "-n", "-f", "arkanas/07_iso.mk"],
+            [
+                "make",
+                "--no-print-directory",
+                "-n",
+                "-f",
+                "arkanas/01_base.mk",
+            ],
+            check=False,
             cwd=REPO_ROOT,
             env=env,
             capture_output=True,
