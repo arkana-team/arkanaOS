@@ -27,7 +27,7 @@ class ReleaseMetadataTests(unittest.TestCase):
                 "make",
                 "-f",
                 str(MAKEFILE),
-                "timestamp",
+                "release-metadata",
                 f"BUILDNUM_FILE={build_number}",
                 f"STAGING_PATH={root / 'staging'}",
             ],
@@ -41,12 +41,24 @@ class ReleaseMetadataTests(unittest.TestCase):
 
     def test_valid_release_labels_write_expected_metadata(self) -> None:
         cases = (
-            ("nightly", "Nightly", "true"),
-            ("r1-a1", "Release 1 Alpha 1", "true"),
-            ("r1-b1", "Release 1 Beta 1", "true"),
-            ("r1-1", "Release 1", "false"),
+            ("nightly", "nightly", "nightly", "nightly-build-233", "true"),
+            (
+                "r1-a1",
+                "1.0 (alpha 1)",
+                "1.0-alpha1",
+                "v1.0-alpha1-build-233",
+                "true",
+            ),
+            (
+                "r1-b1",
+                "1.0 (beta 1)",
+                "1.0-beta1",
+                "v1.0-beta1-build-233",
+                "true",
+            ),
+            ("r1-1", "1.0", "1.0", "v1.0-build-233", "false"),
         )
-        for prefix, version, prerelease in cases:
+        for prefix, version, version_id, release_id, prerelease in cases:
             with self.subTest(prefix=prefix), tempfile.TemporaryDirectory(
                 prefix="arkana-release-metadata-"
             ) as temporary:
@@ -62,14 +74,28 @@ class ReleaseMetadataTests(unittest.TestCase):
                 )
                 self.assertEqual(
                     (metadata / "arkana-release-id").read_text().strip(),
-                    f"{prefix}-233",
+                    release_id,
                 )
                 self.assertEqual(
                     (metadata / "arkana-release-version").read_text().strip(), version
                 )
                 self.assertEqual(
+                    (metadata / "arkana-release-version-id").read_text().strip(),
+                    version_id,
+                )
+                self.assertEqual(
                     (metadata / "arkana-release-prerelease").read_text().strip(),
                     prerelease,
+                )
+                os_release = (metadata / "os-release").read_text(encoding="utf-8")
+                self.assertIn(f'VERSION="{version} build 233"', os_release)
+                self.assertIn(f'VERSION_ID="{version_id}"', os_release)
+                self.assertIn(
+                    f'PRETTY_NAME="arkanaOS {version} build 233"', os_release
+                )
+                self.assertEqual(
+                    (metadata / "issue").read_text(encoding="utf-8").strip(),
+                    f"arkanaOS {version} build 233",
                 )
 
     def test_invalid_release_label_does_not_consume_build_number(self) -> None:

@@ -417,12 +417,13 @@ systemd: timestamp download-systemd kernel-headers .systemd-done release-metadat
 release-metadata: timestamp
 	@set -euo pipefail; \
 	BUILD="$$(cat "$(STAGING_PATH)/etc/arkana-build-number")"; \
-	RELEASE_ID="$$(cat "$(STAGING_PATH)/etc/arkana-release-id")"; \
-	VERSION="$$(cat "$(STAGING_PATH)/etc/arkana-release-version")"; \
+	VERSION_ID="$$(cat "$(STAGING_PATH)/etc/arkana-release-version-id")"; \
+	RELEASE_VERSION="$$(cat "$(STAGING_PATH)/etc/arkana-release-version")"; \
 	mkdir -p "$(STAGING_PATH)/etc"; \
+	VERSION="$$RELEASE_VERSION build $$BUILD"; \
 	printf 'NAME=arkanaOS\nVERSION="%s"\nID=arkana\nID_LIKE=lfs\nVERSION_ID="%s"\nPRETTY_NAME="arkanaOS %s"\nANSI_COLOR="38;5;6"\n' \
-	  "$$VERSION" "$$RELEASE_ID" "$$RELEASE_ID" > "$(STAGING_PATH)/etc/os-release"; \
-	printf 'arkanaOS %s\n' "$$RELEASE_ID" > "$(STAGING_PATH)/etc/issue"
+	  "$$VERSION" "$$VERSION_ID" "$$VERSION" > "$(STAGING_PATH)/etc/os-release"; \
+	printf 'arkanaOS %s\n' "$$VERSION" > "$(STAGING_PATH)/etc/issue"
 
 .PHONY: timestamp
 timestamp:
@@ -432,13 +433,18 @@ timestamp:
 	PREFIX="$${ARKANA_RELEASE_PREFIX:-nightly}"; \
 	PRERELEASE=true; \
 	if [[ "$$PREFIX" == nightly ]]; then \
-	  VERSION=Nightly; \
+	  RELEASE_VERSION=nightly; VERSION_ID=nightly; TAG_PREFIX=nightly; \
 	elif [[ "$$PREFIX" =~ ^r([1-9][0-9]*)-a([1-9][0-9]*)$$ ]]; then \
-	  VERSION="Release $${BASH_REMATCH[1]} Alpha $${BASH_REMATCH[2]}"; \
+	  RELEASE_VERSION="$${BASH_REMATCH[1]}.0 (alpha $${BASH_REMATCH[2]})"; \
+	  VERSION_ID="$${BASH_REMATCH[1]}.0-alpha$${BASH_REMATCH[2]}"; \
+	  TAG_PREFIX="v$${BASH_REMATCH[1]}.0-alpha$${BASH_REMATCH[2]}"; \
 	elif [[ "$$PREFIX" =~ ^r([1-9][0-9]*)-b([1-9][0-9]*)$$ ]]; then \
-	  VERSION="Release $${BASH_REMATCH[1]} Beta $${BASH_REMATCH[2]}"; \
+	  RELEASE_VERSION="$${BASH_REMATCH[1]}.0 (beta $${BASH_REMATCH[2]})"; \
+	  VERSION_ID="$${BASH_REMATCH[1]}.0-beta$${BASH_REMATCH[2]}"; \
+	  TAG_PREFIX="v$${BASH_REMATCH[1]}.0-beta$${BASH_REMATCH[2]}"; \
 	elif [[ "$$PREFIX" =~ ^r([1-9][0-9]*)-([1-9][0-9]*)$$ ]]; then \
-	  VERSION="Release $${BASH_REMATCH[1]}"; PRERELEASE=false; \
+	  RELEASE_VERSION="$${BASH_REMATCH[1]}.0"; \
+	  VERSION_ID="$$RELEASE_VERSION"; TAG_PREFIX="v$$RELEASE_VERSION"; PRERELEASE=false; \
 	else \
 	  echo "Invalid ARKANA_RELEASE_PREFIX: $$PREFIX" >&2; exit 1; \
 	fi; \
@@ -459,12 +465,13 @@ timestamp:
 	  chmod --reference="$(BUILDNUM_FILE)" "$$TMP"; chown --reference="$(BUILDNUM_FILE)" "$$TMP"; \
 	  mv -f "$$TMP" "$(BUILDNUM_FILE)"; \
 	fi; \
-	RELEASE_ID="$$PREFIX-$$BUILD"; \
+	RELEASE_ID="$$TAG_PREFIX-build-$$BUILD"; \
 	mkdir -p "$(STAGING_PATH)/etc"; \
 	printf '%s\n' "$$BUILD" > "$(STAGING_PATH)/etc/arkana-build-number"; \
 	printf '%s\n' "$$PREFIX" > "$(STAGING_PATH)/etc/arkana-release-prefix"; \
 	printf '%s\n' "$$RELEASE_ID" > "$(STAGING_PATH)/etc/arkana-release-id"; \
-	printf '%s\n' "$$VERSION" > "$(STAGING_PATH)/etc/arkana-release-version"; \
+	printf '%s\n' "$$RELEASE_VERSION" > "$(STAGING_PATH)/etc/arkana-release-version"; \
+	printf '%s\n' "$$VERSION_ID" > "$(STAGING_PATH)/etc/arkana-release-version-id"; \
 	printf '%s\n' "$$PRERELEASE" > "$(STAGING_PATH)/etc/arkana-release-prerelease"
 
 # Download coreutils
