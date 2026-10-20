@@ -5,11 +5,7 @@ THREADS ?= $(shell nproc)
 IN_CONTAINER = $(shell ./scripts/detect-container.sh)
 
 ifneq ($(IN_CONTAINER),true)
-ifeq ($(FORCE),1)
-$(warning forcing Makefile build outside a detected container - problems may occur)
-else
-$(error must run in a detected container - use ./build.sh to start build)
-endif
+$(error refusing to build outside a detected container - use ./build.sh to start build)
 endif
 
 

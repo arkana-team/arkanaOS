@@ -62,7 +62,7 @@ class BuildSafetyTests(unittest.TestCase):
     def test_make_guard_refuses_an_ambiguous_root_cgroup(self):
         env = os.environ.copy()
         env.pop("container", None)
-        env.pop("FORCE", None)
+        env["FORCE"] = "1"
         env["container"] = "host"
         env["ARKANA_CONTAINER_ROOT"] = str(self.root)
         env["ARKANA_CGROUP_FILE"] = str(self.cgroup_file)
@@ -74,7 +74,7 @@ class BuildSafetyTests(unittest.TestCase):
             env=env,
         )
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("must run in a detected container", result.stderr)
+        self.assertIn("refusing to build outside a detected container", result.stderr)
 
     def test_build_script_passes_cpu_limit_to_make_and_ninja(self):
         with tempfile.TemporaryDirectory() as temporary:
