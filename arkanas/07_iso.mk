@@ -913,6 +913,7 @@ iso:
 	mkdir -p $(ISO_ROOT_PATH)/etc/skel && cp -a xinitrc $(ISO_ROOT_PATH)/etc/skel/.xinitrc
 	install -D -m 0755 xinitrc $(ISO_ROOT_PATH)/usr/bin/arkana-nscde-session
 	install -D -o 0 -g 0 -m 0644 bash_profile $(ISO_ROOT_PATH)/root/.bash_profile
+	install -D -o 0 -g 0 -m 0644 bash_profile $(ISO_ROOT_PATH)/etc/skel/.bash_profile
 	install -D -o 0 -g 0 -m 0644 securetty $(ISO_ROOT_PATH)/etc/securetty
 	install -D -o 0 -g 0 -m 0644 nscde-config/Xresources $(ISO_ROOT_PATH)/etc/X11/Xresources.d/arkanaOS
 	install -D -o 0 -g 0 -m 0644 bashrc $(ISO_ROOT_PATH)/root/.bashrc
