@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+ARKANA_RELEASE_PREFIX=${ARKANA_RELEASE_PREFIX:-r1-a1}
 mkdir -p output src staging
 
 # Keep builds resource-bounded by default; ARKANA_BUILD_* variables tune the limits.
@@ -57,6 +58,7 @@ docker run --rm -it --init \
   -e HOST_UID="$(id -u)" \
   -e HOST_GID="$(id -g)" \
   -e ARKANA_BUILD_NUMBER \
+  -e ARKANA_RELEASE_PREFIX="$ARKANA_RELEASE_PREFIX" \
   -e THREADS="$CPUS" \
   -e NINJAJOBS="$CPUS" \
   --memory="${CONTAINER_RAM_MB}m" \
