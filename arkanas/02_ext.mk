@@ -1,6 +1,6 @@
 # Enable multi-threaded Bash operation
 SHELL = bash
-THREADS = $(shell nproc)
+THREADS ?= $(shell nproc)
 export CFLAGS ?= -O2 -std=gnu17
 .NOTPARALLEL:
 

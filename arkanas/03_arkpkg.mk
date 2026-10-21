@@ -1,5 +1,5 @@
 SHELL = bash
-THREADS = $(shell nproc)
+THREADS ?= $(shell nproc)
 .NOTPARALLEL:
 
 SRC_PATH = $(shell realpath ./src)

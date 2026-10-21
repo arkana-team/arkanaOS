@@ -1,8 +1,8 @@
 # Enable multi-threaded Bash operation
 SHELL = bash
 .DEFAULT_GOAL := all
-THREADS = $(shell nproc)
-MKSQUASHFS_THREADS ?= 2
+THREADS ?= $(shell nproc)
+MKSQUASHFS_THREADS ?= $(THREADS)
 .NOTPARALLEL:
 
 # Paths used to build the ISO components
