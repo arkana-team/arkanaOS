@@ -61,11 +61,16 @@ LINUX_PATH = $(SRC_PATH)/linux-$(LINUX_VER)
 
 # GRUB (bootloader)
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/grub-efi.html
-GRUB_URL = https://mirrors.ocf.berkeley.edu/gnu/grub/grub-2.12.tar.gz
-GRUB_FALLBACK_URL = https://ftp.gnu.org/gnu/grub/grub-2.12.tar.gz
+GRUB_URL = https://gitlab.freedesktop.org/api/v4/projects/26558/packages/generic/source-assets/grub-$(GRUB_VER)/grub-$(GRUB_VER).tar.xz
 GRUB_FONT_URL = https://unifoundry.com/pub/unifont/unifont-16.0.01/font-builds/unifont-16.0.01.pcf.gz
-GRUB_VER = 2.12
+GRUB_SHA256 = f0db0104927df0b9a48bc41b735c702936190d17eb2d73d3018fa77474a0cabe
+GRUB_VER = 2.16
+GRUB_ARCHIVE = grub-$(GRUB_VER).tar.xz
+GRUB_OBTAINED_STAMP = .grub-$(GRUB_VER)-obtained
+GRUB_BUILD_STAMP = .grub-$(GRUB_VER)-built
+GRUB_DONE_STAMP = .grub-$(GRUB_VER)-done
 GRUB_PATH = $(SRC_PATH)/grub-$(GRUB_VER)
+GRUB_DESTDIR = $(SRC_PATH)/grub-$(GRUB_VER)-destdir
 
 # Freetype
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/freetype2.html
@@ -429,32 +434,71 @@ linux-firmware: .linux-firmware-done
 	touch .linux-firmware-done
 
 # Download GRUB
-download-grub: .grub-obtained
+download-grub: $(GRUB_OBTAINED_STAMP)
 
-.grub-obtained:
-	cd $(SRC_PATH) && ( wget --tries=5 --timeout=30 -O grub-$(GRUB_VER).tar.gz $(GRUB_URL) || wget --tries=5 --timeout=30 -O grub-$(GRUB_VER).tar.gz $(GRUB_FALLBACK_URL) ) && tar xf grub-$(GRUB_VER).tar.gz && \
+.grub-$(GRUB_VER)-obtained:
+	cd $(SRC_PATH) && \
+	if [ ! -f $(GRUB_ARCHIVE) ]; then \
+	  wget --tries=5 --timeout=30 -O $(GRUB_ARCHIVE).part $(GRUB_URL) && \
+	  echo "$(GRUB_SHA256)  $(GRUB_ARCHIVE).part" | sha256sum -c - && \
+	    mv $(GRUB_ARCHIVE).part $(GRUB_ARCHIVE); \
+	fi && \
+	echo "$(GRUB_SHA256)  $(GRUB_ARCHIVE)" | sha256sum -c - && \
+	tar xf $(GRUB_ARCHIVE) && \
 	wget --tries=5 --timeout=30 -O unifont-16.0.01.pcf.gz $(GRUB_FONT_URL)
-	touch .grub-obtained
+	touch $(GRUB_OBTAINED_STAMP)
 
 # Compile GRUB
-grub: download-grub .grub-done
+grub: $(GRUB_DONE_STAMP)
 
-.grub-done:
-	cd $(GRUB_PATH) && (make distclean || true) && rm -rf build-efi build-pc && \
-	cd $(GRUB_PATH) && echo depends bli part_gpt > grub-core/extra_deps.lst && \
+# Keep the i386-pc kernel at the BIOS load address required by GRUB.
+.grub-$(GRUB_VER)-built: freetype $(GRUB_OBTAINED_STAMP)
+	cd $(GRUB_PATH) && rm -rf build-efi build-pc $(GRUB_DESTDIR) && rm -f grub-core/extra_deps.lst && \
+	cd $(GRUB_PATH) && \
 	mkdir -p build-efi && cd build-efi && \
 	CFLAGS="-O2 -std=gnu17" CPPFLAGS="" LDFLAGS="" PKG_CONFIG_PATH=$(STAGING_PATH)/usr/lib/pkgconfig ../configure --prefix=/usr --sysconfdir=/etc --disable-efiemu --with-platform=efi \
-	--target=x86_64 --disable-werror && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
+	--target=x86_64 --disable-werror && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(GRUB_DESTDIR) install && \
 	cd $(GRUB_PATH) && mkdir -p build-pc && cd build-pc && \
 	CFLAGS="-O2 -std=gnu17" CPPFLAGS="" LDFLAGS="" PKG_CONFIG_PATH=$(STAGING_PATH)/usr/lib/pkgconfig ../configure --prefix=/usr --sysconfdir=/etc --disable-efiemu --with-platform=pc \
-	--target=i386 --disable-werror && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
-	mkdir -p $(STAGING_PATH)/usr/share/bash-completion/completions && \
-	mv $(STAGING_PATH)/etc/bash_completion.d/grub $(STAGING_PATH)/usr/share/bash-completion/completions
+	--target=i386 --disable-werror && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(GRUB_DESTDIR) install && \
+	test "$$(readelf -h grub-core/kernel.exec | awk '/Entry point address:/ { print $$4 }')" = "0x9000" && \
+	test -x $(GRUB_DESTDIR)/usr/sbin/grub-install && \
+	test -x $(GRUB_DESTDIR)/usr/bin/grub-mkrescue && \
+	test -d $(GRUB_DESTDIR)/usr/lib/grub/x86_64-efi && \
+	test -d $(GRUB_DESTDIR)/usr/lib/grub/i386-pc && \
+	test -f $(GRUB_DESTDIR)/usr/share/bash-completion/completions/grub
+	touch $(GRUB_BUILD_STAMP)
+
+$(GRUB_DONE_STAMP): $(GRUB_BUILD_STAMP)
 
 	# Font data here
-	mkdir -p $(STAGING_PATH)/usr/share/fonts/unifont && gunzip -c $(SRC_PATH)/unifont-16.0.01.pcf.gz > $(STAGING_PATH)/usr/share/fonts/unifont/unifont.pcf
+	rm -rf $(STAGING_PATH)/usr/lib/grub $(STAGING_PATH)/usr/share/grub $(STAGING_PATH)/etc/grub.d && \
+	mkdir -p $(STAGING_PATH)/usr/bin $(STAGING_PATH)/usr/sbin && \
+	find $(STAGING_PATH)/usr/bin -maxdepth 1 \( -type f -o -type l \) -name 'grub-*' -delete && \
+	find $(STAGING_PATH)/usr/sbin -maxdepth 1 \( -type f -o -type l \) -name 'grub-*' -delete && \
+	rm -f $(STAGING_PATH)/etc/bash_completion.d/grub \
+	  $(STAGING_PATH)/usr/share/bash-completion/completions/grub \
+	  $(STAGING_PATH)/usr/share/info/grub.info* \
+	  $(STAGING_PATH)/usr/share/man/man8/grub-* && \
+	find $(STAGING_PATH)/usr/share/locale -type f -path '*/LC_MESSAGES/grub.mo' -delete && \
+	for source_path in $(GRUB_DESTDIR)/*; do \
+	  if [ "$$source_path" = "$(GRUB_DESTDIR)/usr" ] && [ -L $(STAGING_PATH)/usr/sbin ]; then \
+	    for usr_path in "$$source_path"/*; do \
+	      if [ "$$usr_path" = "$$source_path/sbin" ]; then \
+	        cp -a "$$usr_path"/. $(STAGING_PATH)/usr/bin/ || exit 1; \
+	      else \
+	        cp -a "$$usr_path" $(STAGING_PATH)/usr/ || exit 1; \
+	      fi; \
+	    done; \
+	  else \
+	    cp -a "$$source_path" $(STAGING_PATH)/ || exit 1; \
+	  fi; \
+	done && \
+	mkdir -p $(STAGING_PATH)/usr/share/fonts/unifont $(STAGING_PATH)/usr/share/grub && \
+	gunzip -c $(SRC_PATH)/unifont-16.0.01.pcf.gz > $(STAGING_PATH)/usr/share/fonts/unifont/unifont.pcf && \
+	chroot $(STAGING_PATH) /usr/bin/grub-mkfont -o /usr/share/grub/unicode.pf2 /usr/share/fonts/unifont/unifont.pcf
 
-	touch .grub-done
+	touch $(GRUB_DONE_STAMP)
 
 # Download freetype
 download-freetype: .freetype-obtained
@@ -728,11 +772,13 @@ boot-initramfs:
 
 # Create ISO file for booting
 .PHONY: iso
-iso:
+iso: grub
 	rm -rf $(ISO_ROOT_PATH)
 	mkdir -p $(ISO_ROOT_PATH)
 	# Rootless builds cannot preserve foreign UID/ACL metadata or copy static device nodes.
-	rsync -a --no-owner --no-group --exclude='/dev/fuse' $(STAGING_PATH)/ $(ISO_ROOT_PATH)/
+	rsync -a --no-owner --no-group --exclude='/dev/fuse' \
+	  --exclude='/tmp/arkana-grub-iso-source.*' --exclude='/tmp/arkana-grub-iso-output.*' \
+	  $(STAGING_PATH)/ $(ISO_ROOT_PATH)/
 	printf 'arkanaOS ISO root\n' > $(ISO_ROOT_PATH)/.arkana-iso-root
 	# Keep the browser and optional development/diagnostic tools in arkpkg packages.
 	rm -rf $(ISO_ROOT_PATH)/opt/firefox $(ISO_ROOT_PATH)/usr/lib/git-core \
@@ -1025,4 +1071,19 @@ iso:
 	echo '    initrd /boot/initramfs.img' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
 	echo '}' >> $(ISO_STAGING_PATH)/boot/grub/grub.cfg
 
-	grub-mkrescue -o $(OUTPUT_PATH)/arkana.iso $(ISO_STAGING_PATH) -- -volid "ARKANA"
+	GRUB_INSTALL_VERSION=$$(chroot $(STAGING_PATH) /usr/sbin/grub-install --version); \
+	GRUB_MKRESCUE_VERSION=$$(chroot $(STAGING_PATH) /usr/bin/grub-mkrescue --version); \
+	for version in "$$GRUB_INSTALL_VERSION" "$$GRUB_MKRESCUE_VERSION"; do \
+	  printf '%s\n' "$$version" | grep -Fq "(GRUB) $(GRUB_VER)" || { \
+	    echo "GRUB version mismatch: expected $(GRUB_VER), got $$version" >&2; exit 1; \
+	  }; \
+	done; \
+	set -euo pipefail; \
+	GRUB_RESCUE_SOURCE=$$(mktemp -d $(STAGING_PATH)/tmp/arkana-grub-iso-source.XXXXXX); \
+	GRUB_RESCUE_OUTPUT=$$(mktemp -d $(STAGING_PATH)/tmp/arkana-grub-iso-output.XXXXXX); \
+	trap 'rm -rf "$$GRUB_RESCUE_SOURCE" "$$GRUB_RESCUE_OUTPUT"' EXIT; \
+	cp -al $(ISO_STAGING_PATH)/. "$$GRUB_RESCUE_SOURCE"/; \
+	chroot $(STAGING_PATH) /usr/bin/grub-mkrescue \
+	  -o "/tmp/$$(basename "$$GRUB_RESCUE_OUTPUT")/arkana.iso" \
+	  "/tmp/$$(basename "$$GRUB_RESCUE_SOURCE")" -- -volid "ARKANA"; \
+	mv "$$GRUB_RESCUE_OUTPUT/arkana.iso" $(OUTPUT_PATH)/arkana.iso
