@@ -1032,6 +1032,8 @@ iso: grub
 	ln -sf /usr/bin/bzgrep $(ISO_ROOT_PATH)/usr/bin/bzfgrep
 	ln -sf /usr/bin/bzmore $(ISO_ROOT_PATH)/usr/bin/bzless
 	ln -sf /usr/lib/p11-kit/trust-extract-compat $(ISO_ROOT_PATH)/usr/bin/update-ca-certificates
+	printf '/usr/lib/x86_64-linux-gnu\n' > $(ISO_ROOT_PATH)/etc/ld.so.conf
+	ln -sfn ../ca-bundle.crt $(ISO_ROOT_PATH)/etc/ssl/certs/ca-certificates.crt
 
 	chroot $(ISO_ROOT_PATH) fc-cache -fv || true
 	chroot $(ISO_ROOT_PATH) glib-compile-schemas /usr/share/glib-2.0/schemas || true
