@@ -37,6 +37,53 @@ class BuildSafetyTests(unittest.TestCase):
         )
         return result.stdout.strip() == "true"
 
+    def run_build_script(self, release_prefix=None, script=BUILD_SCRIPT):
+        bin_dir = self.root / "bin"
+        bin_dir.mkdir(exist_ok=True)
+        docker = bin_dir / "docker"
+        docker.write_text(
+            "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$DOCKER_LOG\"\n",
+            encoding="utf-8",
+        )
+        docker.chmod(0o755)
+        log = self.root / "docker.log"
+        env = os.environ.copy()
+        env.pop("ARKANA_RELEASE_PREFIX", None)
+        if release_prefix is not None:
+            env["ARKANA_RELEASE_PREFIX"] = release_prefix
+        env.update(
+            {
+                "PATH": f"{bin_dir}{os.pathsep}{env['PATH']}",
+                "DOCKER_LOG": str(log),
+                "ARKANA_BUILD_CPUS": "1",
+                "ARKANA_BUILD_RAM_MB": "512",
+                "ARKANA_BUILD_SWAP_MB": "0",
+            }
+        )
+        result = subprocess.run(
+            [str(script)],
+            cwd=self.root,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+        return result, log
+
+    def test_build_entrypoints_pass_the_alpha_prefix_and_allow_override(self):
+        for script in (REPO_ROOT / "build", BUILD_SCRIPT):
+            for requested, expected in ((None, "r1-a1"), ("nightly", "nightly")):
+                with self.subTest(script=script.name, release_prefix=requested):
+                    (self.root / "docker.log").unlink(missing_ok=True)
+                    result, log = self.run_build_script(requested, script)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    invocations = log.read_text(encoding="utf-8").splitlines()
+                    self.assertEqual(len(invocations), 2)
+                    self.assertIn(
+                        f"-e ARKANA_RELEASE_PREFIX={expected}", invocations[1]
+                    )
+
     def test_root_cgroup_view_alone_is_not_container_proof(self):
         self.write_cgroup("0::/\n")
         self.assertFalse(self.detect())
