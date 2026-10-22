@@ -159,7 +159,7 @@ ROOT_UUID="$(blkid -s UUID -o value "$ROOTPART")"
 echo "Copying system..."
 mkdir -p /mnt/{dev,proc,sys,run,mnt,tmp}
 
-rsync -axH --no-i-r --info=progress2 / /mnt
+rsync -ax --info=progress2 / /mnt
 rm -f /mnt/root/.NsCDE/NsCDE.conf
 rm -f /mnt/etc/systemd/system/getty@tty1.service.d/override.conf
 rm -f /mnt/etc/systemd/system/serial-getty@ttyS0.service.d/override.conf
