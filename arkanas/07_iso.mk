@@ -452,7 +452,7 @@ download-grub: $(GRUB_OBTAINED_STAMP)
 grub: $(GRUB_DONE_STAMP)
 
 # Keep the i386-pc kernel at the BIOS load address required by GRUB.
-.grub-$(GRUB_VER)-built: freetype $(GRUB_OBTAINED_STAMP)
+.grub-$(GRUB_VER)-built: .freetype-done $(GRUB_OBTAINED_STAMP)
 	cd $(GRUB_PATH) && rm -rf build-efi build-pc $(GRUB_DESTDIR) && rm -f grub-core/extra_deps.lst && \
 	cd $(GRUB_PATH) && \
 	mkdir -p build-efi && cd build-efi && \
