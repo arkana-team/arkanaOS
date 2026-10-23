@@ -1,6 +1,10 @@
+import hashlib
+import io
 import os
 import re
+import shutil
 import subprocess
+import tarfile
 import tempfile
 import unittest
 from pathlib import Path
@@ -188,6 +192,124 @@ class BuildSafetyTests(unittest.TestCase):
                     )
                     checked += 1
         self.assertGreater(checked, 0)
+
+
+class LibndpSourceSafetyTests(unittest.TestCase):
+    def setUp(self):
+        self.tempdir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tempdir.cleanup)
+        self.root = Path(self.tempdir.name)
+        for directory in ("arkanas", "src", "staging", "output", "bin"):
+            (self.root / directory).mkdir()
+        for name in ("02_ext.mk", "staging-guard.mk"):
+            shutil.copyfile(REPO_ROOT / "arkanas" / name, self.root / "arkanas" / name)
+
+        self.release = self.root / "release.tar.gz"
+        with tarfile.open(self.release, "w:gz") as archive:
+            for name, content, mode in (
+                ("configure", '#!/bin/sh\necho configure >> "$FLOW_LOG"\n', 0o755),
+                ("Makefile", 'all:\n\t@echo build >> "$$FLOW_LOG"\n'
+                 'install:\n\t@echo install >> "$$FLOW_LOG"\n', 0o644),
+            ):
+                data = content.encode()
+                entry = tarfile.TarInfo(f"libndp-1.9/{name}")
+                entry.size = len(data)
+                entry.mode = mode
+                archive.addfile(entry, io.BytesIO(data))
+        self.digest = hashlib.sha256(self.release.read_bytes()).hexdigest()
+        self.cached = self.root / "src/libndp-1.9.tar.gz"
+        self.source = self.root / "src/libndp-1.9"
+        self.flow_log = self.root / "flow.log"
+        self.wget_log = self.root / "wget.log"
+        wget = self.root / "bin/wget"
+        wget.write_text(
+            '#!/bin/sh\nprintf "%s\\n" "$@" >> "$WGET_LOG"\n'
+            'while [ "$1" != "-O" ]; do shift; done\n'
+            'cp "$RELEASE_ARCHIVE" "$2"\n'
+        )
+        wget.chmod(0o755)
+        self.env = os.environ.copy()
+        self.env.pop("STAGING_PATH", None)
+        self.env.update({
+            "PATH": f"{self.root / 'bin'}{os.pathsep}{self.env['PATH']}",
+            "FLOW_LOG": str(self.flow_log),
+            "WGET_LOG": str(self.wget_log),
+            "RELEASE_ARCHIVE": str(self.release),
+        })
+
+    def run_libndp(self, target="libndp", fixture_digest=True):
+        arguments = ["make", "--no-print-directory", "-f", "arkanas/02_ext.mk", target]
+        if fixture_digest:
+            arguments.append(f"LIBNDP_SHA256={self.digest}")
+        return subprocess.run(
+            arguments, cwd=self.root, env=self.env, capture_output=True,
+            text=True, timeout=30, check=False,
+        )
+
+    def seed_legacy_source(self):
+        self.source.mkdir()
+        (self.source / "unverified-leftover").touch()
+        configure = self.source / "configure"
+        configure.write_text('#!/bin/sh\necho unverified >> "$FLOW_LOG"\nexit 1\n')
+        configure.chmod(0o755)
+        for stamp in (".libndp-obtained", ".libndp-done"):
+            (self.root / stamp).touch()
+
+    def test_download_uses_https_and_verified_build_is_incremental(self):
+        result = self.run_libndp()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.flow_log.read_text().splitlines(), ["configure", "build", "install"])
+        requests = self.wget_log.read_text()
+        self.assertTrue(requests.splitlines()[-1].startswith("https://"))
+        stamp = self.root / ".libndp-done"
+        built_at = stamp.stat().st_mtime_ns
+
+        result = self.run_libndp()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("libndp-1.9.tar.gz: OK", result.stdout)
+        self.assertEqual(stamp.stat().st_mtime_ns, built_at)
+        self.assertEqual(self.wget_log.read_text(), requests)
+        self.assertEqual(self.flow_log.read_text().splitlines(), ["configure", "build", "install"])
+
+    def test_untrusted_download_is_rejected_before_extraction(self):
+        result = self.run_libndp(fixture_digest=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("FAILED", result.stdout)
+        self.assertFalse(self.source.exists())
+        self.assertFalse(self.flow_log.exists())
+        self.assertFalse((self.root / ".libndp-verified-obtained").exists())
+        self.assertFalse((self.root / ".libndp-done").exists())
+
+    def test_legacy_source_is_replaced_before_direct_compile_target(self):
+        shutil.copyfile(self.release, self.cached)
+        self.seed_legacy_source()
+        result = self.run_libndp(".libndp-done")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertFalse((self.source / "unverified-leftover").exists())
+        self.assertEqual(self.flow_log.read_text().splitlines(), ["configure", "build", "install"])
+        self.assertFalse(self.wget_log.exists())
+
+    def test_corrupt_legacy_cache_blocks_build_despite_old_stamps(self):
+        self.cached.write_bytes(b"untrusted archive")
+        self.seed_legacy_source()
+        result = self.run_libndp()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("FAILED", result.stdout)
+        self.assertFalse(self.flow_log.exists())
+        self.assertFalse(self.wget_log.exists())
+        self.assertFalse((self.root / ".libndp-verified-obtained").exists())
+
+    def test_corrupt_cache_is_rejected_after_successful_build(self):
+        result = self.run_libndp()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        previous_flow = self.flow_log.read_text()
+        self.cached.write_bytes(b"corrupted cached archive")
+        for target in ("download-libndp", "libndp", ".libndp-done"):
+            with self.subTest(target=target):
+                result = self.run_libndp(target)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("FAILED", result.stdout)
+                self.assertEqual(self.flow_log.read_text(), previous_flow)
 
 
 if __name__ == "__main__":
