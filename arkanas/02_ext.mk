@@ -898,7 +898,7 @@ make-ca: download-make-ca .make-ca-done
 .make-ca-done:
 	cd $(MAKE_CA_PATH) && $(MAKE) DESTDIR=$(STAGING_PATH) install && install -dm755 $(STAGING_PATH)/etc/ssl/local && \
 	mkdir -p $(STAGING_PATH)/etc/systemd/system/timers.target.wants && ln -sfn /usr/lib/systemd/system/update-pki.timer $(STAGING_PATH)/etc/systemd/system/timers.target.wants/update-pki.timer && \
-	curl -k -o $(STAGING_PATH)/etc/ssl/ca-bundle.crt https://curl.se/ca/cacert.pem && chmod 644 $(STAGING_PATH)/etc/ssl/ca-bundle.crt && \
+	curl --fail -o $(STAGING_PATH)/etc/ssl/ca-bundle.crt https://curl.se/ca/cacert.pem && chmod 644 $(STAGING_PATH)/etc/ssl/ca-bundle.crt && \
 	echo 'export CURL_CA_BUNDLE=/etc/ssl/ca-bundle.crt' >> $(STAGING_PATH)/etc/profile
 	touch .make-ca-done
 
