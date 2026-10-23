@@ -6,12 +6,14 @@ on:
       - "prune-runtime-docs"
       - "prune-optional-devel"
       - "tests/**"
+      - ".github/workflows/04_stage4_iso.yml"
       - ".github/workflows/iso-pruning-tests.yml"
   push:
     paths:
       - "prune-runtime-docs"
       - "prune-optional-devel"
       - "tests/**"
+      - ".github/workflows/04_stage4_iso.yml"
       - ".github/workflows/iso-pruning-tests.yml"
 
 permissions:

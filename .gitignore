@@ -14,6 +14,7 @@ output
 
 # Scratch / debug scripts
 *.py
+!tests/test_iso_artifact_provenance.py
 check_*.sh
 audit_*.sh
 *.log
@@ -22,4 +23,3 @@ audit_*.sh
 *.tar.zst
 arkana-*.tar
 arkana-*.tar.zst
-
