@@ -15,6 +15,7 @@ output
 # Scratch / debug scripts
 *.py
 !tests/test_iso_artifact_provenance.py
+!tests/test_ca_bundle_download.py
 check_*.sh
 audit_*.sh
 *.log
