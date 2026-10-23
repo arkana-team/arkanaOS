@@ -91,8 +91,10 @@ NEWT_PATH = $(SRC_PATH)/newt-$(NEWT_VER)
 
 # Libndp
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/basicnet/libndp.html
-LIBNDP_URL = http://libndp.org/files/libndp-1.9.tar.gz
+LIBNDP_URL = https://ftp.osuosl.org/pub/blfs/conglomeration/libndp/libndp-1.9.tar.gz
 LIBNDP_VER = 1.9
+# Matches NixOS nixpkgs nixos-24.11: pkgs/by-name/li/libndp/package.nix
+LIBNDP_SHA256 = a8ab214e01dc3a9b615276905395637f391298c84d77651f0cbf0b1082dd2dd4
 LIBNDP_PATH = $(SRC_PATH)/libndp-$(LIBNDP_VER)
 
 # Libffi
@@ -501,14 +503,25 @@ newt: download-newt .newt-done
 	touch .newt-done
 
 # Download libndp
-download-libndp: .libndp-obtained
-.libndp-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libndp-$(LIBNDP_VER).tar.gz $(LIBNDP_URL) && tar xf libndp-$(LIBNDP_VER).tar.gz
-	touch .libndp-obtained
+.PHONY: download-libndp verify-libndp
+download-libndp: .libndp-verified-obtained
+
+$(SRC_PATH)/libndp-$(LIBNDP_VER).tar.gz:
+	wget --tries=5 --timeout=30 -O "$@.tmp" $(LIBNDP_URL) && mv "$@.tmp" "$@"
+
+# Check even cached archives when the extraction/build stamps already exist.
+verify-libndp: $(SRC_PATH)/libndp-$(LIBNDP_VER).tar.gz
+	cd $(SRC_PATH) && echo '$(LIBNDP_SHA256)  libndp-$(LIBNDP_VER).tar.gz' | sha256sum -c -
+
+# A new stamp replaces source trees extracted before verification was required.
+.libndp-verified-obtained: $(SRC_PATH)/libndp-$(LIBNDP_VER).tar.gz | verify-libndp
+	rm -rf $(LIBNDP_PATH)
+	cd $(SRC_PATH) && tar xf libndp-$(LIBNDP_VER).tar.gz
+	touch $@
 
 # Compile libndp
 libndp: download-libndp .libndp-done
-.libndp-done:
+.libndp-done: .libndp-verified-obtained
 	cd $(LIBNDP_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libndp-done
 
