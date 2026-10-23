@@ -120,6 +120,7 @@ class ReleaseMetadataTests(unittest.TestCase):
 class ISOReleaseWorkflowTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
+        """Load the workflow's release shell step for direct regression tests."""
         workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
         step = workflow.split(
             "      - name: Generate Release Notes & Tags from Template\n", 1
@@ -130,6 +131,7 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
         self, root: Path, *, prefix: str, release_id: str, version: str,
         prerelease: str,
     ) -> subprocess.CompletedProcess[str]:
+        """Run release processing with isolated metadata and template files."""
         metadata = root / "staging/etc"
         metadata.mkdir(parents=True)
         values = {
@@ -167,6 +169,7 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
         )
 
     def test_valid_release_metadata_renders_template_literally(self) -> None:
+        """Accept supported labels and replace template placeholders literally."""
         cases = (
             ("nightly", "nightly", "nightly-build-233", "true"),
             ("r1-a1", "1.0 (alpha 1)", "v1.0-alpha1-build-233", "true"),
@@ -197,6 +200,7 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
                 )
 
     def test_release_version_cannot_inject_commands_into_template_processing(self) -> None:
+        """Reject a multiline version that could add a sed file-write command."""
         with tempfile.TemporaryDirectory(prefix="arkana-iso-release-") as temporary:
             root = Path(temporary)
             marker = root / "injected-file"
