@@ -40,7 +40,7 @@ class CaBundleDownloadTests(unittest.TestCase):
             def handle(self):
                 try:
                     super().handle()
-                except ConnectionResetError:
+                except (BrokenPipeError, ConnectionResetError):
                     # A client rejecting the server certificate may reset the socket.
                     pass
 
@@ -56,6 +56,7 @@ class CaBundleDownloadTests(unittest.TestCase):
         cls.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
         cls.addClassCleanup(cls.server.server_close)
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.minimum_version = ssl.TLSVersion.TLSv1_2
         context.load_cert_chain(cls.cert, key)
         cls.server.socket = context.wrap_socket(cls.server.socket, server_side=True)
         thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
