@@ -23,20 +23,23 @@ CPIO_PATH = $(SRC_PATH)/cpio-$(CPIO_VER)
 
 # libisoburn (provides xorriso required by grub-mkrescue)
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/multimedia/libisoburn.html
-LIBISOBURN_URL = http://files.libburnia-project.org/releases/libisoburn-1.5.6.tar.gz
+LIBISOBURN_URL = https://files.libburnia-project.org/releases/libisoburn-1.5.6.tar.gz
 LIBISOBURN_VER = 1.5.6
+LIBISOBURN_SHA256 = 2b80a6f73dd633a5d243facbe97a15e5c9a07644a5e1a242c219b9375a45f71b
 LIBISOBURN_PATH = $(SRC_PATH)/libisoburn-$(LIBISOBURN_VER)
 
 # Libburn
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/multimedia/libburn.html
-LIBBURN_URL = http://files.libburnia-project.org/releases/libburn-1.5.6.tar.gz
+LIBBURN_URL = https://files.libburnia-project.org/releases/libburn-1.5.6.tar.gz
 LIBBURN_VER = 1.5.6
+LIBBURN_SHA256 = 7295491b4be5eeac5e7a3fb2067e236e2955ffdc6bbd45f546466edee321644b
 LIBBURN_PATH = $(SRC_PATH)/libburn-$(LIBBURN_VER)
 
 # Libisofs
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/multimedia/libisofs.html
-LIBISOFS_URL = http://files.libburnia-project.org/releases/libisofs-1.5.6.tar.gz
+LIBISOFS_URL = https://files.libburnia-project.org/releases/libisofs-1.5.6.tar.gz
 LIBISOFS_VER = 1.5.6
+LIBISOFS_SHA256 = 0152d66a9d340b659fe9c880eb9190f3570fb477ac07cf52e8bcd134a1d30d70
 LIBISOFS_PATH = $(SRC_PATH)/libisofs-$(LIBISOFS_VER)
 
 # mtools (provides mformat required by libisoburn)
@@ -295,16 +298,26 @@ cpio: download-cpio .cpio-done
 	touch .cpio-done
 
 # Download libisoburn
-download-libisoburn: .libisoburn-obtained
+.PHONY: download-libisoburn verify-libisoburn
+download-libisoburn: .libisoburn-verified-obtained
 
-.libisoburn-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libisoburn-$(LIBISOBURN_VER).tar.gz $(LIBISOBURN_URL) && tar xf libisoburn-$(LIBISOBURN_VER).tar.gz
-	touch .libisoburn-obtained
+$(SRC_PATH)/libisoburn-$(LIBISOBURN_VER).tar.gz:
+	wget --tries=5 --timeout=30 -O "$@.tmp" $(LIBISOBURN_URL) && mv "$@.tmp" "$@"
+
+# Check even cached archives when the extraction/build stamps already exist.
+verify-libisoburn: $(SRC_PATH)/libisoburn-$(LIBISOBURN_VER).tar.gz
+	cd $(SRC_PATH) && echo '$(LIBISOBURN_SHA256)  libisoburn-$(LIBISOBURN_VER).tar.gz' | sha256sum -c -
+
+# A new stamp replaces source trees extracted before verification was required.
+.libisoburn-verified-obtained: $(SRC_PATH)/libisoburn-$(LIBISOBURN_VER).tar.gz | verify-libisoburn
+	rm -rf $(LIBISOBURN_PATH)
+	cd $(SRC_PATH) && tar xf libisoburn-$(LIBISOBURN_VER).tar.gz
+	touch $@
 
 # Compile libisoburn
 libisoburn: libburn libisofs download-libisoburn .libisoburn-done
 
-.libisoburn-done:
+.libisoburn-done: .libisoburn-verified-obtained
 	cd $(LIBISOBURN_PATH) && \
 	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
 	PKG_CONFIG_LIBDIR="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
@@ -317,30 +330,50 @@ libisoburn: libburn libisofs download-libisoburn .libisoburn-done
 	touch .libisoburn-done
 
 # Download libburn
-download-libburn: .libburn-obtained
+.PHONY: download-libburn verify-libburn
+download-libburn: .libburn-verified-obtained
 
-.libburn-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libburn-$(LIBBURN_VER).tar.gz $(LIBBURN_URL) && tar xf libburn-$(LIBBURN_VER).tar.gz
-	touch .libburn-obtained
+$(SRC_PATH)/libburn-$(LIBBURN_VER).tar.gz:
+	wget --tries=5 --timeout=30 -O "$@.tmp" $(LIBBURN_URL) && mv "$@.tmp" "$@"
+
+# Check even cached archives when the extraction/build stamps already exist.
+verify-libburn: $(SRC_PATH)/libburn-$(LIBBURN_VER).tar.gz
+	cd $(SRC_PATH) && echo '$(LIBBURN_SHA256)  libburn-$(LIBBURN_VER).tar.gz' | sha256sum -c -
+
+# A new stamp replaces source trees extracted before verification was required.
+.libburn-verified-obtained: $(SRC_PATH)/libburn-$(LIBBURN_VER).tar.gz | verify-libburn
+	rm -rf $(LIBBURN_PATH)
+	cd $(SRC_PATH) && tar xf libburn-$(LIBBURN_VER).tar.gz
+	touch $@
 
 # Compile libburn
 libburn: download-libburn .libburn-done
 
-.libburn-done:
+.libburn-done: .libburn-verified-obtained
 	cd $(LIBBURN_PATH) && sed -i 's/catch_int ()/catch_int (int signum)/' test/poll.c && ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libburn-done
 
 # Download libisofs
-download-libisofs: .libisofs-obtained
+.PHONY: download-libisofs verify-libisofs
+download-libisofs: .libisofs-verified-obtained
 
-.libisofs-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libisofs-$(LIBISOFS_VER).tar.gz $(LIBISOFS_URL) && tar xf libisofs-$(LIBISOFS_VER).tar.gz
-	touch .libisofs-obtained
+$(SRC_PATH)/libisofs-$(LIBISOFS_VER).tar.gz:
+	wget --tries=5 --timeout=30 -O "$@.tmp" $(LIBISOFS_URL) && mv "$@.tmp" "$@"
+
+# Check even cached archives when the extraction/build stamps already exist.
+verify-libisofs: $(SRC_PATH)/libisofs-$(LIBISOFS_VER).tar.gz
+	cd $(SRC_PATH) && echo '$(LIBISOFS_SHA256)  libisofs-$(LIBISOFS_VER).tar.gz' | sha256sum -c -
+
+# A new stamp replaces source trees extracted before verification was required.
+.libisofs-verified-obtained: $(SRC_PATH)/libisofs-$(LIBISOFS_VER).tar.gz | verify-libisofs
+	rm -rf $(LIBISOFS_PATH)
+	cd $(SRC_PATH) && tar xf libisofs-$(LIBISOFS_VER).tar.gz
+	touch $@
 
 # Compile libisofs
 libisofs: download-libisofs .libisofs-done
 
-.libisofs-done:
+.libisofs-done: .libisofs-verified-obtained
 	cd $(LIBISOFS_PATH) && ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --disable-static && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .libisofs-done
 

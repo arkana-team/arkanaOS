@@ -312,5 +312,173 @@ class LibndpSourceSafetyTests(unittest.TestCase):
                 self.assertEqual(self.flow_log.read_text(), previous_flow)
 
 
+class GraphicsAndIsoSourceSafetyTests(unittest.TestCase):
+    PACKAGES = (
+        ("openbox", "3.6.1", "05_graphics.mk"),
+        ("libisoburn", "1.5.6", "07_iso.mk"),
+        ("libburn", "1.5.6", "07_iso.mk"),
+        ("libisofs", "1.5.6", "07_iso.mk"),
+    )
+
+    def prepare(self, package, version, makefile):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.root = Path(temporary.name)
+        self.package = package
+        self.makefile = makefile
+        for directory in ("arkanas", "src", "staging/root", "output", "bin"):
+            (self.root / directory).mkdir(parents=True)
+        for name in (makefile, "staging-guard.mk"):
+            shutil.copyfile(REPO_ROOT / "arkanas" / name, self.root / "arkanas" / name)
+        (self.root / "xinitrc").touch()
+        self.release = self.root / "release.tar.gz"
+        with tarfile.open(self.release, "w:gz") as archive:
+            for name, content, mode in (
+                ("configure", '#!/bin/sh\necho configure >> "$FLOW_LOG"\n', 0o755),
+                ("Makefile", 'all clean install:\n\t@echo $@ >> "$$FLOW_LOG"\n', 0o644),
+                ("test/poll.c", "void catch_int () {}\n", 0o644),
+            ):
+                data = content.encode()
+                entry = tarfile.TarInfo(f"{package}-{version}/{name}")
+                entry.size = len(data)
+                entry.mode = mode
+                archive.addfile(entry, io.BytesIO(data))
+        self.digest = hashlib.sha256(self.release.read_bytes()).hexdigest()
+        self.cached = self.root / f"src/{package}-{version}.tar.gz"
+        self.source = self.root / f"src/{package}-{version}"
+        self.flow_log = self.root / "flow.log"
+        self.wget_log = self.root / "wget.log"
+        self.obtained = self.root / f".{package}-verified-obtained"
+        self.done = self.root / f".{package}-done"
+        wget = self.root / "bin/wget"
+        wget.write_text(
+            '#!/bin/sh\nprintf "%s\\n" "$@" >> "$WGET_LOG"\n'
+            'while [ "$1" != "-O" ]; do shift; done\n'
+            'cp "$RELEASE_ARCHIVE" "$2" || exit 1\n'
+            'exit "${WGET_EXIT_CODE:-0}"\n'
+        )
+        wget.chmod(0o755)
+        autoreconf = self.root / "bin/autoreconf"
+        autoreconf.write_text('#!/bin/sh\necho autoreconf >> "$FLOW_LOG"\n')
+        autoreconf.chmod(0o755)
+        self.env = os.environ.copy()
+        self.env.pop("STAGING_PATH", None)
+        self.env.update({
+            "PATH": f"{self.root / 'bin'}{os.pathsep}{self.env['PATH']}",
+            "FLOW_LOG": str(self.flow_log),
+            "WGET_LOG": str(self.wget_log),
+            "RELEASE_ARCHIVE": str(self.release),
+            "WGET_EXIT_CODE": "0",
+        })
+
+    def run_package(self, target=None, fixture_digest=True):
+        arguments = ["make", "--no-print-directory", "-f", f"arkanas/{self.makefile}",
+                     target or self.package]
+        if self.package == "libisoburn":
+            # Exercise this recipe independently of the libburn/libisofs builds.
+            arguments.extend(["-o", "libburn", "-o", "libisofs"])
+        if fixture_digest:
+            arguments.append(f"{self.package.upper()}_SHA256={self.digest}")
+        return subprocess.run(
+            arguments, cwd=self.root, env=self.env, capture_output=True,
+            text=True, timeout=30, check=False,
+        )
+
+    def seed_legacy_source(self):
+        self.source.mkdir()
+        (self.source / "unverified-leftover").touch()
+        configure = self.source / "configure"
+        configure.write_text('#!/bin/sh\necho unverified >> "$FLOW_LOG"\nexit 1\n')
+        configure.chmod(0o755)
+        (self.root / f".{self.package}-obtained").touch()
+        self.done.touch()
+
+    def assert_built(self, result):
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        expected = ["configure", "all", "install"]
+        if self.package == "openbox":
+            expected.insert(0, "autoreconf")
+        elif self.package == "libisoburn":
+            expected.insert(1, "clean")
+        self.assertEqual(self.flow_log.read_text().splitlines(), expected)
+        self.assertTrue(self.obtained.exists())
+        self.assertTrue(self.done.exists())
+
+    def test_https_download_and_incremental_verified_build(self):
+        for package in self.PACKAGES:
+            with self.subTest(package=package[0]):
+                self.prepare(*package)
+                self.assert_built(self.run_package())
+                requests = self.wget_log.read_text()
+                self.assertTrue(requests.splitlines()[-1].startswith("https://"))
+                built_at = self.done.stat().st_mtime_ns
+                result = self.run_package()
+                self.assert_built(result)
+                self.assertIn(f"{self.cached.name}: OK", result.stdout)
+                self.assertEqual(self.done.stat().st_mtime_ns, built_at)
+                self.assertEqual(self.wget_log.read_text(), requests)
+
+    def test_untrusted_download_is_rejected_before_extraction_or_build(self):
+        for package in self.PACKAGES:
+            with self.subTest(package=package[0]):
+                self.prepare(*package)
+                result = self.run_package(fixture_digest=False)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("FAILED", result.stdout)
+                self.assertFalse(self.source.exists())
+                self.assertFalse(self.flow_log.exists())
+                self.assertFalse(self.obtained.exists())
+                self.assertFalse(self.done.exists())
+
+    def test_legacy_stamps_and_sources_cannot_bypass_verification(self):
+        for package in self.PACKAGES:
+            with self.subTest(package=package[0]):
+                self.prepare(*package)
+                shutil.copyfile(self.release, self.cached)
+                self.seed_legacy_source()
+                self.assert_built(self.run_package(self.done.name))
+                self.assertFalse((self.source / "unverified-leftover").exists())
+                self.assertFalse(self.wget_log.exists())
+
+    def test_corrupt_legacy_cache_blocks_direct_compile_target(self):
+        for package in self.PACKAGES:
+            with self.subTest(package=package[0]):
+                self.prepare(*package)
+                self.cached.write_bytes(b"untrusted archive")
+                self.seed_legacy_source()
+                result = self.run_package(self.done.name)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("FAILED", result.stdout)
+                self.assertFalse(self.flow_log.exists())
+                self.assertFalse(self.obtained.exists())
+
+    def test_corrupt_cache_blocks_all_targets_after_successful_build(self):
+        for package in self.PACKAGES:
+            with self.subTest(package=package[0]):
+                self.prepare(*package)
+                self.assert_built(self.run_package())
+                previous_flow = self.flow_log.read_text()
+                self.cached.write_bytes(b"corrupted cached archive")
+                for target in (f"download-{self.package}", self.package, self.done.name):
+                    result = self.run_package(target)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("FAILED", result.stdout)
+                    self.assertEqual(self.flow_log.read_text(), previous_flow)
+
+    def test_interrupted_download_is_not_cached_or_extracted(self):
+        for package in self.PACKAGES:
+            with self.subTest(package=package[0]):
+                self.prepare(*package)
+                self.env["WGET_EXIT_CODE"] = "1"
+                result = self.run_package()
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse(self.cached.exists())
+                self.assertFalse(self.source.exists())
+                self.assertFalse(self.obtained.exists())
+                self.assertFalse(self.done.exists())
+                self.env["WGET_EXIT_CODE"] = "0"
+                self.assert_built(self.run_package())
+
+
 if __name__ == "__main__":
     unittest.main()
