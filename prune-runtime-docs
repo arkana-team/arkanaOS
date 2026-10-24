@@ -16,10 +16,14 @@ def is_within_root(root: Path, path: Path) -> bool:
 
 
 def main() -> None:
-    if len(sys.argv) != 2:
-        raise SystemExit(f"usage: {sys.argv[0]} STAGING_ROOT")
+    if len(sys.argv) != 1:
+        raise SystemExit(f"usage: {sys.argv[0]}")
 
-    root = Path(sys.argv[1]).resolve()
+    output_root = Path(__file__).resolve().parent / "output"
+    root = output_root / "iso-root"
+    if root.is_symlink():
+        raise SystemExit("refusing to prune a symlinked ISO root")
+    root = root.resolve(strict=False)
     marker = root / ".arkana-iso-root"
     if root == Path("/") or marker.is_symlink() or not marker.is_file():
         raise SystemExit(f"refusing to prune an unmarked ISO root: {root}")

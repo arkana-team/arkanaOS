@@ -919,8 +919,8 @@ iso: grub
 	  $(ISO_ROOT_PATH)/usr/share/man/man1/mzip.1
 	# Retain Python itself and its build support, but omit upstream self-tests and test fixtures.
 	rm -rf $(ISO_ROOT_PATH)/usr/lib/python3.13/test $(ISO_ROOT_PATH)/usr/lib/installed-tests
-	python3 prune-runtime-docs $(ISO_ROOT_PATH)
-	python3 prune-optional-devel $(ISO_ROOT_PATH)
+	python3 prune-runtime-docs
+	python3 prune-optional-devel
 	# Keep the default image focused on NsCDE; optional window managers and SDKs are packages.
 	rm -rf $(ISO_ROOT_PATH)/etc/xdg/openbox $(ISO_ROOT_PATH)/usr/include/openbox \
 	  $(ISO_ROOT_PATH)/usr/lib/openbox-* $(ISO_ROOT_PATH)/usr/share/themes/*/openbox-3 \

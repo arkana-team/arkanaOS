@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -18,8 +19,10 @@ class PruneOptionalDevelTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.work = Path(self.temporary.name)
-        self.root = self.work / "iso-root"
-        self.root.mkdir()
+        self.root = self.work / "output/iso-root"
+        self.root.mkdir(parents=True)
+        self.script = self.work / SCRIPT.name
+        shutil.copy2(SCRIPT, self.script)
 
     def mark_root(self) -> None:
         (self.root / ".arkana-iso-root").write_text(
@@ -28,10 +31,11 @@ class PruneOptionalDevelTests(unittest.TestCase):
 
     def run_pruner(self) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
-            [sys.executable, str(SCRIPT), str(self.root)],
+            [sys.executable, str(self.script)],
             capture_output=True,
             text=True,
             check=False,
+            cwd=self.work,
         )
 
     def test_prunes_development_files_and_keeps_runtime_files(self) -> None:
@@ -58,6 +62,42 @@ class PruneOptionalDevelTests(unittest.TestCase):
         header = self.root / "usr/include/X11/Xlib.h"
         header.parent.mkdir(parents=True)
         header.write_text("header", encoding="utf-8")
+
+        result = self.run_pruner()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertTrue(header.is_file())
+
+    def test_rejects_caller_selected_root(self) -> None:
+        alternate = self.work / "outside/iso-root"
+        header = alternate / "usr/include/X11/Xlib.h"
+        header.parent.mkdir(parents=True)
+        header.write_text("keep", encoding="utf-8")
+        (alternate / ".arkana-iso-root").write_text(
+            "arkanaOS ISO root\n", encoding="utf-8"
+        )
+
+        result = subprocess.run(
+            [sys.executable, str(self.script), str(alternate)],
+            capture_output=True,
+            text=True,
+            check=False,
+            cwd=self.work,
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertTrue(header.is_file())
+
+    def test_refuses_symlinked_iso_root(self) -> None:
+        outside = self.work / "outside/iso-root"
+        header = outside / "usr/include/X11/Xlib.h"
+        header.parent.mkdir(parents=True)
+        header.write_text("keep", encoding="utf-8")
+        (outside / ".arkana-iso-root").write_text(
+            "arkanaOS ISO root\n", encoding="utf-8"
+        )
+        self.root.rmdir()
+        self.root.symlink_to(outside, target_is_directory=True)
 
         result = self.run_pruner()
 
