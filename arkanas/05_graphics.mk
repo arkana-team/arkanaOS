@@ -86,8 +86,9 @@ XF86_INPUT_EVDEV_PATH = $(SRC_PATH)/xf86-input-evdev-$(XF86_INPUT_EVDEV_VER)
 
 # Openbox
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/x/openbox.html
-OPENBOX_URL = http://openbox.org/dist/openbox/openbox-3.6.1.tar.gz
+OPENBOX_URL = https://openbox.org/dist/openbox/openbox-3.6.1.tar.gz
 OPENBOX_VER = 3.6.1
+OPENBOX_SHA256 = 8b4ac0760018c77c0044fab06a4f0c510ba87eae934d9983b10878483bde7ef7
 OPENBOX_PATH = $(SRC_PATH)/openbox-$(OPENBOX_VER)
 
 # Fribidi
@@ -588,14 +589,25 @@ xf86-input-evdev: download-xf86-input-evdev .xf86-input-evdev-done
 	touch .xf86-input-evdev-done
 
 # Download openbox
-download-openbox: .openbox-obtained
-.openbox-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O openbox-$(OPENBOX_VER).tar.gz $(OPENBOX_URL) && tar xf openbox-$(OPENBOX_VER).tar.gz
-	touch .openbox-obtained
+.PHONY: download-openbox verify-openbox
+download-openbox: .openbox-verified-obtained
+
+$(SRC_PATH)/openbox-$(OPENBOX_VER).tar.gz:
+	wget --tries=5 --timeout=30 -O "$@.tmp" $(OPENBOX_URL) && mv "$@.tmp" "$@"
+
+# Check even cached archives when the extraction/build stamps already exist.
+verify-openbox: $(SRC_PATH)/openbox-$(OPENBOX_VER).tar.gz
+	cd $(SRC_PATH) && echo '$(OPENBOX_SHA256)  openbox-$(OPENBOX_VER).tar.gz' | sha256sum -c -
+
+# A new stamp replaces source trees extracted before verification was required.
+.openbox-verified-obtained: $(SRC_PATH)/openbox-$(OPENBOX_VER).tar.gz | verify-openbox
+	rm -rf $(OPENBOX_PATH)
+	cd $(SRC_PATH) && tar xf openbox-$(OPENBOX_VER).tar.gz
+	touch $@
 
 # Compile openbox
 openbox: download-openbox .openbox-done
-.openbox-done:
+.openbox-done: .openbox-verified-obtained
 	cd $(OPENBOX_PATH) && autoreconf -fi && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --docdir=/usr/share/doc/openbox-$(OPENBOX_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	cp -a xinitrc $(STAGING_PATH)/root/.xinitrc
 	touch .openbox-done
