@@ -2,6 +2,11 @@ name: 2. Build Extensions & Toolchain
 
 on:
   workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: "Successful Run All run ID on the default branch to rebuild"
+        required: true
+        type: string
   workflow_call:
 
 concurrency:
@@ -19,8 +24,53 @@ jobs:
     timeout-minutes: 360
 
     steps:
+      - name: Verify Stage 1 Source
+        id: source
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" != workflow_dispatch || "$GITHUB_REF" != "refs/heads/$DEFAULT_BRANCH" ]]; then
+            echo "Intermediate builds require a manual run on the default branch." >&2
+            exit 1
+          fi
+          if [[ "$GITHUB_WORKFLOW_REF" == "$GITHUB_REPOSITORY/.github/workflows/00_run_all.yml@$GITHUB_REF" ]]; then
+            # Run All orders stage2 after stage1; download only from this run.
+            SOURCE_RUN_ID=$GITHUB_RUN_ID
+            SOURCE_SHA=$GITHUB_SHA
+          elif [[ "$GITHUB_WORKFLOW_REF" == "$GITHUB_REPOSITORY/.github/workflows/02_stage2_toolchain.yml@$GITHUB_REF" ]]; then
+            if ! [[ "$SOURCE_RUN_ID" =~ ^[1-9][0-9]*$ ]]; then
+              echo "Provide a successful Run All run ID." >&2
+              exit 1
+            fi
+            # Run All keeps every upstream producing stage within one trusted run.
+            WORKFLOW_ID=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/00_run_all.yml" --jq .id)
+            RUN_JSON=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID")
+            SOURCE_SHA=$(jq -er --arg run_id "$SOURCE_RUN_ID" --arg workflow_id "$WORKFLOW_ID" \
+              --arg repository "$GITHUB_REPOSITORY" --arg branch "$DEFAULT_BRANCH" '
+              select((.id | tostring) == $run_id and
+                (.workflow_id | tostring) == $workflow_id and
+                .repository.full_name == $repository and
+                .head_repository.full_name == $repository and
+                .event == "workflow_dispatch" and .head_branch == $branch and
+                .status == "completed" and .conclusion == "success") |
+              .head_sha | select(test("^[0-9a-f]{40}$"))' <<< "$RUN_JSON")
+          else
+            echo "Unsupported intermediate workflow caller." >&2
+            exit 1
+          fi
+          {
+            echo "run_id=$SOURCE_RUN_ID"
+            echo "sha=$SOURCE_SHA"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.source.outputs.sha }}
+          persist-credentials: false
 
       - name: Free Disk Space
         run: |
@@ -34,57 +84,27 @@ jobs:
           restore-keys: ${{ runner.os }}-ccache-
           max-size: 10G
 
-      - name: Download Stage 1 Artifact (From chained Run All)
-        if: github.workflow == 'Run All Pipeline Stages'
+      - name: Download Verified Stage 1 Artifact
         uses: actions/download-artifact@v4
         with:
           name: arkana-stage1
-
-      - name: Download Stage 1 Artifact (Latest Across Repo)
-        if: github.workflow != 'Run All Pipeline Stages'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "Fetching artifacts list..."
-          if ! ARTIFACT_JSON=$(gh api "repos/${{ github.repository }}/actions/artifacts?per_page=100"); then
-            echo "Error: Failed to fetch artifacts list from GitHub API. Please check token permissions."
-            exit 1
-          fi
-          
-          # Find latest matching artifact
-          ARTIFACT_ID=$(echo "$ARTIFACT_JSON" | jq -r '.artifacts | map(select((.name == "arkana-stage1" or .name == "arkana-base-staging") and .expired == false)) | sort_by(.created_at) | last | .id')
-          
-          if [ -z "$ARTIFACT_ID" ] || [ "$ARTIFACT_ID" = "null" ]; then
-            echo "Error: No valid stage 1 artifact found in the repository!"
-            echo "API Response content:"
-            echo "$ARTIFACT_JSON" | head -n 30
-            exit 1
-          fi
-          
-          echo "Found latest Stage 1 Artifact ID: $ARTIFACT_ID"
-          echo "Downloading..."
-          if ! gh api repos/${{ github.repository }}/actions/artifacts/$ARTIFACT_ID/zip > artifact.zip; then
-            echo "Error: Failed to download artifact from GitHub API."
-            exit 1
-          fi
-          
-          echo "Unzipping..."
-          unzip -q artifact.zip
-          rm artifact.zip
-          
-          if [ -f arkana-base-staging.tar ]; then
-            mv arkana-base-staging.tar arkana-stage1.tar
-          fi
-          
-          if [ ! -f arkana-stage1.tar ]; then
-            echo "Error: Extracted archive did not contain arkana-stage1.tar or arkana-base-staging.tar!"
-            exit 1
-          fi
-          
-          echo "Successfully prepared Stage 1 artifact!"
+          run-id: ${{ steps.source.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: ${{ runner.temp }}/stage1-download
 
       - name: Unarchive Stage 1
-        run: sudo tar -xf arkana-stage1.tar && rm arkana-stage1.tar
+        run: |
+          set -euo pipefail
+          EXTRACT_DIR=$(mktemp -d "$RUNNER_TEMP/stage1.XXXXXX")
+          trap 'sudo rm -rf "$EXTRACT_DIR"' EXIT
+          sudo tar -xf "$RUNNER_TEMP/stage1-download/arkana-stage1.tar" -C "$EXTRACT_DIR" -- staging src
+          for member in staging src; do
+            if [[ ! -d "$EXTRACT_DIR/$member" || -L "$EXTRACT_DIR/$member" || -e "$member" || -L "$member" ]]; then
+              echo "Invalid or conflicting Stage 1 directory: $member" >&2
+              exit 1
+            fi
+          done
+          sudo mv "$EXTRACT_DIR/staging" "$EXTRACT_DIR/src" .
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
