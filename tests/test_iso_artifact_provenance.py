@@ -1,4 +1,4 @@
-"""Exercise the release workflow's actual shell with synthetic API responses."""
+"""Exercise artifact consumers' actual shell with synthetic API responses."""
 
 import io
 import json
@@ -12,16 +12,15 @@ from pathlib import Path
 
 
 REPOSITORY = Path(__file__).resolve().parents[1]
-WORKFLOW = REPOSITORY / ".github/workflows/04_stage4_iso.yml"
 
 
-def step(name):
-    content = WORKFLOW.read_text().split(f"      - name: {name}\n", 1)[1]
-    return content.split("\n      - name:", 1)[0]
+class ArtifactProvenanceChecks:
+    def step(self, name):
+        content = self.workflow.read_text().split(f"      - name: {name}\n", 1)[1]
+        return content.split("\n      - name:", 1)[0]
 
-
-class ISOArtifactProvenanceTests(unittest.TestCase):
     def setUp(self):
+        self.workflow = REPOSITORY / ".github/workflows" / self.workflow_name
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
@@ -72,7 +71,7 @@ class ISOArtifactProvenanceTests(unittest.TestCase):
             "GITHUB_REPOSITORY": "arkana-team/arkanaOS",
             "GITHUB_EVENT_NAME": "workflow_dispatch",
             "GITHUB_REF": "refs/heads/main",
-            "GITHUB_WORKFLOW_REF": "arkana-team/arkanaOS/.github/workflows/04_stage4_iso.yml@refs/heads/main",
+            "GITHUB_WORKFLOW_REF": f"arkana-team/arkanaOS/.github/workflows/{self.workflow_name}@refs/heads/main",
             "GITHUB_RUN_ID": "789",
             "GITHUB_SHA": "b" * 40,
             "DEFAULT_BRANCH": "main",
@@ -84,29 +83,29 @@ class ISOArtifactProvenanceTests(unittest.TestCase):
 
     def execute(self, name):
         self.run_json.write_text(json.dumps(self.run))
-        script = textwrap.dedent(step(name).split("        run: |\n", 1)[1])
+        script = textwrap.dedent(self.step(name).split("        run: |\n", 1)[1])
         return subprocess.run(
             ["bash", "-e", "-c", script], cwd=self.workspace, env=self.env,
             capture_output=True, text=True, timeout=10,
         )
 
     def test_verified_run_pins_both_checkout_and_download(self):
-        result = self.execute("Verify Stage 3 Source")
+        result = self.execute(f"Verify Stage {self.stage} Source")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(self.output.read_text(), f"run_id=456\nsha={'a' * 40}\n")
-        self.assertIn("ref: ${{ steps.source.outputs.sha }}", step("Checkout Repository"))
-        download = step("Download Verified Stage 3 Artifact")
-        self.assertIn("name: arkana-stage3", download)
+        self.assertIn("ref: ${{ steps.source.outputs.sha }}", self.step("Checkout Repository"))
+        download = self.step(f"Download Verified Stage {self.stage} Artifact")
+        self.assertIn(f"name: arkana-stage{self.stage}", download)
         self.assertIn("run-id: ${{ steps.source.outputs.run_id }}", download)
         self.assertIn("github-token: ${{ secrets.GITHUB_TOKEN }}", download)
-        self.assertIn("path: ${{ runner.temp }}/stage3-download", download)
+        self.assertIn("path: ${{ runner.temp }}/stage" + str(self.stage) + "-download", download)
 
     def test_current_pipeline_uses_only_its_own_artifact_and_revision(self):
         self.env["GITHUB_WORKFLOW_REF"] = self.env["GITHUB_WORKFLOW_REF"].replace(
-            "04_stage4_iso.yml", "00_run_all.yml"
+            self.workflow_name, "00_run_all.yml"
         )
         self.env["SOURCE_RUN_ID"] = ""
-        result = self.execute("Verify Stage 3 Source")
+        result = self.execute(f"Verify Stage {self.stage} Source")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(self.output.read_text(), f"run_id=789\nsha={'b' * 40}\n")
         self.assertFalse(self.api_log.exists())
@@ -128,7 +127,7 @@ class ISOArtifactProvenanceTests(unittest.TestCase):
             for value in values:
                 with self.subTest(field=field, value=value):
                     self.run[field] = value
-                    result = self.execute("Verify Stage 3 Source")
+                    result = self.execute(f"Verify Stage {self.stage} Source")
                     self.assertNotEqual(result.returncode, 0)
                     self.assertFalse(self.output.exists())
             self.run[field] = original
@@ -148,7 +147,7 @@ class ISOArtifactProvenanceTests(unittest.TestCase):
             for value in values:
                 with self.subTest(field=field, value=value):
                     self.env[field] = value
-                    result = self.execute("Verify Stage 3 Source")
+                    result = self.execute(f"Verify Stage {self.stage} Source")
                     self.assertNotEqual(result.returncode, 0)
                     self.assertFalse(self.output.exists())
                     self.assertFalse(self.api_log.exists())
@@ -156,14 +155,14 @@ class ISOArtifactProvenanceTests(unittest.TestCase):
 
     def test_api_failure_stops_authorization(self):
         self.env["FAIL_API"] = "yes"
-        result = self.execute("Verify Stage 3 Source")
+        result = self.execute(f"Verify Stage {self.stage} Source")
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse(self.output.exists())
 
     def archive(self, extra=()):
-        download = self.root / "stage3-download"
+        download = self.root / f"stage{self.stage}-download"
         download.mkdir()
-        with tarfile.open(download / "arkana-stage3.tar", "w") as archive:
+        with tarfile.open(download / f"arkana-stage{self.stage}.tar", "w") as archive:
             for name in ["staging", "src"]:
                 member = tarfile.TarInfo(name)
                 member.type = tarfile.DIRTYPE
@@ -178,17 +177,44 @@ class ISOArtifactProvenanceTests(unittest.TestCase):
 
     def test_extraction_imports_only_expected_roots_and_preserves_runtime_links(self):
         self.workspace.joinpath("Dockerfile").write_text("trusted")
-        unrelated = tarfile.TarInfo("Dockerfile")
-        unrelated.size = 4
+        self.workspace.joinpath("arkanas").mkdir()
+        self.workspace.joinpath("arkanas/build.mk").write_text("trusted")
+        unrelated = []
+        for name in ["Dockerfile", "arkanas/build.mk"]:
+            member = tarfile.TarInfo(name)
+            member.size = 4
+            unrelated.append((member, b"evil"))
         link = tarfile.TarInfo("staging/runtime-link")
         link.type = tarfile.SYMTYPE
         link.linkname = "/dev/null"
-        self.archive([(unrelated, b"evil"), (link, None)])
-        result = self.execute("Unarchive Stage 3")
+        self.archive([*unrelated, (link, None)])
+        result = self.execute(f"Unarchive Stage {self.stage}")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(self.workspace.joinpath("Dockerfile").read_text(), "trusted")
+        self.assertEqual(self.workspace.joinpath("arkanas/build.mk").read_text(), "trusted")
         self.assertEqual(self.workspace.joinpath("src/source").read_text(), "data")
         self.assertEqual(os.readlink(self.workspace / "staging/runtime-link"), "/dev/null")
+
+    def test_extraction_rejects_existing_roots_without_replacing_them(self):
+        self.archive()
+        for member in ["staging", "src"]:
+            for kind in ["directory", "symlink"]:
+                with self.subTest(member=member, kind=kind):
+                    destination = self.workspace / member
+                    if kind == "directory":
+                        destination.mkdir()
+                        (destination / "trusted").write_text("keep")
+                    else:
+                        destination.symlink_to(self.root / "missing")
+                    result = self.execute(f"Unarchive Stage {self.stage}")
+                    self.assertNotEqual(result.returncode, 0)
+                    if kind == "directory":
+                        self.assertEqual((destination / "trusted").read_text(), "keep")
+                        (destination / "trusted").unlink()
+                        destination.rmdir()
+                    else:
+                        self.assertTrue(destination.is_symlink())
+                        destination.unlink()
 
     def test_extraction_rejects_parent_traversal_and_symlink_writes(self):
         for attack in ["traversal", "symlink", "hardlink", "root-link"]:
@@ -209,12 +235,27 @@ class ISOArtifactProvenanceTests(unittest.TestCase):
                         payload.size = 4
                         extra.append((payload, b"evil"))
                 self.archive(extra)
-                result = self.execute("Unarchive Stage 3")
+                result = self.execute(f"Unarchive Stage {self.stage}")
                 self.assertNotEqual(result.returncode, 0)
                 self.assertFalse((outside / "payload").exists())
                 self.assertFalse((self.workspace / "staging").exists())
-                (self.root / "stage3-download/arkana-stage3.tar").unlink()
-                (self.root / "stage3-download").rmdir()
+                (self.root / f"stage{self.stage}-download/arkana-stage{self.stage}.tar").unlink()
+                (self.root / f"stage{self.stage}-download").rmdir()
+
+
+class Stage1ArtifactProvenanceTests(ArtifactProvenanceChecks, unittest.TestCase):
+    stage = 1
+    workflow_name = "02_stage2_toolchain.yml"
+
+
+class Stage2ArtifactProvenanceTests(ArtifactProvenanceChecks, unittest.TestCase):
+    stage = 2
+    workflow_name = "03_stage3_graphics.yml"
+
+
+class ISOArtifactProvenanceTests(ArtifactProvenanceChecks, unittest.TestCase):
+    stage = 3
+    workflow_name = "04_stage4_iso.yml"
 
 
 if __name__ == "__main__":

@@ -6,6 +6,8 @@ on:
       - "prune-runtime-docs"
       - "prune-optional-devel"
       - "tests/**"
+      - ".github/workflows/02_stage2_toolchain.yml"
+      - ".github/workflows/03_stage3_graphics.yml"
       - ".github/workflows/04_stage4_iso.yml"
       - ".github/workflows/iso-pruning-tests.yml"
   push:
@@ -13,6 +15,8 @@ on:
       - "prune-runtime-docs"
       - "prune-optional-devel"
       - "tests/**"
+      - ".github/workflows/02_stage2_toolchain.yml"
+      - ".github/workflows/03_stage3_graphics.yml"
       - ".github/workflows/04_stage4_iso.yml"
       - ".github/workflows/iso-pruning-tests.yml"
 
