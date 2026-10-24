@@ -1225,8 +1225,12 @@ download-dbus-broker: .dbus-broker-obtained
 # Compile dbus-broker
 dbus-broker: download-dbus-broker .dbus-broker-done
 .dbus-broker-done:
-	mkdir -p $(DBUS_BROKER_PATH)/build && cd $(DBUS_BROKER_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && \
-	ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install && mv $(STAGING_PATH)/usr/lib/systemd/system/dbus-broker.service $(STAGING_PATH)/usr/lib/systemd/system/dbus.service
+	rm -rf $(DBUS_BROKER_PATH)/build
+	# Keep systemd's pkg-config install paths rooted at /usr; the general native file sysroots them twice under DESTDIR.
+	sed '/^[[:space:]]*sys_root[[:space:]]*=/d' $(SRC_PATH)/cross_file.txt > $(SRC_PATH)/dbus-broker.native
+	mkdir -p $(DBUS_BROKER_PATH)/build && cd $(DBUS_BROKER_PATH)/build && meson setup --native-file $(SRC_PATH)/dbus-broker.native --prefix=/usr --buildtype=release .. && \
+	ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install && rm -rf $(STAGING_PATH)/build/arkana/staging && \
+	mv $(STAGING_PATH)/usr/lib/systemd/system/dbus-broker.service $(STAGING_PATH)/usr/lib/systemd/system/dbus.service
 	touch .dbus-broker-done
 
 # Download Kbd
