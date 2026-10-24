@@ -2,6 +2,11 @@
 SHELL = bash
 THREADS ?= $(shell nproc)
 .NOTPARALLEL:
+
+# Source archives may contain owners outside rootless container ID mappings.
+TAR_OPTIONS += --no-same-owner
+export TAR_OPTIONS
+
 IN_CONTAINER = $(shell ./scripts/detect-container.sh)
 
 ifneq ($(IN_CONTAINER),true)
