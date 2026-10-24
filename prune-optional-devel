@@ -398,9 +398,13 @@ def remove_path(root: Path, path: Path) -> bool:
 
 
 def main() -> None:
-    if len(sys.argv) != 2:
-        raise SystemExit(f"usage: {sys.argv[0]} ISO_ROOT")
-    root = Path(sys.argv[1]).resolve()
+    if len(sys.argv) != 1:
+        raise SystemExit(f"usage: {sys.argv[0]}")
+    output_root = Path(__file__).resolve().parent / "output"
+    root = output_root / "iso-root"
+    if root.is_symlink():
+        raise SystemExit("refusing to prune a symlinked ISO root")
+    root = root.resolve(strict=False)
     if not root.is_dir():
         raise SystemExit(f"ISO root is not a directory: {root}")
     marker = root / ".arkana-iso-root"
