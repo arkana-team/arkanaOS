@@ -3,3 +3,15 @@
 @@ -46,1 +46,1 @@
 -Test (!EnvMatch infostore.sandboxmode 1) f_ApplicationsMenu
 +Test (!EnvMatch infostore.sandboxmode 1) + DynamicPopupAction Function f_ApplicationsMenu
+--- a/Functions.fvwmconf
++++ b/Functions.fvwmconf
+@@ -2044,6 +2044,9 @@
+ # proper default nscde menu.
+ DestroyFunc f_ApplicationsMenu
+ AddToFunc f_ApplicationsMenu
+++ I DestroyMenu recreate m_Applications
+++ I AddToMenu m_Applications "$[gt.Applications]" Title
+++ I AddToMenu m_Applications "NsCDE%NsCDE/Dtagen.xpm%" Popup m_NsCDEMenu
+ + I Test (EnvIsSet APPMENU) \
+     PipeRead "fvwm-menu-desktop -e --enable-mini-icons \
+     --theme NsCDE --insert-in-menu m_Applications --include-items none \
