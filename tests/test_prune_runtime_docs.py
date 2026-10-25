@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -18,8 +19,10 @@ class PruneRuntimeDocsTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.work = Path(self.temporary.name)
-        self.root = self.work / "iso-root"
-        self.root.mkdir()
+        self.root = self.work / "output/iso-root"
+        self.root.mkdir(parents=True)
+        self.script = self.work / SCRIPT.name
+        shutil.copy2(SCRIPT, self.script)
 
     def mark_root(self) -> None:
         (self.root / ".arkana-iso-root").write_text(
@@ -28,10 +31,11 @@ class PruneRuntimeDocsTests(unittest.TestCase):
 
     def run_pruner(self) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
-            [sys.executable, str(SCRIPT), str(self.root)],
+            [sys.executable, str(self.script)],
             capture_output=True,
             text=True,
             check=False,
+            cwd=self.work,
         )
 
     def test_prunes_docs_and_caches_but_preserves_help_and_licenses(self) -> None:
@@ -66,6 +70,63 @@ class PruneRuntimeDocsTests(unittest.TestCase):
         docs.mkdir(parents=True)
         protected = docs / "readme.txt"
         protected.write_text("keep", encoding="utf-8")
+
+        result = self.run_pruner()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(protected.read_text(encoding="utf-8"), "keep")
+
+    def test_rejects_caller_selected_root(self) -> None:
+        alternate = self.work / "outside/iso-root"
+        docs = alternate / "usr/share/doc/optional-tool"
+        docs.mkdir(parents=True)
+        protected = docs / "readme.txt"
+        protected.write_text("keep", encoding="utf-8")
+        (alternate / ".arkana-iso-root").write_text(
+            "arkanaOS ISO root\n", encoding="utf-8"
+        )
+
+        result = subprocess.run(
+            [sys.executable, str(self.script), str(alternate)],
+            capture_output=True,
+            text=True,
+            check=False,
+            cwd=self.work,
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(protected.read_text(encoding="utf-8"), "keep")
+
+    def test_refuses_symlinked_iso_root(self) -> None:
+        outside = self.work / "outside/iso-root"
+        docs = outside / "usr/share/doc/optional-tool"
+        docs.mkdir(parents=True)
+        protected = docs / "readme.txt"
+        protected.write_text("keep", encoding="utf-8")
+        (outside / ".arkana-iso-root").write_text(
+            "arkanaOS ISO root\n", encoding="utf-8"
+        )
+        self.root.rmdir()
+        self.root.symlink_to(outside, target_is_directory=True)
+
+        result = self.run_pruner()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(protected.read_text(encoding="utf-8"), "keep")
+
+    def test_refuses_symlinked_output_directory(self) -> None:
+        outside = self.work / "outside"
+        outside_root = outside / "iso-root"
+        docs = outside_root / "usr/share/doc/optional-tool"
+        docs.mkdir(parents=True)
+        protected = docs / "readme.txt"
+        protected.write_text("keep", encoding="utf-8")
+        (outside_root / ".arkana-iso-root").write_text(
+            "arkanaOS ISO root\n", encoding="utf-8"
+        )
+        self.root.rmdir()
+        (self.work / "output").rmdir()
+        (self.work / "output").symlink_to(outside, target_is_directory=True)
 
         result = self.run_pruner()
 
