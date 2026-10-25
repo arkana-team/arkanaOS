@@ -13,6 +13,69 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DETECTOR = REPO_ROOT / "scripts/detect-container.sh"
 BUILD_SCRIPT = REPO_ROOT / "build.sh"
+ISO_MAKEFILE = REPO_ROOT / "arkanas/07_iso.mk"
+
+
+class IsoRootBindingTests(unittest.TestCase):
+    def test_make_rejects_custom_iso_root_during_parse(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            custom_root = Path(temporary) / "custom-iso-root"
+            result = subprocess.run(
+                [
+                    "make",
+                    "--no-print-directory",
+                    "-n",
+                    "-f",
+                    str(ISO_MAKEFILE),
+                    "iso",
+                    f"ISO_ROOT_PATH={custom_root}",
+                ],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("refusing ISO_ROOT_PATH override", result.stderr)
+
+    def test_iso_recipe_guard_rejects_symlinked_output_parent(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            work = Path(temporary)
+            outside = work / "outside"
+            outside_root = outside / "iso-root"
+            sentinel = outside_root / "sentinel"
+            sentinel.parent.mkdir(parents=True)
+            sentinel.write_text("keep", encoding="utf-8")
+            (work / "output").symlink_to(outside, target_is_directory=True)
+
+            recipe = ISO_MAKEFILE.read_text(encoding="utf-8")
+            guard = next(
+                line.strip()
+                for line in recipe.splitlines()
+                if line.strip().startswith("@test ")
+                and "realpath -m --" in line
+                and "ISO_ROOT_PATH" in line
+            )
+            command = (
+                guard.removeprefix("@")
+                .replace("$$", "$")
+                .replace("$(ISO_ROOT_PATH)", "output/iso-root")
+                .replace(
+                    "$(ARKANA_CANONICAL_ISO_ROOT)",
+                    str(work / "output/iso-root"),
+                )
+            )
+            result = subprocess.run(
+                ["bash", "-c", command],
+                cwd=work,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertTrue(sentinel.is_file())
 
 
 class BuildSafetyTests(unittest.TestCase):

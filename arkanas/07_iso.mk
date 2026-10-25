@@ -13,6 +13,10 @@ CPIO_STAGING_PATH = $(shell realpath -m ./cpio-staging)
 ISO_STAGING_PATH = $(shell realpath -m ./iso-staging)
 OUTPUT_PATH = $(shell realpath -m ./output)
 ISO_ROOT_PATH = $(OUTPUT_PATH)/iso-root
+override ARKANA_CANONICAL_ISO_ROOT := $(shell realpath -m .)/output/iso-root
+ifneq ($(abspath $(ISO_ROOT_PATH)), $(abspath $(ARKANA_CANONICAL_ISO_ROOT)))
+$(error refusing ISO_ROOT_PATH override; the ISO pruners require $(ARKANA_CANONICAL_ISO_ROOT))
+endif
 
 # Cpio
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/cpio.html
@@ -806,6 +810,7 @@ boot-initramfs:
 # Create ISO file for booting
 .PHONY: iso
 iso: grub
+	@test "$$(realpath -m -- "$(ISO_ROOT_PATH)")" = "$(ARKANA_CANONICAL_ISO_ROOT)" || { printf '%s\n' "error: ISO_ROOT_PATH must resolve to $(ARKANA_CANONICAL_ISO_ROOT); ISO pruners use that root" >&2; exit 1; }
 	rm -rf $(ISO_ROOT_PATH)
 	mkdir -p $(ISO_ROOT_PATH)
 	# Rootless builds cannot preserve foreign UID/ACL metadata or copy static device nodes.
