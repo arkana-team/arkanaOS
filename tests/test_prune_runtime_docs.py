@@ -114,6 +114,25 @@ class PruneRuntimeDocsTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(protected.read_text(encoding="utf-8"), "keep")
 
+    def test_refuses_symlinked_output_directory(self) -> None:
+        outside = self.work / "outside"
+        outside_root = outside / "iso-root"
+        docs = outside_root / "usr/share/doc/optional-tool"
+        docs.mkdir(parents=True)
+        protected = docs / "readme.txt"
+        protected.write_text("keep", encoding="utf-8")
+        (outside_root / ".arkana-iso-root").write_text(
+            "arkanaOS ISO root\n", encoding="utf-8"
+        )
+        self.root.rmdir()
+        (self.work / "output").rmdir()
+        (self.work / "output").symlink_to(outside, target_is_directory=True)
+
+        result = self.run_pruner()
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(protected.read_text(encoding="utf-8"), "keep")
+
     def test_refuses_docs_symlinked_outside_root(self) -> None:
         outside = self.work / "outside-docs"
         protected = outside / "optional-tool/readme.txt"

@@ -20,10 +20,15 @@ def main() -> None:
         raise SystemExit(f"usage: {sys.argv[0]}")
 
     output_root = Path(__file__).resolve().parent / "output"
+    if output_root.is_symlink():
+        raise SystemExit("refusing to use a symlinked output directory")
+    output_root = output_root.resolve(strict=False)
     root = output_root / "iso-root"
     if root.is_symlink():
         raise SystemExit("refusing to prune a symlinked ISO root")
     root = root.resolve(strict=False)
+    if root.parent != output_root:
+        raise SystemExit(f"refusing to prune an ISO root outside output: {root}")
     marker = root / ".arkana-iso-root"
     if root == Path("/") or marker.is_symlink() or not marker.is_file():
         raise SystemExit(f"refusing to prune an unmarked ISO root: {root}")
