@@ -205,6 +205,16 @@ class LibfuseInstallSafetyTests(unittest.TestCase):
         self.assertIn("-Dudevrulesdir=/usr/lib/udev/rules.d", recipe)
         self.assertIn("-Dinitscriptdir=", recipe)
         self.assertIn("meson setup --reconfigure", recipe)
+        meson_commands = [
+            line.strip() for line in recipe.splitlines() if "meson setup" in line
+        ]
+        self.assertEqual(len(meson_commands), 2)
+        self.assertIn("--reconfigure", meson_commands[0])
+        self.assertIn("-Dinitscriptdir=;", meson_commands[0])
+        self.assertNotIn(" .;", meson_commands[0])
+        self.assertNotIn(" ..;", meson_commands[0])
+        self.assertNotIn("--reconfigure", meson_commands[1])
+        self.assertIn("-Dinitscriptdir= ..;", meson_commands[1])
         self.assertIn("DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install", recipe)
         self.assertIn("chown root:root $(STAGING_PATH)/usr/bin/fusermount3", recipe)
         self.assertIn("chmod u+s $(STAGING_PATH)/usr/bin/fusermount3", recipe)

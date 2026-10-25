@@ -1194,7 +1194,7 @@ libfuse: download-libfuse .libfuse-done
 .libfuse-done:
 	mkdir -p $(LIBFUSE_PATH)/build && cd $(LIBFUSE_PATH)/build && \
 	if [ -f meson-private/coredata.dat ]; then \
-		meson setup --reconfigure --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -Duseroot=false -Dudevrulesdir=/usr/lib/udev/rules.d -Dinitscriptdir= ..; \
+		meson setup --reconfigure --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -Duseroot=false -Dudevrulesdir=/usr/lib/udev/rules.d -Dinitscriptdir=; \
 	else \
 		meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -Duseroot=false -Dudevrulesdir=/usr/lib/udev/rules.d -Dinitscriptdir= ..; \
 	fi && ninja -j$(THREADS) && \
