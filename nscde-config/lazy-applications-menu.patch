@@ -1,0 +1,5 @@
+--- a/Menus.fvwmconf
++++ b/Menus.fvwmconf
+@@ -46,1 +46,1 @@
+-Test (!EnvMatch infostore.sandboxmode 1) f_ApplicationsMenu
++Test (!EnvMatch infostore.sandboxmode 1) + DynamicPopupAction Function f_ApplicationsMenu
