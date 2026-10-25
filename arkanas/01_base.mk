@@ -1192,8 +1192,13 @@ download-libfuse: .libfuse-obtained
 libfuse: download-libfuse .libfuse-done
 
 .libfuse-done:
-	mkdir -p $(LIBFUSE_PATH)/build && cd $(LIBFUSE_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja -j$(THREADS) && \
-	DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install && chmod u+s $(STAGING_PATH)/usr/bin/fusermount3 && cd .. && \
+	mkdir -p $(LIBFUSE_PATH)/build && cd $(LIBFUSE_PATH)/build && \
+	if [ -f meson-private/coredata.dat ]; then \
+		meson setup --reconfigure --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -Duseroot=false -Dudevrulesdir=/usr/lib/udev/rules.d -Dinitscriptdir= ..; \
+	else \
+		meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -Duseroot=false -Dudevrulesdir=/usr/lib/udev/rules.d -Dinitscriptdir= ..; \
+	fi && ninja -j$(THREADS) && \
+	DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install && chown root:root $(STAGING_PATH)/usr/bin/fusermount3 && chmod u+s $(STAGING_PATH)/usr/bin/fusermount3 && cd .. && \
 	cp -R doc/html -T $(STAGING_PATH)/usr/share/doc/fuse-$(LIBFUSE_VER) && install -v -m644 doc/{README.NFS,kernel.txt} $(STAGING_PATH)/usr/share/doc/fuse-$(LIBFUSE_VER)
 	touch .libfuse-done
 

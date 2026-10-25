@@ -194,6 +194,22 @@ class BuildSafetyTests(unittest.TestCase):
         self.assertGreater(checked, 0)
 
 
+class LibfuseInstallSafetyTests(unittest.TestCase):
+    def test_libfuse_install_is_rootless_and_stays_in_staging(self):
+        makefile = (REPO_ROOT / "arkanas/01_base.mk").read_text(encoding="utf-8")
+        start = makefile.index(".libfuse-done:")
+        end = makefile.index("# Download D-Bus", start)
+        recipe = makefile[start:end]
+
+        self.assertEqual(recipe.count("-Duseroot=false"), 2)
+        self.assertIn("-Dudevrulesdir=/usr/lib/udev/rules.d", recipe)
+        self.assertIn("-Dinitscriptdir=", recipe)
+        self.assertIn("meson setup --reconfigure", recipe)
+        self.assertIn("DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install", recipe)
+        self.assertIn("chown root:root $(STAGING_PATH)/usr/bin/fusermount3", recipe)
+        self.assertIn("chmod u+s $(STAGING_PATH)/usr/bin/fusermount3", recipe)
+
+
 class LibndpSourceSafetyTests(unittest.TestCase):
     def setUp(self):
         self.tempdir = tempfile.TemporaryDirectory()
