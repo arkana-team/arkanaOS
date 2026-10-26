@@ -38,6 +38,21 @@ class ArkupSystemInstallTests(unittest.TestCase):
             recipe,
         )
 
+    def test_update_builder_workflow_covers_the_system_install_recipe(self) -> None:
+        workflow = (
+            REPOSITORY / ".github/workflows/update-builder-tests.yml"
+        ).read_text(encoding="utf-8")
+
+        for path in (
+            "arkanas/03_arkpkg.mk",
+            "tests/test_arkup_system_install.py",
+            "tests/test_update_builder_pin.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(workflow.count(f'"{path}"'), 2)
+        self.assertIn("-p 'test_update_builder*.py'", workflow)
+        self.assertIn("-p 'test_arkup_system_install.py'", workflow)
+
 
 if __name__ == "__main__":
     unittest.main()
