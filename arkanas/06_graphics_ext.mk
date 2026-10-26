@@ -396,7 +396,7 @@ fltk: download-fltk .fltk-done
 	cd $(FLTK_PATH) && rm -f config.cache && \
 	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
 	CFLAGS="--sysroot=$(STAGING_PATH) -I$(STAGING_PATH)/usr/include -O2 -std=gnu17" \
-	CXXFLAGS="--sysroot=$(STAGING_PATH) -I$(STAGING_PATH)/usr/include -O2 -std=gnu17" \
+	CXXFLAGS="--sysroot=$(STAGING_PATH) -I$(STAGING_PATH)/usr/include -O2 -std=gnu++17" \
 	LDFLAGS="--sysroot=$(STAGING_PATH) -L$(STAGING_PATH)/usr/lib -Wl,-rpath-link,$(STAGING_PATH)/usr/lib" \
 	./configure --prefix=/usr --enable-shared --disable-gl && \
 	sed -i '/^DSOFLAGS/s|=|= --sysroot=$(STAGING_PATH) -L$(STAGING_PATH)/usr/lib -Wl,-rpath-link,$(STAGING_PATH)/usr/lib|' makeinclude && \
@@ -425,7 +425,7 @@ dillo: download-dillo fltk .dillo-done
 	PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" \
 	CC="gcc" CXX="g++" \
 	CFLAGS="--sysroot=$(STAGING_PATH) -I$(STAGING_PATH)/usr/include -fpermissive -Wno-error=incompatible-pointer-types -O2 -std=gnu17" \
-	CXXFLAGS="--sysroot=$(STAGING_PATH) -I$(STAGING_PATH)/usr/include -fpermissive -Wno-error=incompatible-pointer-types -O2 -std=gnu17" \
+	CXXFLAGS="--sysroot=$(STAGING_PATH) -I$(STAGING_PATH)/usr/include -fpermissive -Wno-error=incompatible-pointer-types -O2 -std=gnu++17" \
 	LDFLAGS="--sysroot=$(STAGING_PATH) -L$(STAGING_PATH)/usr/lib -Wl,-rpath-link,$(STAGING_PATH)/usr/lib" \
 	./configure --prefix=/usr --sysconfdir=/etc --disable-tls && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
