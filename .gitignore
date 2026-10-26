@@ -20,6 +20,7 @@ output
 !tests/test_update_builder.py
 !tests/test_build_modes.py
 !tests/test_workflow_concurrency.py
+!tests/test_update_builder_pin.py
 __pycache__/
 *.py[cod]
 *.aup

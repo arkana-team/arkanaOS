@@ -55,13 +55,13 @@ keep the private key offline, outside Git, and backed up securely. The
 container mounts both trees read-only, mounts the keys read-only, disables
 network access at runtime, and uses bounded memory and one CPU for package
 creation. Docker needs network access only while building the image to fetch
-the pinned arkup source and Rust dependencies. The image defaults to the reviewed arkup commit
-`f9b433bafacd00d7f1a29541e81b303b999c4d65`, which provides the `--system-file`
-option required to mark release metadata as system-managed. Keep the source URL
-and commit ref paired; switch to `arkana-team/arkup` only after that feature is
-available there. Set `ARKUP_GIT_REF` only when deliberately testing another
-reviewed compatible commit. Rootless Podman runs use `keep-id` so the unprivileged container can
-read private input trees and signing keys owned by the invoking account.
+the pinned arkup source and Rust dependencies. The image and build script use
+the same merged upstream arkup commit
+`ab6a1b7ee9321587b3ab1d371f56b04362ac35cb`, which provides the `--system-file`
+option required to mark release metadata as system-managed. Set
+`ARKUP_GIT_REF` only when deliberately testing another reviewed compatible
+commit. Rootless Podman runs use `keep-id` so the unprivileged container can read
+private input trees and signing keys owned by the invoking account.
 
 ## Weekly developer releases
 
