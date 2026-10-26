@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
-
 
 SCRIPT = Path(__file__).resolve().parents[1] / "build.sh"
 
@@ -69,8 +69,7 @@ class BuildModeTests(unittest.TestCase):
             cwd=cwd or self.project,
             env=self.env,
             text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             check=False,
         )
 
@@ -142,6 +141,19 @@ class BuildModeTests(unittest.TestCase):
         result = self.run_builder("--both", "--base-root", "/tmp/base")
         self.assertEqual(result.returncode, 2)
         self.assertFalse(self.docker_log.exists())
+
+
+class WorkflowSecurityTests(unittest.TestCase):
+    def test_source_checkouts_do_not_persist_github_credentials(self) -> None:
+        workflow = Path(__file__).resolve().parents[1] / ".github/workflows/update-builder-tests.yml"
+        contents = workflow.read_text(encoding="utf-8")
+        blocks = re.split(r"(?m)^      - ", contents)
+        checkouts = [block for block in blocks if block.startswith("name: Check out source\n")]
+
+        self.assertEqual(len(checkouts), 2)
+        for block in checkouts:
+            self.assertRegex(block, r"(?m)^        uses: actions/checkout@")
+            self.assertRegex(block, r"(?m)^          persist-credentials: false$")
 
 
 if __name__ == "__main__":
