@@ -93,6 +93,8 @@ docker build \
   -f Dockerfile.update-builder \
   -t arkana-update-builder .
 
+# The commas are part of this single --tmpfs argument.
+# shellcheck disable=SC2054
 RUN_ARGS=(
   --rm
   --network none

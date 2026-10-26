@@ -5,20 +5,28 @@ on:
     paths:
       - "scripts/build-update-pack.py"
       - "tests/test_update_builder.py"
+      - "tests/test_build_modes.py"
+      - "build.sh"
       - "build-update.sh"
       - "Dockerfile.update-builder"
       - ".dockerignore"
       - "UPDATE-BUILDER.md"
       - ".github/workflows/update-builder-tests.yml"
+      - ".github/workflows/00_run_all.yml"
+      - ".github/workflows/04_stage4_iso.yml"
   push:
     paths:
       - "scripts/build-update-pack.py"
       - "tests/test_update_builder.py"
+      - "tests/test_build_modes.py"
+      - "build.sh"
       - "build-update.sh"
       - "Dockerfile.update-builder"
       - ".dockerignore"
       - "UPDATE-BUILDER.md"
       - ".github/workflows/update-builder-tests.yml"
+      - ".github/workflows/00_run_all.yml"
+      - ".github/workflows/04_stage4_iso.yml"
 
 permissions:
   contents: read
@@ -36,6 +44,9 @@ jobs:
           python-version: "3.11"
       - name: Run update-builder tests
         run: python3 -m unittest discover -s tests -p 'test_update_builder.py' -v
+
+      - name: Run arkana-builder mode tests
+        run: python3 -m unittest discover -s tests -p 'test_build_modes.py' -v
 
   builder-image:
     name: Build and smoke-test arkana-update-builder

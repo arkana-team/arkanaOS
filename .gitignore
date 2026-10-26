@@ -18,6 +18,7 @@ output
 !tests/test_iso_artifact_provenance.py
 !tests/test_ca_bundle_download.py
 !tests/test_update_builder.py
+!tests/test_build_modes.py
 __pycache__/
 *.py[cod]
 *.aup
