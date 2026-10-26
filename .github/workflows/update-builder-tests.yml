@@ -1,0 +1,54 @@
+name: Update builder tests
+
+on:
+  pull_request:
+    paths:
+      - "scripts/build-update-pack.py"
+      - "tests/test_update_builder.py"
+      - "build-update.sh"
+      - "Dockerfile.update-builder"
+      - ".dockerignore"
+      - "UPDATE-BUILDER.md"
+      - ".github/workflows/update-builder-tests.yml"
+  push:
+    paths:
+      - "scripts/build-update-pack.py"
+      - "tests/test_update_builder.py"
+      - "build-update.sh"
+      - "Dockerfile.update-builder"
+      - ".dockerignore"
+      - "UPDATE-BUILDER.md"
+      - ".github/workflows/update-builder-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  update-builder:
+    name: Test .aup delta generation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run update-builder tests
+        run: python3 -m unittest discover -s tests -p 'test_update_builder.py' -v
+
+  builder-image:
+    name: Build and smoke-test arkana-update-builder
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Build update-builder image
+        run: docker build --file Dockerfile.update-builder --tag arkana-update-builder:ci .
+      - name: Verify restricted offline entrypoint
+        run: >-
+          docker run --rm --network none --read-only
+          --tmpfs /tmp:rw,noexec,nosuid,size=16m
+          --user 1000:1000 --cap-drop ALL
+          --security-opt no-new-privileges
+          arkana-update-builder:ci --help
