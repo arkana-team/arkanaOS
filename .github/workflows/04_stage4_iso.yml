@@ -154,15 +154,23 @@ jobs:
           if [[ "$RELEASE_PREFIX" == nightly ]]; then
             EXPECTED_RELEASE_ID="nightly-${BUILD_NUM}"
             EXPECTED_RELEASE_VERSION=nightly
+            RELEASE_CHANNEL=Nightly
+            RELEASE_STATUS="Developer build for testing and development only. Supported for 7 days."
           elif [[ "$RELEASE_PREFIX" =~ ^r([1-9][0-9]*)-a([1-9][0-9]*)$ ]]; then
             EXPECTED_RELEASE_ID="v${BASH_REMATCH[1]}.0-alpha${BASH_REMATCH[2]}-build-${BUILD_NUM}"
             EXPECTED_RELEASE_VERSION="${BASH_REMATCH[1]}.0 (alpha ${BASH_REMATCH[2]})"
+            RELEASE_CHANNEL=Alpha
+            RELEASE_STATUS="Early pre-release for testing and development. Supported for 2 weeks."
           elif [[ "$RELEASE_PREFIX" =~ ^r([1-9][0-9]*)-b([1-9][0-9]*)$ ]]; then
             EXPECTED_RELEASE_ID="v${BASH_REMATCH[1]}.0-beta${BASH_REMATCH[2]}-build-${BUILD_NUM}"
             EXPECTED_RELEASE_VERSION="${BASH_REMATCH[1]}.0 (beta ${BASH_REMATCH[2]})"
+            RELEASE_CHANNEL=Beta
+            RELEASE_STATUS="Pre-release for broader testing. Supported for 7 weeks."
           elif [[ "$RELEASE_PREFIX" =~ ^r([1-9][0-9]*)-([1-9][0-9]*)$ ]]; then
             EXPECTED_RELEASE_ID="v${BASH_REMATCH[1]}.0-build-${BUILD_NUM}"
             EXPECTED_RELEASE_VERSION="${BASH_REMATCH[1]}.0"
+            RELEASE_CHANNEL=Stable
+            RELEASE_STATUS="Stable release. Supported for 10 months."
           else
             echo "Invalid arkanaOS release prefix: $RELEASE_PREFIX" >&2
             exit 1
@@ -181,19 +189,24 @@ jobs:
             exit 1
           fi
           RELEASE_NAME="arkanaOS ${RELEASE_VERSION} build ${BUILD_NUM}"
-          export RELEASE_NAME
+          export RELEASE_NAME RELEASE_CHANNEL RELEASE_STATUS
           python3 - <<'PY'
           import os
           from pathlib import Path
 
           template_path = Path("RELEASE_TEMPLATE.md")
           template = template_path.read_text(encoding="utf-8")
-          if "RELEASE_NAME" not in template:
-              raise SystemExit("Release template is missing its RELEASE_NAME placeholder.")
-          template_path.write_text(
-              template.replace("RELEASE_NAME", os.environ["RELEASE_NAME"]),
-              encoding="utf-8",
-          )
+          replacements = {
+              "@@RELEASE_CHANNEL@@": os.environ["RELEASE_CHANNEL"],
+              "@@RELEASE_NAME@@": os.environ["RELEASE_NAME"],
+              "@@RELEASE_STATUS@@": os.environ["RELEASE_STATUS"],
+          }
+          missing = [token for token in replacements if token not in template]
+          if missing:
+              raise SystemExit(f"Release template is missing placeholders: {missing}")
+          for token, value in replacements.items():
+              template = template.replace(token, value)
+          template_path.write_text(template, encoding="utf-8")
           PY
           {
             echo "RELEASE_ID=$RELEASE_ID"

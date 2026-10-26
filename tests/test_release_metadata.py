@@ -15,6 +15,7 @@ from pathlib import Path
 REPOSITORY = Path(__file__).resolve().parents[1]
 MAKEFILE = REPOSITORY / "arkanas/01_base.mk"
 ISO_WORKFLOW = REPOSITORY / ".github/workflows/04_stage4_iso.yml"
+RELEASE_TEMPLATE = REPOSITORY / "RELEASE_TEMPLATE.md"
 
 
 class ReleaseMetadataTests(unittest.TestCase):
@@ -143,9 +144,7 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
         }
         for name, value in values.items():
             (metadata / name).write_text(value, encoding="utf-8")
-        (root / "RELEASE_TEMPLATE.md").write_text(
-            "# RELEASE_NAME\nRelease: RELEASE_NAME\n", encoding="utf-8"
-        )
+        shutil.copy2(RELEASE_TEMPLATE, root / "RELEASE_TEMPLATE.md")
         github_env = root / "github-env"
         environment = os.environ.copy()
         environment["GITHUB_ENV"] = str(github_env)
@@ -171,12 +170,24 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
     def test_valid_release_metadata_renders_template_literally(self) -> None:
         """Accept supported labels and replace template placeholders literally."""
         cases = (
-            ("nightly", "nightly", "nightly-233", "true"),
-            ("r1-a1", "1.0 (alpha 1)", "v1.0-alpha1-build-233", "true"),
-            ("r1-b1", "1.0 (beta 1)", "v1.0-beta1-build-233", "true"),
-            ("r1-1", "1.0", "v1.0-build-233", "false"),
+            (
+                "nightly", "nightly", "nightly-233", "true", "Nightly",
+                "Developer build for testing and development only. Supported for 7 days.",
+            ),
+            (
+                "r1-a1", "1.0 (alpha 1)", "v1.0-alpha1-build-233", "true", "Alpha",
+                "Early pre-release for testing and development. Supported for 2 weeks.",
+            ),
+            (
+                "r1-b1", "1.0 (beta 1)", "v1.0-beta1-build-233", "true", "Beta",
+                "Pre-release for broader testing. Supported for 7 weeks.",
+            ),
+            (
+                "r1-1", "1.0", "v1.0-build-233", "false", "Stable",
+                "Stable release. Supported for 10 months.",
+            ),
         )
-        for prefix, version, release_id, prerelease in cases:
+        for prefix, version, release_id, prerelease, channel, status in cases:
             with self.subTest(prefix=prefix), tempfile.TemporaryDirectory(
                 prefix="arkana-iso-release-"
             ) as temporary:
@@ -190,12 +201,22 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
                 )
                 self.assertEqual(result.returncode, 0, result.stderr)
                 expected_name = f"arkanaOS {version} build 233"
+                expected_template = (
+                    RELEASE_TEMPLATE.read_text(encoding="utf-8")
+                    .replace("@@RELEASE_CHANNEL@@", channel)
+                    .replace("@@RELEASE_NAME@@", expected_name)
+                    .replace("@@RELEASE_STATUS@@", status)
+                )
                 self.assertEqual(
                     (root / "RELEASE_TEMPLATE.md").read_text(encoding="utf-8"),
-                    f"# {expected_name}\nRelease: {expected_name}\n",
+                    expected_template,
                 )
                 self.assertIn(
                     f"RELEASE_ID={release_id}\n",
+                    (root / "github-env").read_text(encoding="utf-8"),
+                )
+                self.assertIn(
+                    f"RELEASE_NAME={expected_name}\n",
                     (root / "github-env").read_text(encoding="utf-8"),
                 )
 
@@ -219,7 +240,7 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
             self.assertFalse(marker.exists())
             self.assertEqual(
                 (root / "RELEASE_TEMPLATE.md").read_text(encoding="utf-8"),
-                "# RELEASE_NAME\nRelease: RELEASE_NAME\n",
+                RELEASE_TEMPLATE.read_text(encoding="utf-8"),
             )
 
 

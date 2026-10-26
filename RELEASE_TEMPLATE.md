@@ -1,16 +1,17 @@
-# RELEASE_NAME
+# @@RELEASE_CHANNEL@@ Release
 
-RELEASE_NAME
+### @@RELEASE_NAME@@
 
-**Testing Results:**
-Testing is not done yet.
+### Testing Platform
+Built by GitHub Actions on `ubuntu-latest`. This automated workflow does not boot the ISO or test physical hardware.
 
 ### Usability Status
-Not reported yet.
+@@RELEASE_STATUS@@
 
-### Commited Changes
+### Release Assets
+Scheduled weekly releases include the bootable ISO and signed Arkup `.aup` update package, checksum, and verification public key. Manually triggered releases include the ISO.
 
 ### Screenshots
-Not added yet.
+Not captured by the automated workflow.
 
 ## GitHub Generated Release Notes
