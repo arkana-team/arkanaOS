@@ -89,7 +89,11 @@ class BuildModeTests(unittest.TestCase):
     def test_no_mode_keeps_iso_as_the_default(self) -> None:
         result = self.run_builder()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-        self.assertIn("-t arkana-builder .", self.docker_log.read_text())
+        docker_command = self.docker_log.read_text()
+        self.assertIn("-t arkana-builder .", docker_command)
+        run_command = next(line for line in docker_command.splitlines() if line.startswith("run "))
+        self.assertIn("run --rm --init", run_command)
+        self.assertNotRegex(run_command, r"(^|\s)(?:-it|-t|--tty)(?:\s|$)")
         self.assertFalse(self.update_log.exists())
 
     def test_update_mode_delegates_all_options(self) -> None:

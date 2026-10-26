@@ -188,7 +188,7 @@ docker build --cpu-quota="$((CPUS * 100000))" \
   --memory="${CONTAINER_RAM_MB}m" \
   --memory-swap="${TOTAL_MEM_SWAP_MB}m" \
   -t arkana-builder .
-docker run --rm -it --init \
+docker run --rm --init \
   --cap-add=MKNOD \
   -v "$SCRIPT_DIR:/build/arkana" \
   -v "$SCRIPT_DIR/.git:/build/arkana/.git:ro" \
