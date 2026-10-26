@@ -18,6 +18,9 @@ deletions for systems that already have arkanaOS installed.
 update target. The base tree and key arguments are required before the ISO
 build starts. `--update` forwards its arguments to `build-update.sh`.
 
+The base system build installs the pinned `arkup` client at `/usr/bin/arkup`,
+so installed systems can verify and apply `.aup` update packages.
+
 ## Build an update
 
 Use a root tree from the installed base release and the root tree for the new
