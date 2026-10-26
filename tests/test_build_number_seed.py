@@ -52,7 +52,9 @@ class BuildNumberSeedTests(unittest.TestCase):
     def test_does_not_lower_ahead_checked_in_counter(self) -> None:
         with tempfile.TemporaryDirectory(prefix="arkana-build-seed-") as temporary:
             root = Path(temporary)
-            result = self.run_seed(root, "920", ("nightly-908", "v1.0-alpha1-build-912"))
+            result = self.run_seed(
+                root, "920", ("nightly-908", "v1.0-alpha1-build-912")
+            )
 
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual((root / ".buildnum").read_text().strip(), "920")
@@ -110,7 +112,9 @@ class BuildNumberSeedTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertEqual(build_file.read_text(), "bad\n")
 
-    def test_rejects_out_of_range_published_build_without_rewriting_counter(self) -> None:
+    def test_rejects_out_of_range_published_build_without_rewriting_counter(
+        self,
+    ) -> None:
         with tempfile.TemporaryDirectory(prefix="arkana-build-seed-") as temporary:
             root = Path(temporary)
             result = self.run_seed(
@@ -129,12 +133,14 @@ class BuildNumberSeedTests(unittest.TestCase):
 
         self.assertIn(step, workflow)
         self.assertIn("gh api --paginate", workflow)
-        self.assertIn("python3 scripts/seed-build-number.py --build-file .buildnum", workflow)
+        self.assertIn(
+            "python3 scripts/seed-build-number.py --build-file .buildnum", workflow
+        )
         self.assertIn("group: arkanaOS-release-${{ github.ref }}", workflow)
         self.assertIn("cancel-in-progress: false", workflow)
         self.assertLess(
             workflow.index(step),
-            workflow.index('sudo --preserve-env make -f arkanas/07_iso.mk'),
+            workflow.index("sudo --preserve-env make -f arkanas/07_iso.mk"),
         )
 
 

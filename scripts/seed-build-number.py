@@ -12,9 +12,7 @@ from pathlib import Path
 BUILD_TAG_PATTERNS = (
     re.compile(r"nightly-([0-9]+)"),
     re.compile(r"nightly-[0-9]{8}-build-([0-9]+)"),
-    re.compile(
-        r"v[1-9][0-9]*\.0-(?:alpha[1-9][0-9]*|beta[1-9][0-9]*)-build-([0-9]+)"
-    ),
+    re.compile(r"v[1-9][0-9]*\.0-(?:alpha[1-9][0-9]*|beta[1-9][0-9]*)-build-([0-9]+)"),
     re.compile(r"v[1-9][0-9]*\.0-build-([0-9]+)"),
 )
 MAX_BUILD_NUMBER = 9_223_372_036_854_775_806
