@@ -211,7 +211,7 @@ download-ninja: .ninja-obtained
 ninja: download-ninja .ninja-done
 .ninja-done:
 	cd $(NINJA_PATH) && grep -q 'NINJAJOBS' src/ninja.cc || sed -i '/int Guess/a int   j = 0;char* jobs = getenv( "NINJAJOBS" );if ( jobs != NULL ) j = atoi( jobs );if ( j > 0 ) return j;' src/ninja.cc && \
-	python3 configure.py --bootstrap --verbose && install -m755 ninja $(STAGING_PATH)/usr/bin/ && \
+	CFLAGS="-O2 -pipe" CXXFLAGS="-O2 -pipe -std=gnu++17" python3 configure.py --bootstrap --verbose && install -m755 ninja $(STAGING_PATH)/usr/bin/ && \
 	install -Dm644 misc/bash-completion $(STAGING_PATH)/usr/share/bash-completion/completions/ninja
 	touch .ninja-done
 
