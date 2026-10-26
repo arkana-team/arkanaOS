@@ -102,6 +102,8 @@ RUN_ARGS=(
   --tmpfs /tmp:rw,noexec,nosuid,size=128m
   --user "$(id -u):$(id -g)"
   --cap-drop ALL
+  # ISO roots may contain mode-600 files owned by root; allow reads only.
+  --cap-add DAC_READ_SEARCH
   --security-opt no-new-privileges
   --memory 512m
   --memory-swap 512m

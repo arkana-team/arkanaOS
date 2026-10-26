@@ -31,9 +31,9 @@ class BuildModeTests(unittest.TestCase):
         docker.write_text(
             "#!/usr/bin/env bash\n"
             "set -euo pipefail\n"
-            "printf '%s\\n' \"$*\" >> \"$DOCKER_LOG\"\n"
-            "if [[ \"${1:-}\" == run ]]; then\n"
-            "  mkdir -p \"$PROJECT_DIR/output/iso-root\"\n"
+            'printf \'%s\\n\' "$*" >> "$DOCKER_LOG"\n'
+            'if [[ "${1:-}" == run ]]; then\n'
+            '  mkdir -p "$PROJECT_DIR/output/iso-root"\n'
             "  printf 'arkanaOS ISO root\\n' > \"$PROJECT_DIR/output/iso-root/.arkana-iso-root\"\n"
             "  printf 'iso\\n' > \"$PROJECT_DIR/output/arkana.iso\"\n"
             "fi\n",
@@ -90,7 +90,9 @@ class BuildModeTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         docker_command = self.docker_log.read_text()
         self.assertIn("-t arkana-builder .", docker_command)
-        run_command = next(line for line in docker_command.splitlines() if line.startswith("run "))
+        run_command = next(
+            line for line in docker_command.splitlines() if line.startswith("run ")
+        )
         self.assertIn("run --rm --init", run_command)
         self.assertNotRegex(run_command, r"(^|\s)(?:-it|-t|--tty)(?:\s|$)")
         self.assertFalse(self.update_log.exists())
@@ -129,12 +131,21 @@ class BuildModeTests(unittest.TestCase):
             "weekly developer build",
             cwd=self.root,
         )
-        docker_output = self.docker_log.read_text() if self.docker_log.exists() else "missing"
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr + docker_output)
+        docker_output = (
+            self.docker_log.read_text() if self.docker_log.exists() else "missing"
+        )
+        self.assertEqual(
+            result.returncode, 0, result.stdout + result.stderr + docker_output
+        )
         self.assertIn("-t arkana-builder .", self.docker_log.read_text())
         update_args = json.loads(self.update_log.read_text())
-        self.assertEqual(update_args[update_args.index("--base-root") + 1], str(base_root))
-        self.assertEqual(update_args[update_args.index("--target-root") + 1], str(self.project / "output/iso-root"))
+        self.assertEqual(
+            update_args[update_args.index("--base-root") + 1], str(base_root)
+        )
+        self.assertEqual(
+            update_args[update_args.index("--target-root") + 1],
+            str(self.project / "output/iso-root"),
+        )
         self.assertIn("weekly developer build", update_args)
 
     def test_both_requires_update_inputs_before_building(self) -> None:
@@ -145,15 +156,43 @@ class BuildModeTests(unittest.TestCase):
 
 class WorkflowSecurityTests(unittest.TestCase):
     def test_source_checkouts_do_not_persist_github_credentials(self) -> None:
-        workflow = Path(__file__).resolve().parents[1] / ".github/workflows/update-builder-tests.yml"
+        workflow = (
+            Path(__file__).resolve().parents[1]
+            / ".github/workflows/update-builder-tests.yml"
+        )
         contents = workflow.read_text(encoding="utf-8")
         blocks = re.split(r"(?m)^      - ", contents)
-        checkouts = [block for block in blocks if block.startswith("name: Check out source\n")]
+        checkouts = [
+            block for block in blocks if block.startswith("name: Check out source\n")
+        ]
 
         self.assertEqual(len(checkouts), 2)
         for block in checkouts:
             self.assertRegex(block, r"(?m)^        uses: actions/checkout@")
             self.assertRegex(block, r"(?m)^          persist-credentials: false$")
+
+    def test_integration_test_changes_trigger_the_workflow(self) -> None:
+        workflow = (
+            Path(__file__).resolve().parents[1]
+            / ".github/workflows/update-builder-tests.yml"
+        )
+        contents = workflow.read_text(encoding="utf-8")
+
+        self.assertEqual(
+            contents.count('      - "tests/test_update_builder_integration.py"'), 2
+        )
+
+    def test_update_builder_can_read_restricted_iso_files_without_mode_changes(
+        self,
+    ) -> None:
+        script = Path(__file__).resolve().parents[1] / "build-update.sh"
+        contents = script.read_text(encoding="utf-8")
+
+        self.assertIn('  --user "$(id -u):$(id -g)"', contents)
+        self.assertIn("  --cap-drop ALL", contents)
+        self.assertIn("  --cap-add DAC_READ_SEARCH", contents)
+        self.assertIn("src=$TARGET_ROOT,dst=/inputs/target,readonly", contents)
+        self.assertNotRegex(contents, r"(?m)^\s*(?:chmod|chown)\b")
 
 
 if __name__ == "__main__":
