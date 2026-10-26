@@ -1,8 +1,8 @@
 FROM rust:1.85-slim-bookworm AS arkup-build
 
-# This pin provides the --system-file option used for system release metadata.
-ARG ARKUP_GIT_URL=https://github.com/debarkak/arkup.git
-ARG ARKUP_GIT_REF=f9b433bafacd00d7f1a29541e81b303b999c4d65
+# Pin the upstream Arkup revision that supports system-managed release metadata.
+ARG ARKUP_GIT_URL=https://github.com/arkana-team/arkup.git
+ARG ARKUP_GIT_REF=ab6a1b7ee9321587b3ab1d371f56b04362ac35cb
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates git \
