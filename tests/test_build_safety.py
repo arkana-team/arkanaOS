@@ -17,6 +17,23 @@ ISO_MAKEFILE = REPO_ROOT / "arkanas/07_iso.mk"
 
 
 class IsoRootBindingTests(unittest.TestCase):
+    def test_iso_root_tmp_is_cleaned_and_restored_before_squashfs(self):
+        recipe = ISO_MAKEFILE.read_text(encoding="utf-8")
+        guard = recipe.index(
+            'test "$(ISO_ROOT_PATH)" = "$(OUTPUT_PATH)/iso-root"'
+        )
+        cleanup = recipe.index('rm -rf -- "$(ISO_ROOT_PATH)/tmp"')
+        recreate = recipe.index(
+            'install -d -o 0 -g 0 -m 1777 "$(ISO_ROOT_PATH)/tmp"', cleanup
+        )
+        size_calculation = recipe.index("INSTALL_ROOT_BYTES=$$", recreate)
+        squashfs = recipe.index("mksquashfs $(ISO_ROOT_PATH)", size_calculation)
+
+        self.assertLess(guard, cleanup)
+        self.assertLess(cleanup, recreate)
+        self.assertLess(recreate, size_calculation)
+        self.assertLess(size_calculation, squashfs)
+
     def test_make_rejects_custom_iso_root_during_parse(self):
         with tempfile.TemporaryDirectory() as temporary:
             custom_root = Path(temporary) / "custom-iso-root"

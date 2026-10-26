@@ -1079,6 +1079,10 @@ iso: grub
 	chroot $(ISO_ROOT_PATH) /usr/bin/ldconfig
 	rm -f $(ISO_ROOT_PATH)/etc/udev/hwdb.bin
 	/usr/bin/systemd-hwdb --root=$(ISO_ROOT_PATH) --usr update
+	# Exclude build and test residue from both installer sizing and the live image.
+	test "$(ISO_ROOT_PATH)" = "$(OUTPUT_PATH)/iso-root"
+	rm -rf -- "$(ISO_ROOT_PATH)/tmp"
+	install -d -o 0 -g 0 -m 1777 "$(ISO_ROOT_PATH)/tmp"
 	rm -f $(ISO_ROOT_PATH)/etc/arkana-install-size
 	set -euo pipefail; \
 	INSTALL_ROOT_BYTES=$$(cd "$(ISO_ROOT_PATH)" && du -sx --apparent-size --block-size=1 --exclude='./boot/vmlinuz' --exclude='./boot/initramfs.img' . | awk '{print $$1}'); \
