@@ -26,11 +26,13 @@ class IsoRootBindingTests(unittest.TestCase):
         recreate = recipe.index(
             'install -d -o 0 -g 0 -m 1777 "$(ISO_ROOT_PATH)/tmp"', cleanup
         )
-        squashfs = recipe.index("mksquashfs $(ISO_ROOT_PATH)", recreate)
+        size_calculation = recipe.index("INSTALL_ROOT_BYTES=$$", recreate)
+        squashfs = recipe.index("mksquashfs $(ISO_ROOT_PATH)", size_calculation)
 
         self.assertLess(guard, cleanup)
         self.assertLess(cleanup, recreate)
-        self.assertLess(recreate, squashfs)
+        self.assertLess(recreate, size_calculation)
+        self.assertLess(size_calculation, squashfs)
 
     def test_make_rejects_custom_iso_root_during_parse(self):
         with tempfile.TemporaryDirectory() as temporary:
