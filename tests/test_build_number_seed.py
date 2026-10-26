@@ -35,6 +35,7 @@ class BuildNumberSeedTests(unittest.TestCase):
         tags = (
             "nightly-20261014-build-877",
             "nightly-908",
+            "nightly-build-913",
             "v1.0-alpha1-build-910",
             "v1.0-beta1-build-909",
             "v1.0-build-912",
@@ -46,8 +47,8 @@ class BuildNumberSeedTests(unittest.TestCase):
             result = self.run_seed(root, "907", tags)
 
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual((root / ".buildnum").read_text().strip(), "912")
-            self.assertIn("latest-published=912, seeded=912", result.stdout)
+            self.assertEqual((root / ".buildnum").read_text().strip(), "913")
+            self.assertIn("latest-published=913, seeded=913", result.stdout)
 
     def test_does_not_lower_ahead_checked_in_counter(self) -> None:
         with tempfile.TemporaryDirectory(prefix="arkana-build-seed-") as temporary:
@@ -65,7 +66,11 @@ class BuildNumberSeedTests(unittest.TestCase):
             result = self.run_seed(
                 root,
                 "907",
-                ("nightly-20261014-build-877", "nightly-908", "v1.0-alpha1-build-912"),
+                (
+                    "nightly-20261014-build-877",
+                    "nightly-build-913",
+                    "v1.0-alpha1-build-912",
+                ),
             )
             self.assertEqual(result.returncode, 0, result.stderr)
 
@@ -89,10 +94,10 @@ class BuildNumberSeedTests(unittest.TestCase):
             )
 
             self.assertEqual(build_result.returncode, 0, build_result.stderr)
-            self.assertEqual((root / ".buildnum").read_text().strip(), "913")
+            self.assertEqual((root / ".buildnum").read_text().strip(), "914")
             self.assertEqual(
                 (root / "staging/etc/arkana-release-id").read_text().strip(),
-                "nightly-913",
+                "nightly-914",
             )
 
     def test_rejects_invalid_checked_in_counter_without_rewriting_it(self) -> None:
