@@ -466,7 +466,11 @@ timestamp:
 	  chmod --reference="$(BUILDNUM_FILE)" "$$TMP"; chown --reference="$(BUILDNUM_FILE)" "$$TMP"; \
 	  mv -f "$$TMP" "$(BUILDNUM_FILE)"; \
 	fi; \
-	RELEASE_ID="$$TAG_PREFIX-build-$$BUILD"; \
+	if [[ "$$PREFIX" == nightly ]]; then \
+	  RELEASE_ID="nightly-$$BUILD"; \
+	else \
+	  RELEASE_ID="$$TAG_PREFIX-build-$$BUILD"; \
+	fi; \
 	mkdir -p "$(STAGING_PATH)/etc"; \
 	printf '%s\n' "$$BUILD" > "$(STAGING_PATH)/etc/arkana-build-number"; \
 	printf '%s\n' "$$PREFIX" > "$(STAGING_PATH)/etc/arkana-release-prefix"; \

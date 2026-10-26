@@ -49,7 +49,7 @@ class ReleaseMetadataTests(unittest.TestCase):
 
     def test_valid_release_labels_write_expected_metadata(self) -> None:
         cases = (
-            ("nightly", "nightly", "nightly", "nightly-build-233", "true"),
+            ("nightly", "nightly", "nightly", "nightly-233", "true"),
             (
                 "r1-a1",
                 "1.0 (alpha 1)",
@@ -171,7 +171,7 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
     def test_valid_release_metadata_renders_template_literally(self) -> None:
         """Accept supported labels and replace template placeholders literally."""
         cases = (
-            ("nightly", "nightly", "nightly-build-233", "true"),
+            ("nightly", "nightly", "nightly-233", "true"),
             ("r1-a1", "1.0 (alpha 1)", "v1.0-alpha1-build-233", "true"),
             ("r1-b1", "1.0 (beta 1)", "v1.0-beta1-build-233", "true"),
             ("r1-1", "1.0", "v1.0-build-233", "false"),

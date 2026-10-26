@@ -152,7 +152,7 @@ jobs:
             exit 1
           fi
           if [[ "$RELEASE_PREFIX" == nightly ]]; then
-            EXPECTED_RELEASE_ID="nightly-build-${BUILD_NUM}"
+            EXPECTED_RELEASE_ID="nightly-${BUILD_NUM}"
             EXPECTED_RELEASE_VERSION=nightly
           elif [[ "$RELEASE_PREFIX" =~ ^r([1-9][0-9]*)-a([1-9][0-9]*)$ ]]; then
             EXPECTED_RELEASE_ID="v${BASH_REMATCH[1]}.0-alpha${BASH_REMATCH[2]}-build-${BUILD_NUM}"

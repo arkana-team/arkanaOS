@@ -191,7 +191,7 @@ def _read_regular_text(root: Path, relative: str, *, single_line: bool = True) -
 
 def _expected_release(prefix: str, build: int) -> tuple[str, str, str, str]:
     if prefix == "nightly":
-        return "nightly", "nightly", f"nightly-build-{build}", "true"
+        return "nightly", "nightly", f"nightly-{build}", "true"
     patterns = (
         (r"r([1-9][0-9]*)-a([1-9][0-9]*)", "alpha", "true"),
         (r"r([1-9][0-9]*)-b([1-9][0-9]*)", "beta", "true"),

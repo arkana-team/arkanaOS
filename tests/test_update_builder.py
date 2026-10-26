@@ -27,7 +27,7 @@ def release_files(root: Path, build: int, prefix: str = "r1-a1") -> None:
         version, version_id, release_id, prerelease = (
             "nightly",
             "nightly",
-            f"nightly-build-{build}",
+            f"nightly-{build}",
             "true",
         )
     elif prefix == "r1-a1":
@@ -66,7 +66,7 @@ class ReleaseMetadataTests(unittest.TestCase):
             target = Path(temporary) / "target"
             release_files(base, 9, "nightly")
             release_files(target, 10, "r1-a1")
-            self.assertEqual(builder.read_release(base).release_id, "nightly-build-9")
+            self.assertEqual(builder.read_release(base).release_id, "nightly-9")
             self.assertEqual(builder.read_release(target).display, "1.0 (alpha 1) build 10")
 
     def test_rejects_inconsistent_os_release_and_malformed_build(self) -> None:
