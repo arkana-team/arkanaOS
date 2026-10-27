@@ -1,0 +1,26 @@
+From 610cbdd43f27573be458f13d076ef01eb6d3b6e0 Mon Sep 17 00:00:00 2001
+Subject: [PATCH] fontconfig: preserve the old leaf base across realloc
+
+Backport the upstream fix from Fontconfig commit 610cbdd43f27573be458f13d076ef01eb6d3b6e0.
+
+--- a/src/fccharset.c
++++ b/src/fccharset.c
+@@ -168,6 +168,7 @@ FcCharSetPutLeaf (FcCharSet  *fcs,
+ 	} else {
+ 	    int          i;
+ 	    unsigned int alloced = fcs->num;
++	    uintptr_t    old_leaves = (uintptr_t)leaves;
+ 	    intptr_t    *new_leaves;
+ 
+ 	    alloced *= 2;
+@@ -190,7 +191,7 @@ FcCharSetPutLeaf (FcCharSet  *fcs,
+ 	    }
+ 	    for (i = 0; i < fcs->num; i++) {
+ 		// Reconstruct FcCharLeaf* from offset, similar to how FcCharSetLeaf() macro operates
+-		FcCharLeaf *leaf = FcOffsetToPtr (leaves, new_leaves[i], FcCharLeaf);
++		FcCharLeaf *leaf = FcOffsetToPtr (old_leaves, new_leaves[i], FcCharLeaf);
+ 		new_leaves[i] = FcPtrToOffset (new_leaves, leaf);
+ 	    }
+ 	    leaves = new_leaves;
+-- 
+2.51.0
