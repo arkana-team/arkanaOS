@@ -194,6 +194,13 @@ class WorkflowSecurityTests(unittest.TestCase):
         self.assertIn("  --cap-add DAC_READ_SEARCH", contents)
         self.assertIn("src=$TARGET_ROOT,dst=/inputs/target,readonly", contents)
         self.assertNotRegex(contents, r"(?m)^\s*(?:chmod|chown)\b")
+        workflow = (
+            Path(__file__).resolve().parents[1]
+            / ".github/workflows/update-builder-tests.yml"
+        ).read_text(encoding="utf-8")
+        self.assertIn("Verify non-root access to root-owned inputs", workflow)
+        self.assertIn("sudo chmod 0600", workflow)
+        self.assertIn("stat -c '%u:%g:%a'", workflow)
 
 
 class BuildNumberSeedTests(unittest.TestCase):

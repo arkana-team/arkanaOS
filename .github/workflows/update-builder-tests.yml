@@ -71,6 +71,34 @@ jobs:
           persist-credentials: false
       - name: Build update-builder image
         run: docker build --file Dockerfile.update-builder --tag arkana-update-builder:ci .
+      - name: Verify non-root access to root-owned inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          fixture="$(mktemp -d "$RUNNER_TEMP/arkana-dac.XXXXXX")"
+          cleanup() {
+            if [[ -e "$fixture/input" ]]; then
+              sudo unlink -- "$fixture/input"
+            fi
+            rmdir -- "$fixture"
+          }
+          trap cleanup EXIT
+          chmod 0755 "$fixture"
+          printf 'root-owned input\n' > "$fixture/input"
+          sudo chown 0:0 "$fixture/input"
+          sudo chmod 0600 "$fixture/input"
+          before="$(stat -c '%u:%g:%a' "$fixture/input")"
+          docker_args=(
+            run --rm --network none --read-only
+            --memory 64m --memory-swap 64m --cpus 1
+            --user 1000:1000 --cap-drop ALL --cap-add DAC_READ_SEARCH
+            --security-opt no-new-privileges
+            --mount "type=bind,source=$fixture,target=/inputs,readonly"
+            --entrypoint /bin/cat arkana-update-builder:ci /inputs/input
+          )
+          output="$(docker "${docker_args[@]}")"
+          [[ "$output" == 'root-owned input' ]]
+          [[ "$(stat -c '%u:%g:%a' "$fixture/input")" == "$before" ]]
       - name: Verify restricted offline entrypoint
         run: >-
           docker run --rm --network none --read-only
