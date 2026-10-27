@@ -35,6 +35,22 @@ class ToolchainCompilerFlagTests(unittest.TestCase):
             r'python3 configure\.py --bootstrap',
         )
 
+    def test_cmake_bootstrap_disables_its_test_targets(self):
+        recipe = (REPO_ROOT / "arkanas/04_toolchain.mk").read_text(
+            encoding="utf-8"
+        )
+        cmake_target = (
+            recipe.split("cmake: download-cmake .cmake-done", 1)[1]
+            .split(".cmake-done:\n", 1)[1]
+            .split("# Download gc", 1)[0]
+        )
+
+        self.assertIn("-- -DBUILD_TESTING:BOOL=OFF", cmake_target)
+        self.assertLess(
+            cmake_target.index("-DBUILD_TESTING:BOOL=OFF"),
+            cmake_target.index("$(MAKE) -j$(THREADS)"),
+        )
+
     def test_git_install_reuses_the_build_feature_and_linker_flags(self):
         recipe = (REPO_ROOT / "arkanas/04_toolchain.mk").read_text(
             encoding="utf-8"
