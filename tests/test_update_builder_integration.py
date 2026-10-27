@@ -74,6 +74,17 @@ class UpdateBuilderIntegrationTests(unittest.TestCase):
 
             create_release_tree(base, 10)
             create_release_tree(target, 11)
+            live_overrides = (
+                "etc/systemd/system/getty@tty1.service.d/override.conf",
+                "etc/systemd/system/serial-getty@ttyS0.service.d/override.conf",
+            )
+            for relative in live_overrides:
+                override = target / relative
+                override.parent.mkdir(parents=True)
+                override.write_text(
+                    "[Service]\nExecStart=\nExecStart=-/sbin/agetty --autologin root %I\n",
+                    encoding="utf-8",
+                )
             for release_root, default_value, executable in (
                 (base, b"default=old\n", b"build-10\n"),
                 (target, b"default=new\n", b"build-11\n"),
@@ -165,6 +176,10 @@ class UpdateBuilderIntegrationTests(unittest.TestCase):
                 b"build-11\n",
             )
             self.assertFalse((install / "usr/bin/retired-tool").exists())
+            for relative in live_overrides:
+                self.assertFalse(os.path.lexists(install / relative))
+                self.assertFalse(os.path.lexists(install / f"{relative}.arkup-new"))
+                self.assertTrue((target / relative).is_file())
 
 
 if __name__ == "__main__":

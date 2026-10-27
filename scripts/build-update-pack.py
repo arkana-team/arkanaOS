@@ -27,6 +27,11 @@ SYSTEM_METADATA = (
     "etc/os-release",
     "etc/issue",
 )
+# The installer removes these live-image passwordless root login overrides.
+LIVE_ONLY_PATHS = {
+    "etc/systemd/system/getty@tty1.service.d/override.conf",
+    "etc/systemd/system/serial-getty@ttyS0.service.d/override.conf",
+}
 CHUNK_SIZE = 1024 * 1024
 
 
@@ -60,7 +65,9 @@ class Release:
 
 
 def is_protected_path(relative: str) -> bool:
-    """Match arkup's protected runtime and package-manager state paths."""
+    """Exclude live-only login overrides and arkup's protected state paths."""
+    if relative in LIVE_ONLY_PATHS:
+        return True
     parts = PurePosixPath(relative).parts
     if not parts:
         return False
