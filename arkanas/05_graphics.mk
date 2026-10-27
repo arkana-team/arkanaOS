@@ -291,13 +291,19 @@ freetype: download-freetype .freetype-done
 FONTCONFIG_URL = https://gitlab.freedesktop.org/api/v4/projects/890/packages/generic/fontconfig/2.17.1/fontconfig-2.17.1.tar.xz
 FONTCONFIG_VER = 2.17.1
 FONTCONFIG_PATH = $(SRC_PATH)/fontconfig-$(FONTCONFIG_VER)
+FONTCONFIG_REALLOC_PATCH = $(CURDIR)/patches/fontconfig-2.17.1-realloc-offset.patch
 download-fontconfig: .fontconfig-obtained
 .fontconfig-obtained:
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O fontconfig-$(FONTCONFIG_VER).tar.xz $(FONTCONFIG_URL) && tar xf fontconfig-$(FONTCONFIG_VER).tar.xz
 	touch .fontconfig-obtained
 fontconfig: download-fontconfig .fontconfig-done
 .fontconfig-done:
-	cd $(FONTCONFIG_PATH) && ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --sysconfdir=/etc --localstatedir=/var --disable-docs --docdir=/usr/share/doc/fontconfig-$(FONTCONFIG_VER) && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cd $(FONTCONFIG_PATH) && \
+	  if ! grep -qF 'uintptr_t    old_leaves = (uintptr_t)leaves;' src/fccharset.c; then \
+	    patch -Np1 -i $(FONTCONFIG_REALLOC_PATCH); \
+	  fi && \
+	  ./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --sysconfdir=/etc --localstatedir=/var --disable-docs --docdir=/usr/share/doc/fontconfig-$(FONTCONFIG_VER) && \
+	  $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .fontconfig-done
 XBITMAPS_URL = https://xorg.freedesktop.org/releases/individual/data/xbitmaps-1.1.3.tar.gz
 XBITMAPS_VER = 1.1.3
