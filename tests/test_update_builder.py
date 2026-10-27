@@ -5,7 +5,9 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import json
 import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -57,6 +59,72 @@ def release_files(root: Path, build: int, prefix: str = "r1-a1") -> None:
     }
     for name, value in values.items():
         (etc / name).write_text(value, encoding="utf-8")
+
+
+class WrapperBuildContextTests(unittest.TestCase):
+    def test_foreign_cwd_cannot_replace_builder_and_keeps_caller_paths(self) -> None:
+        repository = SCRIPT.parent.parent
+        with tempfile.TemporaryDirectory(prefix="arkana-update-wrapper-") as temporary:
+            workspace = Path(temporary)
+            caller = workspace / "caller files"
+            caller.mkdir()
+            (caller / "Dockerfile.update-builder").write_text("FROM scratch\n")
+            (caller / "scripts").mkdir()
+            (caller / "scripts/build-update-pack.py").write_text("raise SystemExit(1)\n")
+            for name in ("base root", "target root"):
+                (caller / name).mkdir()
+            for name in ("release key", "release public key"):
+                (caller / name).touch()
+            bin_dir = workspace / "bin"
+            bin_dir.mkdir()
+            log = workspace / "docker.jsonl"
+            docker = bin_dir / "docker"
+            docker.write_text(
+                f"#!{sys.executable}\n"
+                "import json, os, sys\n"
+                "with open(os.environ['DOCKER_LOG'], 'a') as stream:\n"
+                "    stream.write(json.dumps(sys.argv[1:]) + '\\n')\n"
+            )
+            docker.chmod(0o755)
+            env = dict(
+                os.environ,
+                PATH=f"{bin_dir}{os.pathsep}{os.environ['PATH']}",
+                DOCKER_LOG=str(log),
+                ARKANA_UPDATE_BUILD_CPUS="1",
+                ARKANA_UPDATE_BUILD_RAM_MB="512",
+            )
+            for output in (None, "custom output"):
+                with self.subTest(output=output):
+                    log.unlink(missing_ok=True)
+                    arguments = [
+                        str(repository / "build-update.sh"),
+                        "--base-root", "base root",
+                        "--target-root", "target root",
+                        "--signing-key", "release key",
+                        "--public-key", "release public key",
+                    ]
+                    if output is not None:
+                        arguments.extend(("--output-dir", output))
+                    result = subprocess.run(
+                        arguments, cwd=caller, env=env, text=True, capture_output=True,
+                    )
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    commands = [json.loads(line) for line in log.read_text().splitlines()]
+                    build = next(command for command in commands if command[0] == "build")
+                    self.assertEqual(
+                        build[build.index("-f") + 1],
+                        str(repository / "Dockerfile.update-builder"),
+                    )
+                    self.assertEqual(build[-1], str(repository))
+                    run = next(command for command in commands if command[0] == "run")
+                    for source, destination in (
+                        ("base root", "/inputs/base,readonly"),
+                        ("target root", "/inputs/target,readonly"),
+                        ("release key", "/keys/release.key,readonly"),
+                        ("release public key", "/keys/release.pub,readonly"),
+                        (output or "output/updates", "/output"),
+                    ):
+                        self.assertIn(f"type=bind,src={caller / source},dst={destination}", run)
 
 
 class ReleaseMetadataTests(unittest.TestCase):
