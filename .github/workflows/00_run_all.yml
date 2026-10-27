@@ -45,6 +45,14 @@ jobs:
             echo "Weekly update signing secrets must be non-empty base64-encoded key files." >&2
             exit 1
           fi
+          for key_file in "$KEY_DIR/release.key" "$KEY_DIR/release.pub"; do
+            raw_key="$key_file.raw"
+            if ! base64 --decode "$key_file" > "$raw_key" 2>/dev/null || \
+               [[ "$(wc -c < "$raw_key")" -ne 32 ]]; then
+              echo "Weekly Arkup signing and public key files must each decode to 32 bytes." >&2
+              exit 1
+            fi
+          done
 
       - name: Require a published Arkup-capable ISO as the update base
         if: github.event_name == 'schedule'

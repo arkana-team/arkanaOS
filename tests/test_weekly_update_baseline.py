@@ -23,6 +23,14 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
         self.assertIn("Run workflow_dispatch once", preflight)
         self.assertIn("needs: validate-weekly-signing-keys", workflow)
 
+    def test_signing_preflight_validates_key_material_before_stage_one(self) -> None:
+        workflow = RUN_ALL.read_text(encoding="utf-8")
+        preflight = workflow.split("  stage1:", 1)[0]
+
+        self.assertIn('base64 --decode "$key_file"', preflight)
+        self.assertIn('"$(wc -c < "$raw_key")" -ne 32', preflight)
+        self.assertIn("must each decode to 32 bytes", preflight)
+
     def test_iso_release_marker_is_created_only_when_arkup_is_installed(self) -> None:
         workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
         marker_step = workflow.split("      - name: Mark ISO as Arkup update-capable", 1)[1]
