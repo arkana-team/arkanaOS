@@ -10,6 +10,7 @@ Built by GitHub Actions on `ubuntu-latest`. This automated workflow does not boo
 
 ### Release Assets
 Scheduled weekly releases include the bootable ISO and signed Arkup `.aup` update package, checksum, and verification public key. Manually triggered releases include the ISO.
+Every ISO release also includes `arkanaOS-update-client.txt`, confirming the ISO contains the Arkup client and can be a base for later weekly updates.
 
 ### Screenshots
 Not captured by the automated workflow.

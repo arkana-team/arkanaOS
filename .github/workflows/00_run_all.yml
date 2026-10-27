@@ -22,7 +22,7 @@ permissions:
 
 jobs:
   validate-weekly-signing-keys:
-    name: Validate weekly update signing configuration
+    name: Validate weekly update release prerequisites
     runs-on: ubuntu-latest
     steps:
       - name: Require the release signing keypair for scheduled builds
@@ -43,6 +43,32 @@ jobs:
              ! printf '%s' "$ARKUP_UPDATE_PUBLIC_KEY_B64" | base64 --decode > "$KEY_DIR/release.pub" 2>/dev/null || \
              [[ ! -s "$KEY_DIR/release.key" || ! -s "$KEY_DIR/release.pub" ]]; then
             echo "Weekly update signing secrets must be non-empty base64-encoded key files." >&2
+            exit 1
+          fi
+
+      - name: Require a published Arkup-capable ISO as the update base
+        if: github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          BASE_RELEASE_TAG=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
+            jq -s -r '
+              add
+              | [.[] | select(.draft == false and
+                  any(.assets[]?; .name | endswith(".iso")))]
+              | sort_by(.published_at)
+              | last
+              | .tag_name // empty')
+          if [[ -z "$BASE_RELEASE_TAG" ]]; then
+            echo "No published arkanaOS ISO release is available as the update base." >&2
+            exit 1
+          fi
+
+          HAS_ARKUP_CLIENT=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$BASE_RELEASE_TAG" \
+            --jq 'any(.assets[]?; .name == "arkanaOS-update-client.txt")')
+          if [[ "$HAS_ARKUP_CLIENT" != true ]]; then
+            echo "The latest ISO release $BASE_RELEASE_TAG predates the Arkup client. Run workflow_dispatch once to publish an Arkup-capable ISO before scheduled .aup releases." >&2
             exit 1
           fi
 
