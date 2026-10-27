@@ -74,6 +74,26 @@ class StagingRootSafetyTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("refusing STAGING_PATH override", result.stderr)
 
+    def test_glibc_install_passes_the_target_root_as_install_root(self):
+        makefile = (REPO_ROOT / "arkanas/01_base.mk").read_text(encoding="utf-8")
+        self.assertIn(
+            "$(MAKE) DESTDIR=$(STAGING_PATH) "
+            "install_root=$(STAGING_PATH) install",
+            makefile,
+        )
+
+    def test_iso_ldconfig_runs_only_inside_the_iso_root(self):
+        makefile = (REPO_ROOT / "arkanas/07_iso.mk").read_text(encoding="utf-8")
+        remove_cache = "rm -f $(ISO_ROOT_PATH)/etc/ld.so.cache"
+        target_ldconfig = "chroot $(ISO_ROOT_PATH) /usr/bin/ldconfig"
+        self.assertIn(remove_cache, makefile)
+        self.assertIn(target_ldconfig, makefile)
+        self.assertLess(makefile.index(remove_cache), makefile.index(target_ldconfig))
+
+    def test_build_container_masks_host_ldconfig(self):
+        dockerfile = (REPO_ROOT / "Dockerfile").read_text(encoding="utf-8")
+        self.assertIn("ln -sf /bin/true /sbin/ldconfig", dockerfile)
+
 
 if __name__ == "__main__":
     unittest.main()
