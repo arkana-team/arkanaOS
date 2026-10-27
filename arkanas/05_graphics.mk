@@ -663,8 +663,9 @@ download-libinput: .libinput-obtained
 
 # Compile libinput
 libinput: download-libinput libevdev libwacom .libinput-done
+# glibc headers intentionally redeclare reallocarray; keep that warning non-fatal.
 .libinput-done:
-	mkdir -p $(LIBINPUT_PATH)/build && cd $(LIBINPUT_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D debug-gui=false -D documentation=false -D tests=false -Dc_args="-Wno-error" -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lglib-2.0 -lgobject-2.0" && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
+	mkdir -p $(LIBINPUT_PATH)/build && cd $(LIBINPUT_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -D debug-gui=false -D documentation=false -D tests=false -Dc_args="-Wno-error=redundant-decls" -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lglib-2.0 -lgobject-2.0" && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .libinput-done
 
 # Download libevdev
