@@ -100,6 +100,49 @@ class ReleaseMetadataTests(unittest.TestCase):
 
 
 class DeltaTests(unittest.TestCase):
+    def test_excludes_live_autologin_overrides_from_deltas_and_staging(self) -> None:
+        live_overrides = (
+            "etc/systemd/system/getty@tty1.service.d/override.conf",
+            "etc/systemd/system/serial-getty@ttyS0.service.d/override.conf",
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            workspace = Path(temporary)
+            base = workspace / "base"
+            target = workspace / "target"
+            base.mkdir()
+            target.mkdir()
+            for relative in live_overrides:
+                override = target / relative
+                override.parent.mkdir(parents=True)
+                override.write_text(
+                    "[Service]\nExecStart=\nExecStart=-/sbin/agetty --autologin root %I\n",
+                    encoding="utf-8",
+                )
+            ordinary_config = "etc/systemd/system/getty@tty1.service.d/settings.conf"
+            (target / ordinary_config).write_text(
+                "[Service]\nRestartSec=5\n", encoding="utf-8"
+            )
+
+            base_tree = builder.snapshot_tree(base)
+            target_tree = builder.snapshot_tree(target)
+            changed, deleted = builder.compute_delta(base_tree, target_tree)
+            self.assertEqual(changed, [ordinary_config])
+            self.assertEqual(deleted, [])
+            staged = workspace / "staged"
+            builder.stage_delta(target_tree, changed, staged)
+            for relative in live_overrides:
+                self.assertFalse(os.path.lexists(staged / relative))
+                self.assertTrue((target / relative).is_file())
+            self.assertEqual(
+                (staged / ordinary_config).read_bytes(),
+                (target / ordinary_config).read_bytes(),
+            )
+
+            # Excluding the base too prevents removals of installed configuration.
+            changed, deleted = builder.compute_delta(target_tree, base_tree)
+            self.assertEqual(changed, [])
+            self.assertEqual(deleted, [ordinary_config])
+
     def test_tracks_changed_modes_symlinks_additions_and_deletions(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             base_root = Path(temporary) / "base"
