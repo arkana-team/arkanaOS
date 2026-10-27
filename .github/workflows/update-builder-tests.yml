@@ -71,34 +71,50 @@ jobs:
           persist-credentials: false
       - name: Build update-builder image
         run: docker build --file Dockerfile.update-builder --tag arkana-update-builder:ci .
-      - name: Verify non-root access to root-owned inputs
+      - name: Verify restricted access to root-owned inputs
         shell: bash
         run: |
           set -euo pipefail
           fixture="$(mktemp -d "$RUNNER_TEMP/arkana-dac.XXXXXX")"
           cleanup() {
-            if [[ -e "$fixture/input" ]]; then
-              sudo unlink -- "$fixture/input"
+            if [[ -e "$fixture/inputs/root-owned" ]]; then
+              sudo unlink -- "$fixture/inputs/root-owned"
             fi
+            if [[ -e "$fixture/inputs/signing-key" ]]; then
+              unlink -- "$fixture/inputs/signing-key"
+            fi
+            if [[ -e "$fixture/output/package" ]]; then
+              unlink -- "$fixture/output/package"
+            fi
+            rmdir -- "$fixture/inputs" "$fixture/output"
             rmdir -- "$fixture"
           }
           trap cleanup EXIT
-          chmod 0755 "$fixture"
-          printf 'root-owned input\n' > "$fixture/input"
-          sudo chown 0:0 "$fixture/input"
-          sudo chmod 0600 "$fixture/input"
-          before="$(stat -c '%u:%g:%a' "$fixture/input")"
+          mkdir "$fixture/inputs" "$fixture/output"
+          chmod 0755 "$fixture/inputs"
+          chmod 0700 "$fixture/output"
+          printf 'root-owned input\n' > "$fixture/inputs/root-owned"
+          printf 'private signing key\n' > "$fixture/inputs/signing-key"
+          sudo chown 0:0 "$fixture/inputs/root-owned"
+          sudo chmod 0600 "$fixture/inputs/root-owned"
+          chmod 0600 "$fixture/inputs/signing-key"
+          root_input_before="$(stat -c '%u:%g:%a' "$fixture/inputs/root-owned")"
+          key_before="$(stat -c '%u:%g:%a' "$fixture/inputs/signing-key")"
           docker_args=(
             run --rm --network none --read-only
             --memory 64m --memory-swap 64m --cpus 1
-            --user 1000:1000 --cap-drop ALL --cap-add DAC_READ_SEARCH
+            --user 0:0 --cap-drop ALL --cap-add DAC_OVERRIDE
             --security-opt no-new-privileges
-            --mount "type=bind,source=$fixture,target=/inputs,readonly"
-            --entrypoint /bin/cat arkana-update-builder:ci /inputs/input
+            --mount "type=bind,source=$fixture/inputs,target=/inputs,readonly"
+            --mount "type=bind,source=$fixture/output,target=/output"
+            --entrypoint /bin/sh arkana-update-builder:ci -euc
+            'cat /inputs/root-owned /inputs/signing-key > /output/package; chmod 0644 /output/package'
           )
-          output="$(docker "${docker_args[@]}")"
-          [[ "$output" == 'root-owned input' ]]
-          [[ "$(stat -c '%u:%g:%a' "$fixture/input")" == "$before" ]]
+          docker "${docker_args[@]}"
+          [[ "$(cat "$fixture/output/package")" == $'root-owned input\nprivate signing key' ]]
+          [[ "$(stat -c '%u:%g:%a' "$fixture/inputs/root-owned")" == "$root_input_before" ]]
+          [[ "$(stat -c '%u:%g:%a' "$fixture/inputs/signing-key")" == "$key_before" ]]
+          [[ "$(stat -c '%a' "$fixture/output/package")" == 644 ]]
       - name: Verify restricted offline entrypoint
         run: >-
           docker run --rm --network none --read-only

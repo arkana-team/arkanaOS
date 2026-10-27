@@ -100,10 +100,10 @@ RUN_ARGS=(
   --network none
   --read-only
   --tmpfs /tmp:rw,noexec,nosuid,size=128m
-  --user "$(id -u):$(id -g)"
+  --user 0:0
   --cap-drop ALL
-  # ISO roots may contain mode-600 files owned by root; allow reads only.
-  --cap-add DAC_READ_SEARCH
+  # Read-only inputs/key and one writable output mount bound the DAC override.
+  --cap-add DAC_OVERRIDE
   --security-opt no-new-privileges
   --memory 512m
   --memory-swap 512m

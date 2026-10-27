@@ -189,17 +189,18 @@ class WorkflowSecurityTests(unittest.TestCase):
         script = Path(__file__).resolve().parents[1] / "build-update.sh"
         contents = script.read_text(encoding="utf-8")
 
-        self.assertIn('  --user "$(id -u):$(id -g)"', contents)
+        self.assertIn("  --user 0:0", contents)
         self.assertIn("  --cap-drop ALL", contents)
-        self.assertIn("  --cap-add DAC_READ_SEARCH", contents)
+        self.assertIn("  --cap-add DAC_OVERRIDE", contents)
         self.assertIn("src=$TARGET_ROOT,dst=/inputs/target,readonly", contents)
         self.assertNotRegex(contents, r"(?m)^\s*(?:chmod|chown)\b")
         workflow = (
             Path(__file__).resolve().parents[1]
             / ".github/workflows/update-builder-tests.yml"
         ).read_text(encoding="utf-8")
-        self.assertIn("Verify non-root access to root-owned inputs", workflow)
+        self.assertIn("Verify restricted access to root-owned inputs", workflow)
         self.assertIn("sudo chmod 0600", workflow)
+        self.assertIn("--cap-add DAC_OVERRIDE", workflow)
         self.assertIn("stat -c '%u:%g:%a'", workflow)
 
 
