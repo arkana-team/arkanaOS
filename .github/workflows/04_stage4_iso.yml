@@ -252,9 +252,10 @@ jobs:
             exit 1
           fi
 
-          BASE_RELEASE_TAG=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
-            jq -r --arg current "$RELEASE_ID" '
-              [.[] | select(.draft == false) | select(.tag_name != $current)
+          BASE_RELEASE_TAG=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
+            jq -s -r --arg current "$RELEASE_ID" '
+              add
+              | [.[] | select(.draft == false) | select(.tag_name != $current)
                 | select(any(.assets[]?; .name | endswith(".iso")))]
               | sort_by(.published_at) | last | .tag_name // empty')
           if [[ -z "$BASE_RELEASE_TAG" ]]; then

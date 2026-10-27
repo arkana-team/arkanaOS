@@ -46,6 +46,21 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
         self.assertIn(f'echo "output/{MARKER}"', release_assets)
         self.assertIn(MARKER, (REPOSITORY / "RELEASE_TEMPLATE.md").read_text())
 
+    def test_update_base_lookup_paginates_release_history(self) -> None:
+        workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
+        update_step = workflow.split(
+            "      - name: Build signed update package for weekly developer release", 1
+        )[1].split("      - name:", 1)[0]
+
+        self.assertIn(
+            'gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100"',
+            update_step,
+        )
+        self.assertIn("jq -s -r --arg current \"$RELEASE_ID\"", update_step)
+        self.assertIn("              add\n", update_step)
+        self.assertIn("select(.tag_name != $current)", update_step)
+        self.assertIn('endswith(".iso")', update_step)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
