@@ -118,6 +118,10 @@ class DeltaTests(unittest.TestCase):
                     "[Service]\nExecStart=\nExecStart=-/sbin/agetty --autologin root %I\n",
                     encoding="utf-8",
                 )
+            # Keep the fixture's intended target-root modes independent of
+            # the host process umask.
+            for directory in (path for path in target.rglob("*") if path.is_dir()):
+                directory.chmod(0o755)
             ordinary_config = "etc/systemd/system/getty@tty1.service.d/settings.conf"
             (target / ordinary_config).write_text(
                 "[Service]\nRestartSec=5\n", encoding="utf-8"
