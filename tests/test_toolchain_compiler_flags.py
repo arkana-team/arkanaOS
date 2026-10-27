@@ -18,6 +18,12 @@ class ToolchainCompilerFlagTests(unittest.TestCase):
             self.assertIn("-std=gnu++17", value)
             self.assertNotIn("-std=gnu17", value)
 
+    def test_graphite2_uses_a_cpp_language_standard(self):
+        recipe = (REPO_ROOT / "arkanas/07_iso.mk").read_text(encoding="utf-8")
+
+        self.assertIn('CMAKE_CXX_FLAGS="-O2 -std=gnu++17"', recipe)
+        self.assertNotIn('CMAKE_CXX_FLAGS="-O2 -std=gnu17"', recipe)
+
     def test_ninja_bootstrap_does_not_forward_c_only_flags_to_cpp(self):
         recipe = (REPO_ROOT / "arkanas/04_toolchain.mk").read_text(
             encoding="utf-8"
