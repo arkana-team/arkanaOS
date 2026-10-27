@@ -708,7 +708,7 @@ graphite2: download-graphite2 .graphite2-done
 .graphite2-done:
     # Outdated build system, cool.
 	mkdir -p $(GRAPHITE2_PATH)/build && cd $(GRAPHITE2_PATH)/build && sed -i '/Font.h/i #include <cstdint>' ../tests/featuremap/featuremaptest.cpp && \
-	cmake -D CMAKE_POLICY_VERSION_MINIMUM=3.5 -D CMAKE_INSTALL_PREFIX=/usr -D CMAKE_C_FLAGS="-O2 -std=gnu17" -D CMAKE_CXX_FLAGS="-O2 -std=gnu17" .. && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	cmake -D CMAKE_POLICY_VERSION_MINIMUM=3.5 -D CMAKE_INSTALL_PREFIX=/usr -D CMAKE_C_FLAGS="-O2 -std=gnu17" -D CMAKE_CXX_FLAGS="-O2 -std=gnu++17" .. && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .graphite2-done
 
 # Download pixman
