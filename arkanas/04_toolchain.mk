@@ -251,7 +251,8 @@ download-cmake: .cmake-obtained
 cmake: download-cmake .cmake-done
 .cmake-done:
 	cd $(CMAKE_PATH) && sed -i '/"lib64"/s/64//' Modules/GNUInstallDirs.cmake && CFLAGS="-O2 -std=gnu17" CXXFLAGS="-O2 -std=gnu++17" ./bootstrap --parallel=$(THREADS) --prefix=/usr --system-libs --mandir=/share/man --no-system-jsoncpp \
-	--no-system-cppdap --no-system-librhash --docdir=/share/doc/cmake-$(CMAKE_VER).tar.gz && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	--no-system-cppdap --no-system-librhash --docdir=/share/doc/cmake-$(CMAKE_VER).tar.gz \
+	-- -DBUILD_TESTING:BOOL=OFF && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .cmake-done
 
 # Download gc
