@@ -45,9 +45,11 @@ class ToolchainCompilerFlagTests(unittest.TestCase):
             .split("# Download gc", 1)[0]
         )
 
-        self.assertIn("-- -DBUILD_TESTING:BOOL=OFF", cmake_target)
+        bootstrap_command = cmake_target.split("&& $(MAKE)", 1)[0]
+        self.assertIn("./bootstrap", bootstrap_command)
+        self.assertIn("-- -DBUILD_TESTING:BOOL=OFF", bootstrap_command)
         self.assertLess(
-            cmake_target.index("-DBUILD_TESTING:BOOL=OFF"),
+            cmake_target.index("./bootstrap"),
             cmake_target.index("$(MAKE) -j$(THREADS)"),
         )
 
