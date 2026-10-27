@@ -8,20 +8,49 @@ on:
         required: true
         default: nightly
         type: string
+  schedule:
+    - cron: "0 3 * * 1"
 
 concurrency:
   group: run-all-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
+  queue: max
 
 permissions:
   actions: read
   contents: write
 
 jobs:
+  validate-weekly-signing-keys:
+    name: Validate weekly update signing configuration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require the release signing keypair for scheduled builds
+        if: github.event_name == 'schedule'
+        env:
+          ARKUP_UPDATE_SIGNING_KEY_B64: ${{ secrets.ARKUP_UPDATE_SIGNING_KEY_B64 }}
+          ARKUP_UPDATE_PUBLIC_KEY_B64: ${{ secrets.ARKUP_UPDATE_PUBLIC_KEY_B64 }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$ARKUP_UPDATE_SIGNING_KEY_B64" || -z "$ARKUP_UPDATE_PUBLIC_KEY_B64" ]]; then
+            echo "Add repository secrets ARKUP_UPDATE_SIGNING_KEY_B64 and ARKUP_UPDATE_PUBLIC_KEY_B64 before scheduled releases." >&2
+            exit 1
+          fi
+          KEY_DIR=$(mktemp -d)
+          trap 'rm -rf -- "$KEY_DIR"' EXIT
+          umask 077
+          if ! printf '%s' "$ARKUP_UPDATE_SIGNING_KEY_B64" | base64 --decode > "$KEY_DIR/release.key" 2>/dev/null || \
+             ! printf '%s' "$ARKUP_UPDATE_PUBLIC_KEY_B64" | base64 --decode > "$KEY_DIR/release.pub" 2>/dev/null || \
+             [[ ! -s "$KEY_DIR/release.key" || ! -s "$KEY_DIR/release.pub" ]]; then
+            echo "Weekly update signing secrets must be non-empty base64-encoded key files." >&2
+            exit 1
+          fi
+
   stage1:
     uses: ./.github/workflows/01_stage1_base.yml
+    needs: validate-weekly-signing-keys
     with:
-      release_prefix: ${{ inputs.release_prefix }}
+      release_prefix: ${{ inputs.release_prefix || 'nightly' }}
     secrets: inherit
 
   stage2:

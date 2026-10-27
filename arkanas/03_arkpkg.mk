@@ -13,9 +13,13 @@ ARKPKG_PATH = $(SRC_PATH)/arkpkg-$(ARKPKG_VER)
 ARKCFG_URL = https://github.com/arkana-team/arkcfg/archive/refs/heads/main.tar.gz
 ARKCFG_VER = main
 ARKCFG_PATH = $(SRC_PATH)/arkcfg-$(ARKCFG_VER)
+ARKUP_VER = ab6a1b7ee9321587b3ab1d371f56b04362ac35cb
+ARKUP_URL = https://github.com/arkana-team/arkup/archive/$(ARKUP_VER).tar.gz
+ARKUP_SHA256 = 64e3d9a9e259ce4a1094f589cdd61dc3d3540e714cdae8bec27adf3f12fd485a
+ARKUP_PATH = $(SRC_PATH)/arkup-$(ARKUP_VER)
 
 .PHONY: all
-all: arkpkg arkcfg
+all: arkpkg arkcfg arkup
 
 .PHONY: download-arkpkg
 download-arkpkg: .arkpkg-obtained-$(ARKPKG_VER)
@@ -50,3 +54,24 @@ arkcfg: download-arkcfg .arkcfg-done
 	cd $(ARKCFG_PATH) && CARGO_BUILD_JOBS=1 CARGO_INCREMENTAL=0 cargo build --locked --release
 	install -Dm755 $(ARKCFG_PATH)/target/release/arkcfg $(STAGING_PATH)/usr/bin/arkcfg
 	touch .arkcfg-done
+
+.PHONY: download-arkup verify-arkup-source arkup
+download-arkup: verify-arkup-source
+
+$(SRC_PATH)/arkup-$(ARKUP_VER).tar.gz:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O arkup-$(ARKUP_VER).tar.gz.tmp $(ARKUP_URL)
+	cd $(SRC_PATH) && echo '$(ARKUP_SHA256)  arkup-$(ARKUP_VER).tar.gz.tmp' | sha256sum -c -
+	cd $(SRC_PATH) && mv arkup-$(ARKUP_VER).tar.gz.tmp arkup-$(ARKUP_VER).tar.gz
+
+verify-arkup-source: $(SRC_PATH)/arkup-$(ARKUP_VER).tar.gz
+	cd $(SRC_PATH) && echo '$(ARKUP_SHA256)  arkup-$(ARKUP_VER).tar.gz' | sha256sum -c -
+
+arkup: download-arkup $(STAGING_PATH)/usr/bin/arkup
+
+$(STAGING_PATH)/usr/bin/arkup: arkanas/03_arkpkg.mk $(SRC_PATH)/arkup-$(ARKUP_VER).tar.gz
+	cd $(SRC_PATH) && echo '$(ARKUP_SHA256)  arkup-$(ARKUP_VER).tar.gz' | sha256sum -c -
+	rm -rf $(ARKUP_PATH)
+	cd $(SRC_PATH) && tar xf arkup-$(ARKUP_VER).tar.gz
+	test -f $(ARKUP_PATH)/Cargo.toml && test -f $(ARKUP_PATH)/Cargo.lock
+	cd $(ARKUP_PATH) && CARGO_BUILD_JOBS=1 CARGO_INCREMENTAL=0 cargo build --locked --release
+	install -Dm755 $(ARKUP_PATH)/target/release/arkup $(STAGING_PATH)/usr/bin/arkup

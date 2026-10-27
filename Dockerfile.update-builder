@@ -1,0 +1,32 @@
+FROM rust:1.85-slim-bookworm AS arkup-build
+
+# Pin the upstream Arkup revision that supports system-managed release metadata.
+ARG ARKUP_GIT_URL=https://github.com/arkana-team/arkup.git
+ARG ARKUP_GIT_REF=ab6a1b7ee9321587b3ab1d371f56b04362ac35cb
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates git \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN test -n "$ARKUP_GIT_REF" \
+    && git clone --filter=blob:none "$ARKUP_GIT_URL" /src/arkup \
+    && git -C /src/arkup checkout --detach "$ARKUP_GIT_REF" \
+    && test "$(git -C /src/arkup rev-parse HEAD)" = "$ARKUP_GIT_REF"
+
+WORKDIR /src/arkup
+ENV CARGO_BUILD_JOBS=1 CARGO_INCREMENTAL=0
+RUN cargo test --release --locked \
+    && cargo build --release --locked
+
+FROM python:3.11-slim-bookworm AS runtime
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=arkup-build /src/arkup/target/release/arkup /usr/local/bin/arkup
+COPY scripts/build-update-pack.py /usr/local/lib/arkana-update-builder/build-update-pack.py
+RUN chmod 0755 /usr/local/bin/arkup \
+    && chmod 0644 /usr/local/lib/arkana-update-builder/build-update-pack.py
+
+ENTRYPOINT ["python3", "/usr/local/lib/arkana-update-builder/build-update-pack.py"]

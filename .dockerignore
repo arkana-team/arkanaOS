@@ -11,3 +11,11 @@ logs/
 # Keep repository-private contributor guidance out of the builder image.
 AGENTS.md
 **/AGENTS.md
+**/__pycache__/
+**/*.py[cod]
+release-keys/
+**/*.key
+*.aup
+*.aup.sha256
+.env
+.env.*

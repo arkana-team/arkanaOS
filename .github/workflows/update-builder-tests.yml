@@ -1,0 +1,139 @@
+name: Update builder tests
+
+on:
+  pull_request:
+    paths:
+      - "scripts/build-update-pack.py"
+      - "arkanas/03_arkpkg.mk"
+      - "tests/test_update_builder.py"
+      - "tests/test_update_builder_integration.py"
+      - "tests/test_update_builder_pin.py"
+      - "tests/test_arkup_system_install.py"
+      - "tests/test_build_modes.py"
+      - "build.sh"
+      - "build-update.sh"
+      - "Dockerfile.update-builder"
+      - ".dockerignore"
+      - "UPDATE-BUILDER.md"
+      - ".github/workflows/update-builder-tests.yml"
+      - ".github/workflows/00_run_all.yml"
+      - ".github/workflows/04_stage4_iso.yml"
+  push:
+    paths:
+      - "scripts/build-update-pack.py"
+      - "arkanas/03_arkpkg.mk"
+      - "tests/test_update_builder.py"
+      - "tests/test_update_builder_integration.py"
+      - "tests/test_update_builder_pin.py"
+      - "tests/test_arkup_system_install.py"
+      - "tests/test_build_modes.py"
+      - "build.sh"
+      - "build-update.sh"
+      - "Dockerfile.update-builder"
+      - ".dockerignore"
+      - "UPDATE-BUILDER.md"
+      - ".github/workflows/update-builder-tests.yml"
+      - ".github/workflows/00_run_all.yml"
+      - ".github/workflows/04_stage4_iso.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  update-builder:
+    name: Test .aup delta generation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run update-builder tests
+        run: python3 -m unittest discover -s tests -p 'test_update_builder*.py' -v
+
+      - name: Test system updater installation recipe
+        run: python3 -m unittest discover -s tests -p 'test_arkup_system_install.py' -v
+
+      - name: Run arkana-builder mode tests
+        run: python3 -m unittest discover -s tests -p 'test_build_modes.py' -v
+
+  builder-image:
+    name: Build and smoke-test arkana-update-builder
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build update-builder image
+        run: docker build --file Dockerfile.update-builder --tag arkana-update-builder:ci .
+      - name: Verify restricted access to root-owned inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          fixture="$(mktemp -d "$RUNNER_TEMP/arkana-dac.XXXXXX")"
+          cleanup() {
+            if [[ -e "$fixture/inputs/root-owned" ]]; then
+              sudo unlink -- "$fixture/inputs/root-owned"
+            fi
+            if [[ -e "$fixture/inputs/signing-key" ]]; then
+              unlink -- "$fixture/inputs/signing-key"
+            fi
+            if [[ -e "$fixture/output/package" ]]; then
+              unlink -- "$fixture/output/package"
+            fi
+            rmdir -- "$fixture/inputs" "$fixture/output"
+            rmdir -- "$fixture"
+          }
+          trap cleanup EXIT
+          mkdir "$fixture/inputs" "$fixture/output"
+          chmod 0755 "$fixture/inputs"
+          chmod 0700 "$fixture/output"
+          printf 'root-owned input\n' > "$fixture/inputs/root-owned"
+          printf 'private signing key\n' > "$fixture/inputs/signing-key"
+          sudo chown 0:0 "$fixture/inputs/root-owned"
+          sudo chmod 0600 "$fixture/inputs/root-owned"
+          chmod 0600 "$fixture/inputs/signing-key"
+          root_input_before="$(stat -c '%u:%g:%a' "$fixture/inputs/root-owned")"
+          key_before="$(stat -c '%u:%g:%a' "$fixture/inputs/signing-key")"
+          docker_args=(
+            run --rm --network none --read-only
+            --memory 64m --memory-swap 64m --cpus 1
+            --user 0:0 --cap-drop ALL --cap-add DAC_OVERRIDE
+            --security-opt no-new-privileges
+            --mount "type=bind,source=$fixture/inputs,target=/inputs,readonly"
+            --mount "type=bind,source=$fixture/output,target=/output"
+            --entrypoint /bin/sh arkana-update-builder:ci -euc
+            'cat /inputs/root-owned /inputs/signing-key > /output/package; chmod 0644 /output/package'
+          )
+          docker "${docker_args[@]}"
+          [[ "$(cat "$fixture/output/package")" == $'root-owned input\nprivate signing key' ]]
+          [[ "$(stat -c '%u:%g:%a' "$fixture/inputs/root-owned")" == "$root_input_before" ]]
+          [[ "$(stat -c '%u:%g:%a' "$fixture/inputs/signing-key")" == "$key_before" ]]
+          [[ "$(stat -c '%a' "$fixture/output/package")" == 644 ]]
+      - name: Verify restricted offline entrypoint
+        run: >-
+          docker run --rm --network none --read-only
+          --tmpfs /tmp:rw,noexec,nosuid,size=16m
+          --user 1000:1000 --cap-drop ALL
+          --security-opt no-new-privileges
+          arkana-update-builder:ci --help
+
+      - name: Verify signed update integration with pinned arkup
+        env:
+          ARKUP_BIN: /usr/local/bin/arkup
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: >-
+          docker run --rm --network none --read-only
+          --tmpfs /tmp:rw,noexec,nosuid,size=48m,mode=1777
+          --user 1000:1000 --cap-drop ALL
+          --security-opt no-new-privileges
+          --mount type=bind,source=${{ github.workspace }},target=/work,readonly
+          --env ARKUP_BIN --env PYTHONDONTWRITEBYTECODE
+          --entrypoint python3
+          arkana-update-builder:ci
+          /work/tests/test_update_builder_integration.py
