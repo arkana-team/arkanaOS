@@ -150,6 +150,16 @@ jobs:
             -e CCACHE_DIR=/home/builder/.cache/ccache \
             arkana-builder bash -c "sudo --preserve-env make -f arkanas/07_iso.mk"
 
+      - name: Mark ISO as Arkup update-capable
+        run: |
+          set -euo pipefail
+          if [[ ! -x output/iso-root/usr/bin/arkup ]]; then
+            echo "The ISO root does not contain the Arkup update client." >&2
+            exit 1
+          fi
+          printf 'arkup-client=/usr/bin/arkup\n' > output/arkanaOS-update-client.txt
+          chmod 0644 output/arkanaOS-update-client.txt
+
       - name: Generate Release Notes & Tags from Template
         run: |
           BUILD_NUM=$(cat staging/etc/arkana-build-number)
@@ -242,9 +252,10 @@ jobs:
             exit 1
           fi
 
-          BASE_RELEASE_TAG=$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
-            jq -r --arg current "$RELEASE_ID" '
-              [.[] | select(.draft == false) | select(.tag_name != $current)
+          BASE_RELEASE_TAG=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
+            jq -s -r --arg current "$RELEASE_ID" '
+              add
+              | [.[] | select(.draft == false) | select(.tag_name != $current)
                 | select(any(.assets[]?; .name | endswith(".iso")))]
               | sort_by(.published_at) | last | .tag_name // empty')
           if [[ -z "$BASE_RELEASE_TAG" ]]; then
@@ -269,6 +280,10 @@ jobs:
           xorriso -osirrox on -indev "${BASE_ISOS[0]}" \
             -extract /boot/rootfs.sfs "$BASE_SQUASHFS"
           sudo unsquashfs -no-progress -d "$BASE_ROOT" "$BASE_SQUASHFS"
+          if [[ ! -x "$BASE_ROOT/usr/bin/arkup" ]]; then
+            echo "The selected base ISO does not include the Arkup update client; refusing to publish an unusable .aup package." >&2
+            exit 1
+          fi
           if [[ ! -f "$BASE_ROOT/etc/arkana-build-number" || ! -f output/iso-root/etc/arkana-build-number ]]; then
             echo "The base release or new ISO is missing arkanaOS release metadata." >&2
             exit 1
@@ -331,6 +346,7 @@ jobs:
           {
             echo "files<<EOF"
             echo "output/arkana.iso"
+            echo "output/arkanaOS-update-client.txt"
             if [[ "$GITHUB_EVENT_NAME" == schedule ]]; then
               find output/updates -maxdepth 1 -type f \
                 \( -name '*.aup' -o -name '*.aup.sha256' -o -name 'arkanaOS-update-signing.pub' \) \
