@@ -450,9 +450,16 @@ download-git: .git-obtained
 .git-obtained:
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O git-$(GIT_VER).tar.xz $(GIT_URL) && tar xf git-$(GIT_VER).tar.xz
 	touch .git-obtained
+GIT_BUILD_OPTIONS = \
+	prefix=/usr \
+	CURL_CONFIG=$(STAGING_PATH)/usr/bin/curl-config \
+	USE_LIBPCRE2=YesPlease NO_GETTEXT=YesPlease NO_TCLTK=YesPlease \
+	NO_PYTHON=YesPlease NO_RUST=YesPlease \
+	CFLAGS="-O2 -std=gnu17" \
+	LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib"
 git: pkgconf download-git .git-done
 .git-done:
-	cd $(GIT_PATH) && $(MAKE) -j$(THREADS) prefix=/usr CURL_CONFIG=$(STAGING_PATH)/usr/bin/curl-config USE_LIBPCRE2=YesPlease NO_GETTEXT=YesPlease NO_TCLTK=YesPlease NO_PYTHON=YesPlease NO_RUST=YesPlease CFLAGS="-O2 -std=gnu17" LDFLAGS="-L$(STAGING_PATH)/usr/lib -Wl,-rpath-link=$(STAGING_PATH)/usr/lib" all && $(MAKE) prefix=/usr DESTDIR=$(STAGING_PATH) install
+	cd $(GIT_PATH) && $(MAKE) -j$(THREADS) $(GIT_BUILD_OPTIONS) all && $(MAKE) $(GIT_BUILD_OPTIONS) DESTDIR=$(STAGING_PATH) install
 	touch .git-done
 .PHONY: download-m4 m4 download-bison bison download-patch patch download-pkgconf pkgconf download-gdb gdb download-git git
 .PHONY: download-rust rust
