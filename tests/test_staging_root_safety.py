@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 import tempfile
 import unittest
@@ -76,10 +77,21 @@ class StagingRootSafetyTests(unittest.TestCase):
 
     def test_glibc_install_passes_the_target_root_as_install_root(self):
         makefile = (REPO_ROOT / "arkanas/01_base.mk").read_text(encoding="utf-8")
+        lines = makefile.splitlines()
+        target_lines = [
+            index for index, line in enumerate(lines) if line.strip() == ".glibc-done:"
+        ]
+        self.assertEqual(len(target_lines), 1)
+        recipe_lines = []
+        for line in lines[target_lines[0] + 1 :]:
+            if line and not line[0].isspace() and not line.lstrip().startswith("#"):
+                break
+            if not line.lstrip().startswith("#"):
+                recipe_lines.append(line)
         self.assertIn(
             "$(MAKE) DESTDIR=$(STAGING_PATH) "
             "install_root=$(STAGING_PATH) install",
-            makefile,
+            "\n".join(recipe_lines),
         )
 
     def test_iso_ldconfig_runs_only_inside_the_iso_root(self):
@@ -89,10 +101,29 @@ class StagingRootSafetyTests(unittest.TestCase):
         self.assertIn(remove_cache, makefile)
         self.assertIn(target_ldconfig, makefile)
         self.assertLess(makefile.index(remove_cache), makefile.index(target_ldconfig))
+        ldconfig_calls = [
+            line.strip()
+            for line in makefile.splitlines()
+            if not line.lstrip().startswith("#")
+            and re.search(r"\bldconfig(?:\s|$)", line)
+        ]
+        self.assertEqual(ldconfig_calls, [target_ldconfig])
 
     def test_build_container_masks_host_ldconfig(self):
         dockerfile = (REPO_ROOT / "Dockerfile").read_text(encoding="utf-8")
-        self.assertIn("ln -sf /bin/true /sbin/ldconfig", dockerfile)
+        run_commands = [
+            line.strip()
+            for line in dockerfile.splitlines()
+            if line.lstrip().startswith("RUN ")
+        ]
+        self.assertTrue(
+            any(
+                command.startswith(
+                    "RUN sudo ln -sf /bin/true /sbin/ldconfig &&"
+                )
+                for command in run_commands
+            )
+        )
 
 
 if __name__ == "__main__":
