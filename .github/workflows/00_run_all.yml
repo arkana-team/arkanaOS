@@ -35,6 +35,12 @@ jobs:
       weekly_base_build_number: ${{ steps.verify-weekly-base.outputs.build_number }}
       weekly_base_source_sha: ${{ steps.verify-weekly-base.outputs.source_sha }}
     steps:
+      - name: Check out source for weekly release preflight
+        if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1'
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
       - name: Require the release signing keypair for scheduled builds
         if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1'
         env:
@@ -63,12 +69,8 @@ jobs:
               exit 1
             fi
           done
-
-      - name: Check out source for weekly update-base selection
-        if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1'
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: false
+          python3 scripts/verify-update-signing-keypair.py \
+            "$KEY_DIR/release.key" "$KEY_DIR/release.pub"
 
       - name: Require a published system-update-compatible ISO as the update base
         id: verify-weekly-base

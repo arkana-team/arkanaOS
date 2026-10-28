@@ -15,9 +15,11 @@ output
 # Scratch / debug scripts
 *.py
 !scripts/build-update-pack.py
+!scripts/verify-update-signing-keypair.py
 !tests/test_iso_artifact_provenance.py
 !tests/test_ca_bundle_download.py
 !tests/test_update_builder.py
+!tests/test_update_signing_keypair.py
 !tests/test_build_modes.py
 !tests/test_workflow_concurrency.py
 !tests/test_update_builder_pin.py

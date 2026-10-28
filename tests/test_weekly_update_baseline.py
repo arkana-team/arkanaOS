@@ -35,6 +35,9 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
         self.assertIn('base64 --decode "$key_file"', preflight)
         self.assertIn('"$(wc -c < "$raw_key")" -ne 32', preflight)
         self.assertIn("must each decode to 32 bytes", preflight)
+        checker = "scripts/verify-update-signing-keypair.py"
+        self.assertIn(checker, preflight)
+        self.assertLess(preflight.index("actions/checkout@v4"), preflight.index(checker))
 
     def test_iso_release_marker_is_created_only_when_arkup_is_installed(self) -> None:
         workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
