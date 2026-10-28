@@ -1,12 +1,22 @@
-from pathlib import Path
 import re
 import unittest
-
+from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 class ToolchainCompilerFlagTests(unittest.TestCase):
+    def test_ksh93_passes_a_single_compiler_name_to_its_package_builder(self):
+        recipe = (REPO_ROOT / "arkanas/05_graphics.mk").read_text(
+            encoding="utf-8"
+        )
+        ksh_target = (
+            recipe.split("ksh93: .ksh93-done", 1)[1]
+            .split("# Install pure-Python desktop integration dependencies", 1)[0]
+        )
+
+        self.assertIn("AST_NO_DYLIB=y bin/package CC=gcc make", ksh_target)
+
     def test_graphics_cpp_recipes_use_a_cpp_language_standard(self):
         recipe = (REPO_ROOT / "arkanas/06_graphics_ext.mk").read_text(
             encoding="utf-8"
