@@ -8,6 +8,7 @@ on:
       - ".github/workflows/04_stage4_iso.yml"
       - "RELEASE_TEMPLATE.md"
       - "tests/test_release_metadata.py"
+      - "scripts/select-weekly-update-base.py"
       - ".github/workflows/release-metadata-tests.yml"
   push:
     paths:
@@ -16,6 +17,7 @@ on:
       - ".github/workflows/04_stage4_iso.yml"
       - "RELEASE_TEMPLATE.md"
       - "tests/test_release_metadata.py"
+      - "scripts/select-weekly-update-base.py"
       - ".github/workflows/release-metadata-tests.yml"
 
 permissions:
