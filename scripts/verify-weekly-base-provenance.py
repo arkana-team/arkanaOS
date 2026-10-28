@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify that a weekly update base is a successful, retained Actions artifact."""
+"""Verify an update base is a successful, retained Actions artifact."""
 
 from __future__ import annotations
 

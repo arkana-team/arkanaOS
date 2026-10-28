@@ -1,4 +1,4 @@
-"""Choose the prior base-bound weekly release, with an ISO bootstrap fallback."""
+"""Choose the prior update-capable release, with an ISO bootstrap fallback."""
 
 from __future__ import annotations
 
@@ -43,15 +43,17 @@ def select_base(releases: list[Any], excluded_tags: set[str]) -> str:
         for release in releases
         if isinstance(release, dict) and is_published(release, excluded_tags)
     ]
-    weekly = [
+    update_releases = [
         release
         for release in published
         if any(name.endswith(".aup") for name in release_assets(release))
         and any(name.endswith(".iso") for name in release_assets(release))
         and UPDATE_CLIENT_ASSET in release_assets(release)
     ]
-    if weekly:
-        return max(weekly, key=lambda release: release["published_at"])["tag_name"]
+    if update_releases:
+        return max(update_releases, key=lambda release: release["published_at"])[
+            "tag_name"
+        ]
 
     bootstrap = [
         release
@@ -62,7 +64,7 @@ def select_base(releases: list[Any], excluded_tags: set[str]) -> str:
     if bootstrap:
         return max(bootstrap, key=lambda release: release["published_at"])["tag_name"]
 
-    raise ValueError("no system-update-capable weekly release or ISO is available")
+    raise ValueError("no system-update-capable update release or ISO is available")
 
 
 def main() -> int:

@@ -362,7 +362,7 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
         ]
         result = self.select(releases)
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("no system-update-capable weekly release or ISO", result.stderr)
+        self.assertIn("no system-update-capable update release or ISO", result.stderr)
 
     def test_unsupported_tags_are_not_used_as_api_paths(self) -> None:
         releases = [
@@ -380,7 +380,7 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
     def test_no_base_fails_clearly(self) -> None:
         result = self.select([])
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("no system-update-capable weekly release or ISO", result.stderr)
+        self.assertIn("no system-update-capable update release or ISO", result.stderr)
 
 
 class ScheduledReleaseWorkflowTests(unittest.TestCase):
@@ -403,24 +403,20 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
             "release_prefix: ${{ inputs.release_prefix || 'nightly' }}", workflow
         )
 
-    def test_only_the_monday_weekly_schedule_builds_and_publishes_updates(self) -> None:
-        """Keep daily nightlies ISO-only and reserve signed updates for Mondays."""
-        weekly_condition = (
-            "if: github.event_name == 'schedule' "
-            "&& github.event.schedule == '0 3 * * 1'"
-        )
+    def test_all_scheduled_runs_build_and_publish_updates(self) -> None:
+        """Publish both ISO and signed update packages on nightlies and Mondays."""
+        scheduled_condition = "if: github.event_name == 'schedule'"
         run_all = RUN_ALL_WORKFLOW.read_text(encoding="utf-8")
         iso = ISO_WORKFLOW.read_text(encoding="utf-8")
-        self.assertEqual(run_all.count(weekly_condition), 3)
-        self.assertEqual(iso.count(weekly_condition), 3)
+        self.assertEqual(run_all.count(scheduled_condition), 3)
+        self.assertEqual(iso.count(scheduled_condition), 3)
         self.assertIn(
-            "WEEKLY_UPDATE_RELEASE: ${{ github.event_name == 'schedule' "
-            "&& github.event.schedule == '0 3 * * 1' }}",
+            "SCHEDULED_UPDATE_RELEASE: ${{ github.event_name == 'schedule' }}",
             iso,
         )
-        self.assertIn('if [[ "$WEEKLY_UPDATE_RELEASE" == true ]]; then', iso)
+        self.assertIn('if [[ "$SCHEDULED_UPDATE_RELEASE" == true ]]; then', iso)
         self.assertIn("python3 scripts/select-weekly-update-base.py", run_all)
-        self.assertIn("artifact-ids: ${{ inputs.weekly_base_artifact_id }}", iso)
+        self.assertIn("artifact-ids: ${{ inputs.update_base_artifact_id }}", iso)
         self.assertNotIn("gh release download", iso)
         self.assertIn("target_commitish: ${{ steps.source.outputs.sha }}", iso)
         self.assertNotIn("sort_by(.published_at) | last", run_all + iso)
@@ -428,7 +424,10 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
     def test_release_notes_document_nightly_and_weekly_assets(self) -> None:
         """Keep scheduled assets clear while reusing the existing release template."""
         template = RELEASE_TEMPLATE.read_text(encoding="utf-8")
-        self.assertIn("Scheduled nightly releases include the bootable ISO.", template)
+        self.assertIn(
+            "Scheduled nightly releases and the Monday weekly developer release include the bootable ISO",
+            template,
+        )
         self.assertIn("Monday weekly developer release", template)
         self.assertIn("signed arkup `.aup` update package", template)
         self.assertIn("# GitHub Generated release notes", template)

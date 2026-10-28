@@ -66,18 +66,23 @@ option required to mark release metadata as system-managed. Set
 commit. Rootless Podman runs use `keep-id` so the unprivileged container can read
 private input trees and signing keys owned by the invoking account.
 
-## Weekly developer releases
+## Scheduled developer releases
 
-The scheduled GitHub Actions run starts every Monday at 03:00 UTC and uses the
-same staged ISO pipeline and release-note template as manual nightly builds.
-It builds an update delta from the latest published arkanaOS ISO, then attaches
-the ISO, `.aup`, checksum, and public verification key to the release. The
-update is based on that prior release; users on older builds may need to
-install intervening updates first. The release includes the public key so it
-can be verified; installations must already trust that key before applying
+GitHub Actions publishes a scheduled release every day at 03:00 UTC. Sunday
+and Tuesday through Saturday are nightly builds; Monday is the weekly developer
+release. Each scheduled release uses the same staged ISO pipeline and release
+note template, and attaches both the ISO and a signed `.aup` delta, checksum,
+and public verification key. The update is based on the latest compatible
+published release; users on older builds may need to install intervening
+updates first. Installations must trust the published key before applying
 updates.
 
-Before the first scheduled run, configure repository secrets
+Before the first scheduled update release, run `Run All Pipeline Stages` once
+with `workflow_dispatch` on the default branch. That bootstrap release includes
+the ISO and provenance marker needed to validate the base artifact; it does not
+include an update package. Scheduled releases then publish both assets.
+
+Before scheduled runs, configure organization or repository Actions secrets
 `ARKUP_UPDATE_SIGNING_KEY_B64` and `ARKUP_UPDATE_PUBLIC_KEY_B64` with the
 base64-encoded keypair files. The workflow checks that both exist before it
 starts the multi-hour build and refuses to publish if signing or verification

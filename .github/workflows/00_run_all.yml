@@ -9,9 +9,9 @@ on:
         default: nightly
         type: string
   schedule:
-    # Publish a nightly ISO Sunday and Tuesday through Saturday.
+    # Publish a nightly ISO and signed update Sunday and Tuesday through Saturday.
     - cron: "0 3 * * 0,2-6"
-    # Monday is the weekly developer release and includes the signed .aup.
+    # Monday is the weekly developer release; it also includes the ISO and .aup.
     - cron: "0 3 * * 1"
 
 concurrency:
@@ -24,25 +24,25 @@ permissions:
   contents: write
 
 jobs:
-  validate-weekly-signing-keys:
-    name: Validate weekly update release prerequisites
+  validate-scheduled-update-prerequisites:
+    name: Validate scheduled update release prerequisites
     runs-on: ubuntu-latest
     outputs:
-      weekly_base_release_tag: ${{ steps.verify-weekly-base.outputs.release_tag }}
-      weekly_base_run_id: ${{ steps.verify-weekly-base.outputs.run_id }}
-      weekly_base_artifact_id: ${{ steps.verify-weekly-base.outputs.artifact_id }}
-      weekly_base_artifact_name: ${{ steps.verify-weekly-base.outputs.artifact_name }}
-      weekly_base_build_number: ${{ steps.verify-weekly-base.outputs.build_number }}
-      weekly_base_source_sha: ${{ steps.verify-weekly-base.outputs.source_sha }}
+      update_base_release_tag: ${{ steps.verify-update-base.outputs.release_tag }}
+      update_base_run_id: ${{ steps.verify-update-base.outputs.run_id }}
+      update_base_artifact_id: ${{ steps.verify-update-base.outputs.artifact_id }}
+      update_base_artifact_name: ${{ steps.verify-update-base.outputs.artifact_name }}
+      update_base_build_number: ${{ steps.verify-update-base.outputs.build_number }}
+      update_base_source_sha: ${{ steps.verify-update-base.outputs.source_sha }}
     steps:
-      - name: Check out source for weekly release preflight
-        if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1'
+      - name: Check out source for scheduled release preflight
+        if: github.event_name == 'schedule'
         uses: actions/checkout@v4
         with:
           persist-credentials: false
 
       - name: Require the release signing keypair for scheduled builds
-        if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1'
+        if: github.event_name == 'schedule'
         env:
           ARKUP_UPDATE_SIGNING_KEY_B64: ${{ secrets.ARKUP_UPDATE_SIGNING_KEY_B64 }}
           ARKUP_UPDATE_PUBLIC_KEY_B64: ${{ secrets.ARKUP_UPDATE_PUBLIC_KEY_B64 }}
@@ -58,14 +58,14 @@ jobs:
           if ! printf '%s' "$ARKUP_UPDATE_SIGNING_KEY_B64" | base64 --decode > "$KEY_DIR/release.key" 2>/dev/null || \
              ! printf '%s' "$ARKUP_UPDATE_PUBLIC_KEY_B64" | base64 --decode > "$KEY_DIR/release.pub" 2>/dev/null || \
              [[ ! -s "$KEY_DIR/release.key" || ! -s "$KEY_DIR/release.pub" ]]; then
-            echo "Weekly update signing secrets must be non-empty base64-encoded key files." >&2
+            echo "Update signing secrets must be non-empty base64-encoded key files." >&2
             exit 1
           fi
           for key_file in "$KEY_DIR/release.key" "$KEY_DIR/release.pub"; do
             raw_key="$key_file.raw"
             if ! base64 --decode "$key_file" > "$raw_key" 2>/dev/null || \
                [[ "$(wc -c < "$raw_key")" -ne 32 ]]; then
-              echo "Weekly arkup signing and public key files must each decode to 32 bytes." >&2
+              echo "arkup signing and public key files must each decode to 32 bytes." >&2
               exit 1
             fi
           done
@@ -73,8 +73,8 @@ jobs:
             "$KEY_DIR/release.key" "$KEY_DIR/release.pub"
 
       - name: Require a published system-update-compatible ISO as the update base
-        id: verify-weekly-base
-        if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1'
+        id: verify-update-base
+        if: github.event_name == 'schedule'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
@@ -88,7 +88,7 @@ jobs:
             exit 1
           fi
 
-          VERIFY_DIR=$(mktemp -d "$RUNNER_TEMP/arkana-weekly-base.XXXXXX")
+          VERIFY_DIR=$(mktemp -d "$RUNNER_TEMP/arkana-update-base.XXXXXX")
           trap 'rm -rf -- "$VERIFY_DIR"' EXIT
           RELEASE_JSON="$VERIFY_DIR/release.json"
           MARKER_FILE="$VERIFY_DIR/system-update-marker.txt"
@@ -139,7 +139,7 @@ jobs:
 
   stage1:
     uses: ./.github/workflows/01_stage1_base.yml
-    needs: validate-weekly-signing-keys
+    needs: validate-scheduled-update-prerequisites
     with:
       release_prefix: ${{ inputs.release_prefix || 'nightly' }}
     secrets: inherit
@@ -155,13 +155,13 @@ jobs:
     secrets: inherit
 
   stage4:
-    needs: [stage3, validate-weekly-signing-keys]
+    needs: [stage3, validate-scheduled-update-prerequisites]
     uses: ./.github/workflows/04_stage4_iso.yml
     with:
-      weekly_base_release_tag: ${{ needs.validate-weekly-signing-keys.outputs.weekly_base_release_tag }}
-      weekly_base_run_id: ${{ needs.validate-weekly-signing-keys.outputs.weekly_base_run_id }}
-      weekly_base_artifact_id: ${{ needs.validate-weekly-signing-keys.outputs.weekly_base_artifact_id }}
-      weekly_base_artifact_name: ${{ needs.validate-weekly-signing-keys.outputs.weekly_base_artifact_name }}
-      weekly_base_build_number: ${{ needs.validate-weekly-signing-keys.outputs.weekly_base_build_number }}
-      weekly_base_source_sha: ${{ needs.validate-weekly-signing-keys.outputs.weekly_base_source_sha }}
+      update_base_release_tag: ${{ needs.validate-scheduled-update-prerequisites.outputs.update_base_release_tag }}
+      update_base_run_id: ${{ needs.validate-scheduled-update-prerequisites.outputs.update_base_run_id }}
+      update_base_artifact_id: ${{ needs.validate-scheduled-update-prerequisites.outputs.update_base_artifact_id }}
+      update_base_artifact_name: ${{ needs.validate-scheduled-update-prerequisites.outputs.update_base_artifact_name }}
+      update_base_build_number: ${{ needs.validate-scheduled-update-prerequisites.outputs.update_base_build_number }}
+      update_base_source_sha: ${{ needs.validate-scheduled-update-prerequisites.outputs.update_base_source_sha }}
     secrets: inherit

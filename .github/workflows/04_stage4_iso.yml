@@ -9,22 +9,22 @@ on:
         type: string
   workflow_call:
     inputs:
-      weekly_base_release_tag:
+      update_base_release_tag:
         required: false
         type: string
-      weekly_base_run_id:
+      update_base_run_id:
         required: false
         type: string
-      weekly_base_artifact_id:
+      update_base_artifact_id:
         required: false
         type: string
-      weekly_base_artifact_name:
+      update_base_artifact_name:
         required: false
         type: string
-      weekly_base_build_number:
+      update_base_build_number:
         required: false
         type: string
-      weekly_base_source_sha:
+      update_base_source_sha:
         required: false
         type: string
 
@@ -198,7 +198,7 @@ jobs:
                 "$GITHUB_WORKFLOW_REF" == "$GITHUB_REPOSITORY/.github/workflows/00_run_all.yml@$GITHUB_REF" ]]; then
             if ! [[ "$SOURCE_RUN_ID" =~ ^[1-9][0-9]*$ && "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ && \
                   "$(cat staging/etc/arkana-build-number)" =~ ^[0-9]+$ ]]; then
-              echo "The source run or build metadata is malformed; refusing to mark this ISO as a weekly base." >&2
+              echo "The source run or build metadata is malformed; refusing to mark this ISO as an update base." >&2
               exit 1
             fi
             printf 'arkup-client=/usr/bin/arkup\nbase-sequence=1\nsystem-update=1\nsource-run-id=%s\nsource-sha=%s\nbuild-number=%s\n' \
@@ -290,47 +290,47 @@ jobs:
             echo "RELEASE_PRERELEASE=$RELEASE_PRERELEASE"
           } >> "$GITHUB_ENV"
 
-      - name: Download verified weekly base ISO artifact
-        if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1'
+      - name: Download verified update base ISO artifact
+        if: github.event_name == 'schedule'
         uses: actions/download-artifact@v8
         with:
-          artifact-ids: ${{ inputs.weekly_base_artifact_id }}
+          artifact-ids: ${{ inputs.update_base_artifact_id }}
           repository: ${{ github.repository }}
-          run-id: ${{ inputs.weekly_base_run_id }}
+          run-id: ${{ inputs.update_base_run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: ${{ runner.temp }}/arkana-base-artifact
           digest-mismatch: error
 
-      - name: Build signed update package for weekly developer release
-        if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1'
+      - name: Build signed update package for scheduled developer release
+        if: github.event_name == 'schedule'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ARKUP_UPDATE_SIGNING_KEY_B64: ${{ secrets.ARKUP_UPDATE_SIGNING_KEY_B64 }}
           ARKUP_UPDATE_PUBLIC_KEY_B64: ${{ secrets.ARKUP_UPDATE_PUBLIC_KEY_B64 }}
-          WEEKLY_BASE_RELEASE_TAG: ${{ inputs.weekly_base_release_tag }}
-          WEEKLY_BASE_RUN_ID: ${{ inputs.weekly_base_run_id }}
-          WEEKLY_BASE_ARTIFACT_ID: ${{ inputs.weekly_base_artifact_id }}
-          WEEKLY_BASE_ARTIFACT_NAME: ${{ inputs.weekly_base_artifact_name }}
-          WEEKLY_BASE_BUILD_NUMBER: ${{ inputs.weekly_base_build_number }}
-          WEEKLY_BASE_SOURCE_SHA: ${{ inputs.weekly_base_source_sha }}
+          UPDATE_BASE_RELEASE_TAG: ${{ inputs.update_base_release_tag }}
+          UPDATE_BASE_RUN_ID: ${{ inputs.update_base_run_id }}
+          UPDATE_BASE_ARTIFACT_ID: ${{ inputs.update_base_artifact_id }}
+          UPDATE_BASE_ARTIFACT_NAME: ${{ inputs.update_base_artifact_name }}
+          UPDATE_BASE_BUILD_NUMBER: ${{ inputs.update_base_build_number }}
+          UPDATE_BASE_SOURCE_SHA: ${{ inputs.update_base_source_sha }}
         run: |
           set -euo pipefail
           if [[ -z "$ARKUP_UPDATE_SIGNING_KEY_B64" || -z "$ARKUP_UPDATE_PUBLIC_KEY_B64" ]]; then
-            echo "Weekly update signing secrets are required; refusing to publish an unsigned or incomplete release." >&2
+            echo "Scheduled update signing secrets are required; refusing to publish an unsigned or incomplete release." >&2
             exit 1
           fi
 
-          if ! [[ "$WEEKLY_BASE_RELEASE_TAG" =~ ^(nightly-[0-9]+|v[1-9][0-9]*\.0-(alpha[1-9][0-9]*|beta[1-9][0-9]*|build)-[0-9]+)$ && \
-                "$WEEKLY_BASE_RUN_ID" =~ ^[1-9][0-9]*$ && \
-                "$WEEKLY_BASE_ARTIFACT_ID" =~ ^[1-9][0-9]*$ && \
-                "$WEEKLY_BASE_BUILD_NUMBER" =~ ^[0-9]+$ && \
-                "$WEEKLY_BASE_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "Weekly base provenance inputs are missing or invalid." >&2
+          if ! [[ "$UPDATE_BASE_RELEASE_TAG" =~ ^(nightly-[0-9]+|v[1-9][0-9]*\.0-(alpha[1-9][0-9]*|beta[1-9][0-9]*|build)-[0-9]+)$ && \
+                "$UPDATE_BASE_RUN_ID" =~ ^[1-9][0-9]*$ && \
+                "$UPDATE_BASE_ARTIFACT_ID" =~ ^[1-9][0-9]*$ && \
+                "$UPDATE_BASE_BUILD_NUMBER" =~ ^[0-9]+$ && \
+                "$UPDATE_BASE_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Update base provenance inputs are missing or invalid." >&2
             exit 1
           fi
-          EXPECTED_ARTIFACT_NAME="arkanaOS-${WEEKLY_BASE_RELEASE_TAG#v}-iso"
-          if [[ "$WEEKLY_BASE_ARTIFACT_NAME" != "$EXPECTED_ARTIFACT_NAME" ]]; then
-            echo "The verified weekly base artifact name does not match its release tag." >&2
+          EXPECTED_ARTIFACT_NAME="arkanaOS-${UPDATE_BASE_RELEASE_TAG#v}-iso"
+          if [[ "$UPDATE_BASE_ARTIFACT_NAME" != "$EXPECTED_ARTIFACT_NAME" ]]; then
+            echo "The verified update base artifact name does not match its release tag." >&2
             exit 1
           fi
 
@@ -339,15 +339,15 @@ jobs:
           BASE_MARKER="$BASE_ARTIFACT_DIR/arkanaOS-update-client-system-update.txt"
           RELEASE_MARKER="$RUNNER_TEMP/arkana-base-release-marker.txt"
           if [[ ! -f "$BASE_ISO" || -L "$BASE_ISO" || ! -f "$BASE_MARKER" || -L "$BASE_MARKER" ]]; then
-            echo "The verified weekly base artifact is missing its ISO or provenance marker." >&2
+            echo "The verified update base artifact is missing its ISO or provenance marker." >&2
             exit 1
           fi
 
           RELEASE_JSON="$RUNNER_TEMP/arkana-base-release.json"
-          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$WEEKLY_BASE_RELEASE_TAG" > "$RELEASE_JSON"
-          TAG_SHA=$(gh api "repos/$GITHUB_REPOSITORY/commits/$WEEKLY_BASE_RELEASE_TAG" --jq .sha)
-          if [[ "$TAG_SHA" != "$WEEKLY_BASE_SOURCE_SHA" ]]; then
-            echo "The weekly base release tag changed after provenance validation." >&2
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$UPDATE_BASE_RELEASE_TAG" > "$RELEASE_JSON"
+          TAG_SHA=$(gh api "repos/$GITHUB_REPOSITORY/commits/$UPDATE_BASE_RELEASE_TAG" --jq .sha)
+          if [[ "$TAG_SHA" != "$UPDATE_BASE_SOURCE_SHA" ]]; then
+            echo "The update base release tag changed after provenance validation." >&2
             exit 1
           fi
           MARKER_ASSET=$(jq -cer '
@@ -375,8 +375,8 @@ jobs:
           unsquashfs -no-progress -processors 1 -d "$BASE_ROOT" "$BASE_SQUASHFS"
           if [[ -L "$BASE_ROOT/etc" || -L "$BASE_ROOT/etc/arkana-build-number" || \
                 ! -f "$BASE_ROOT/etc/arkana-build-number" || \
-                "$(cat "$BASE_ROOT/etc/arkana-build-number")" != "$WEEKLY_BASE_BUILD_NUMBER" ]]; then
-            echo "The weekly base ISO build number does not match its verified release metadata." >&2
+                "$(cat "$BASE_ROOT/etc/arkana-build-number")" != "$UPDATE_BASE_BUILD_NUMBER" ]]; then
+            echo "The update base ISO build number does not match its verified release metadata." >&2
             exit 1
           fi
           if [[ -L "$BASE_ROOT/usr" || -L "$BASE_ROOT/usr/bin" || \
@@ -409,16 +409,16 @@ jobs:
             --signing-key "$KEY_DIR/release.key" \
             --public-key "$KEY_DIR/release.pub" \
             --output-dir "$PWD/output/updates" \
-            --description "Weekly arkanaOS developer update based on $WEEKLY_BASE_RELEASE_TAG"
+            --description "Scheduled arkanaOS developer update based on $UPDATE_BASE_RELEASE_TAG"
 
           UPDATE_PACKAGE=$(find output/updates -maxdepth 1 -type f -name '*.aup' -print -quit)
           if [[ -z "$UPDATE_PACKAGE" ]]; then
-            echo "The weekly update builder did not produce a .aup package." >&2
+            echo "The scheduled update builder did not produce a .aup package." >&2
             exit 1
           fi
           cp "$KEY_DIR/release.pub" output/updates/arkanaOS-update-signing.pub
           chmod 0644 output/updates/arkanaOS-update-signing.pub
-          echo "Weekly update package built from $WEEKLY_BASE_RELEASE_TAG: $UPDATE_PACKAGE"
+          echo "Scheduled update package built from $UPDATE_BASE_RELEASE_TAG: $UPDATE_PACKAGE"
 
       - name: Upload Verified arkanaOS ISO Base Artifact
         if: steps.mark-update-capability.outputs.system_update_capable == 'true'
@@ -441,7 +441,7 @@ jobs:
           retention-days: 14
 
       - name: Upload Signed arkanaOS Update Artifact
-        if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1'
+        if: github.event_name == 'schedule'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.RELEASE_ARTIFACT_NAME }}-update
@@ -455,7 +455,7 @@ jobs:
       - name: Select release assets
         id: release-assets
         env:
-          WEEKLY_UPDATE_RELEASE: ${{ github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1' }}
+          SCHEDULED_UPDATE_RELEASE: ${{ github.event_name == 'schedule' }}
         run: |
           set -euo pipefail
           {
@@ -465,7 +465,7 @@ jobs:
             if [[ -f output/arkanaOS-update-client-system-update.txt ]]; then
               echo "output/arkanaOS-update-client-system-update.txt"
             fi
-            if [[ "$WEEKLY_UPDATE_RELEASE" == true ]]; then
+            if [[ "$SCHEDULED_UPDATE_RELEASE" == true ]]; then
               find output/updates -maxdepth 1 -type f \
                 \( -name '*.aup' -o -name '*.aup.sha256' -o -name 'arkanaOS-update-signing.pub' \) \
                 -print | sort
