@@ -82,6 +82,8 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
             "      - name: Download verified weekly base ISO artifact", 1
         )[1].split("      - name:", 1)[0]
         self.assertIn("artifact-ids: ${{ inputs.weekly_base_artifact_id }}", download_step)
+        self.assertIn("uses: actions/download-artifact@v8", download_step)
+        self.assertIn("digest-mismatch: error", download_step)
         self.assertIn("run-id: ${{ inputs.weekly_base_run_id }}", download_step)
         self.assertIn("repository: ${{ github.repository }}", download_step)
         self.assertNotIn("gh release download", workflow)

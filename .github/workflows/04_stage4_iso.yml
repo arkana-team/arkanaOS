@@ -292,13 +292,14 @@ jobs:
 
       - name: Download verified weekly base ISO artifact
         if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           artifact-ids: ${{ inputs.weekly_base_artifact_id }}
           repository: ${{ github.repository }}
           run-id: ${{ inputs.weekly_base_run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: ${{ runner.temp }}/arkana-base-artifact
+          digest-mismatch: error
 
       - name: Build signed update package for weekly developer release
         if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1'
