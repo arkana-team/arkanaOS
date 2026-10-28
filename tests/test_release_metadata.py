@@ -296,7 +296,7 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
             check=False,
         )
 
-    def test_latest_weekly_release_wins_over_newer_nightly_iso(self) -> None:
+    def test_latest_scheduled_update_release_wins_over_older_weekly(self) -> None:
         releases = [
             self.release(
                 "weekly-230",
@@ -309,6 +309,7 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
                 "nightly-233",
                 "2026-10-25T03:00:00Z",
                 "arkana.iso",
+                "arkanaos-nightly-update.aup",
                 "arkanaOS-update-client-system-update.txt",
             ),
             self.release(
@@ -328,7 +329,7 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
         ]
         result = self.select(releases)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout.strip(), "weekly-231")
+        self.assertEqual(result.stdout.strip(), "nightly-233")
 
     def test_weekly_without_arkup_marker_is_skipped(self) -> None:
         releases = [
@@ -369,7 +370,7 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.strip(), "nightly-233")
 
-    def test_build_excludes_current_tag_and_uses_previous_weekly(self) -> None:
+    def test_build_excludes_current_tag_and_uses_previous_scheduled_update(self) -> None:
         releases = [
             self.release("nightly-231", "2026-10-19T03:00:00Z", "arkana.iso", "update.aup", "arkanaOS-update-client-system-update.txt"),
             self.release("nightly-232", "2026-10-26T03:00:00Z", "arkana.iso", "update.aup", "arkanaOS-update-client-system-update.txt"),
