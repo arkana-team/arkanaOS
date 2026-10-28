@@ -7,7 +7,7 @@ import json
 import sys
 from typing import Any
 
-UPDATE_CLIENT_ASSET = "arkanaOS-update-client-base-sequence.txt"
+UPDATE_CLIENT_ASSET = "arkanaOS-update-client-system-update.txt"
 
 
 def release_assets(release: dict[str, Any]) -> set[str]:
@@ -58,7 +58,7 @@ def select_base(releases: list[Any], excluded_tags: set[str]) -> str:
     if bootstrap:
         return max(bootstrap, key=lambda release: release["published_at"])["tag_name"]
 
-    raise ValueError("no base-sequence-capable weekly release or ISO is available")
+    raise ValueError("no system-update-capable weekly release or ISO is available")
 
 
 def main() -> int:

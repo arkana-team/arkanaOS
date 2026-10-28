@@ -283,6 +283,7 @@ class PackBuildTests(unittest.TestCase):
             self.assertEqual(pack[pack.index("--sequence") + 1], "11")
             self.assertIn("--base-sequence", pack)
             self.assertEqual(pack[pack.index("--base-sequence") + 1], "10")
+            self.assertIn("--system-update", pack)
             self.assertIn("--delete", pack)
             self.assertIn("usr/bin/retired", pack)
             for path in set(builder.SYSTEM_METADATA) - {"etc/arkana-release-prerelease"}:

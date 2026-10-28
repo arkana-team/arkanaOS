@@ -438,6 +438,7 @@ def build_update(
             str(target_release.build),
             "--base-sequence",
             str(base_release.build),
+            "--system-update",
             "--arch",
             architecture,
             "--description",
