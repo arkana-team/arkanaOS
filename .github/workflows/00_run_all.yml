@@ -57,6 +57,10 @@ jobs:
             fi
           done
 
+      - name: Check out source for weekly update-base selection
+        if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1'
+        uses: actions/checkout@v4
+
       - name: Require a published Arkup-capable ISO as the update base
         if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1'
         env:
@@ -64,22 +68,17 @@ jobs:
         run: |
           set -euo pipefail
           BASE_RELEASE_TAG=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
-            jq -s -r '
-              add
-              | [.[] | select(.draft == false and
-                  any(.assets[]?; .name | endswith(".iso")))]
-              | sort_by(.published_at)
-              | last
-              | .tag_name // empty')
+            jq -s 'add' |
+            python3 scripts/select-weekly-update-base.py)
           if [[ -z "$BASE_RELEASE_TAG" ]]; then
-            echo "No published arkanaOS ISO release is available as the update base." >&2
+            echo "No published weekly update release or Arkup-capable ISO is available as the update base." >&2
             exit 1
           fi
 
           HAS_ARKUP_CLIENT=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$BASE_RELEASE_TAG" \
             --jq 'any(.assets[]?; .name == "arkanaOS-update-client.txt")')
           if [[ "$HAS_ARKUP_CLIENT" != true ]]; then
-            echo "The latest ISO release $BASE_RELEASE_TAG predates the Arkup client. Run workflow_dispatch once to publish an Arkup-capable ISO before scheduled .aup releases." >&2
+            echo "The selected update base $BASE_RELEASE_TAG predates the Arkup client. Run workflow_dispatch once to publish an Arkup-capable ISO before scheduled .aup releases." >&2
             exit 1
           fi
 
