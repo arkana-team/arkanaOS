@@ -19,7 +19,7 @@ MAKEFILES = [
 
 
 def shell_tokens(line):
-    return set(shlex.split(line.rstrip().removesuffix("\\"), comments=True))
+    return shlex.split(line.rstrip().removesuffix("\\"), comments=True)
 
 
 def ldconfig_command_lines(lines):
@@ -106,29 +106,33 @@ class StagingRootSafetyTests(unittest.TestCase):
                 break
             if not line.lstrip().startswith("#"):
                 recipe_lines.append(line)
-        required_tokens = {
+        required_command = (
             "$(MAKE)",
             "DESTDIR=$(STAGING_PATH)",
             "install_root=$(STAGING_PATH)",
             "install",
-        }
+        )
         active_commands = [
             shell_tokens(line)
             for line in recipe_lines
             if line.strip()
         ]
         self.assertTrue(
-            any(required_tokens.issubset(tokens) for tokens in active_commands),
+            any(
+                tokens[: len(required_command)] == list(required_command)
+                for tokens in active_commands
+            ),
             "glibc install command must actively set DESTDIR and install_root",
         )
-        self.assertFalse(
-            required_tokens.issubset(
-                shell_tokens(
-                    "\t# $(MAKE) DESTDIR=$(STAGING_PATH) "
-                    "install_root=$(STAGING_PATH) install"
-                )
-            ),
-            "shell comments must not satisfy the active install check",
+        commented_install = shell_tokens(
+            "\t$(MAKE) DESTDIR=$(STAGING_PATH) install "
+            "# was: $(MAKE) DESTDIR=$(STAGING_PATH) "
+            "install_root=$(STAGING_PATH) install"
+        )
+        self.assertNotEqual(
+            commented_install[: len(required_command)],
+            list(required_command),
+            "an inline shell comment must not satisfy the active install check",
         )
 
     def test_iso_ldconfig_runs_only_inside_the_iso_root(self):
