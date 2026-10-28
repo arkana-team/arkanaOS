@@ -91,6 +91,26 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
             "python3 scripts/select-weekly-update-base.py", RUN_ALL.read_text()
         )
 
+    def test_signed_update_artifacts_are_limited_to_the_monday_schedule(self) -> None:
+        workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
+        upload_step = workflow.split(
+            "      - name: Upload Signed arkanaOS Update Artifact", 1
+        )[1].split("      - name:", 1)[0]
+        release_assets = workflow.split(
+            "      - name: Select release assets", 1
+        )[1].split("      - name:", 1)[0]
+        monday_schedule = (
+            "github.event_name == 'schedule' && "
+            "github.event.schedule == '0 3 * * 1'"
+        )
+
+        self.assertIn(f"if: {monday_schedule}", upload_step)
+        self.assertIn(
+            f"WEEKLY_UPDATE_RELEASE: ${{{{ {monday_schedule} }}}}",
+            release_assets,
+        )
+        self.assertIn('if [[ "$WEEKLY_UPDATE_RELEASE" == true ]]', release_assets)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
