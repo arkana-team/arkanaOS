@@ -222,15 +222,20 @@ jobs:
             echo "Invalid arkanaOS build number: $BUILD_NUM" >&2
             exit 1
           fi
-          if ! [[ "$RELEASE_PREFIX" =~ ^(nightly|r[1-9][0-9]*-(a[1-9][0-9]*|b[1-9][0-9]*|[1-9][0-9]*))$ ]]; then
+          if ! [[ "$RELEASE_PREFIX" =~ ^(nightly|weekly|r[1-9][0-9]*-(a[1-9][0-9]*|b[1-9][0-9]*|[1-9][0-9]*))$ ]]; then
             echo "Invalid arkanaOS release prefix: $RELEASE_PREFIX" >&2
             exit 1
           fi
-          if [[ "$RELEASE_PREFIX" == nightly ]]; then
-            EXPECTED_RELEASE_ID="nightly-${BUILD_NUM}"
-            EXPECTED_RELEASE_VERSION=nightly
-            RELEASE_CHANNEL=Nightly
-            RELEASE_STATUS="Developer build for testing and development only. Supported for 7 days."
+          if [[ "$RELEASE_PREFIX" == nightly || "$RELEASE_PREFIX" == weekly ]]; then
+            EXPECTED_RELEASE_ID="${RELEASE_PREFIX}-${BUILD_NUM}"
+            EXPECTED_RELEASE_VERSION="$RELEASE_PREFIX"
+            if [[ "$RELEASE_PREFIX" == weekly ]]; then
+              RELEASE_CHANNEL=Weekly
+              RELEASE_STATUS="Weekly developer build for testing and development only. Supported for 7 days."
+            else
+              RELEASE_CHANNEL=Nightly
+              RELEASE_STATUS="Developer build for testing and development only. Supported for 7 days."
+            fi
           elif [[ "$RELEASE_PREFIX" =~ ^r([1-9][0-9]*)-a([1-9][0-9]*)$ ]]; then
             EXPECTED_RELEASE_ID="v${BASH_REMATCH[1]}.0-alpha${BASH_REMATCH[2]}-build-${BUILD_NUM}"
             EXPECTED_RELEASE_VERSION="${BASH_REMATCH[1]}.0 (alpha ${BASH_REMATCH[2]})"
@@ -254,7 +259,7 @@ jobs:
             echo "Release metadata does not match its validated prefix and build number." >&2
             exit 1
           fi
-          if [[ "$RELEASE_PREFIX" == nightly || "$RELEASE_PREFIX" =~ -[ab][1-9][0-9]*$ ]]; then
+          if [[ "$RELEASE_PREFIX" == nightly || "$RELEASE_PREFIX" == weekly || "$RELEASE_PREFIX" =~ -[ab][1-9][0-9]*$ ]]; then
             EXPECTED_PRERELEASE=true
           else
             EXPECTED_PRERELEASE=false
@@ -320,7 +325,7 @@ jobs:
             exit 1
           fi
 
-          if ! [[ "$UPDATE_BASE_RELEASE_TAG" =~ ^(nightly-[0-9]+|v[1-9][0-9]*\.0-(alpha[1-9][0-9]*|beta[1-9][0-9]*|build)-[0-9]+)$ && \
+          if ! [[ "$UPDATE_BASE_RELEASE_TAG" =~ ^(nightly-[0-9]+|weekly-[0-9]+|v[1-9][0-9]*\.0-(alpha[1-9][0-9]*|beta[1-9][0-9]*|build)-[0-9]+)$ && \
                 "$UPDATE_BASE_RUN_ID" =~ ^[1-9][0-9]*$ && \
                 "$UPDATE_BASE_ARTIFACT_ID" =~ ^[1-9][0-9]*$ && \
                 "$UPDATE_BASE_BUILD_NUMBER" =~ ^[0-9]+$ && \

@@ -53,6 +53,7 @@ class ReleaseMetadataTests(unittest.TestCase):
     def test_valid_release_labels_write_expected_metadata(self) -> None:
         cases = (
             ("nightly", "nightly", "nightly", "nightly-233", "true"),
+            ("weekly", "weekly", "weekly", "weekly-233", "true"),
             (
                 "r1-a1",
                 "1.0 (alpha 1)",
@@ -177,6 +178,10 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
                 "Developer build for testing and development only. Supported for 7 days.",
             ),
             (
+                "weekly", "weekly", "weekly-233", "true", "Weekly",
+                "Weekly developer build for testing and development only. Supported for 7 days.",
+            ),
+            (
                 "r1-a1", "1.0 (alpha 1)", "v1.0-alpha1-build-233", "true", "Alpha",
                 "Early pre-release for testing and development. Supported for 2 weeks.",
             ),
@@ -276,7 +281,7 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
     def test_latest_weekly_release_wins_over_newer_nightly_iso(self) -> None:
         releases = [
             self.release(
-                "nightly-230",
+                "weekly-230",
                 "2026-10-19T03:00:00Z",
                 "arkana.iso",
                 "arkanaos-weekly-old.aup",
@@ -289,14 +294,14 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
                 "arkanaOS-update-client-system-update.txt",
             ),
             self.release(
-                "nightly-231",
+                "weekly-231",
                 "2026-10-20T03:00:00Z",
                 "arkana.iso",
                 "arkanaos-weekly-latest.aup",
                 "arkanaOS-update-client-system-update.txt",
             ),
             self.release(
-                "nightly-234",
+                "weekly-234",
                 "2026-10-27T03:00:00Z",
                 "arkana.iso",
                 "draft.aup",
@@ -305,7 +310,7 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
         ]
         result = self.select(releases)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout.strip(), "nightly-231")
+        self.assertEqual(result.stdout.strip(), "weekly-231")
 
     def test_weekly_without_arkup_marker_is_skipped(self) -> None:
         releases = [
@@ -400,7 +405,8 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
             ['- cron: "0 3 * * 0,2-6"', '- cron: "0 3 * * 1"'],
         )
         self.assertIn(
-            "release_prefix: ${{ inputs.release_prefix || 'nightly' }}", workflow
+            "release_prefix: ${{ inputs.release_prefix || (github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1' && 'weekly' || 'nightly') }}",
+            workflow,
         )
 
     def test_all_scheduled_runs_build_and_publish_updates(self) -> None:

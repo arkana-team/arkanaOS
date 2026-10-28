@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       release_prefix:
-        description: "Release label before the automatic build number (nightly, r1-a1, r1-b1, r1-1)"
+        description: "Release label before the automatic build number (nightly, weekly, r1-a1, r1-b1, r1-1)"
         required: true
         default: nightly
         type: string

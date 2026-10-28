@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import runpy
 import unittest
 from pathlib import Path
 
@@ -9,9 +10,18 @@ REPOSITORY = Path(__file__).resolve().parents[1]
 RUN_ALL = REPOSITORY / ".github/workflows/00_run_all.yml"
 ISO_WORKFLOW = REPOSITORY / ".github/workflows/04_stage4_iso.yml"
 MARKER = "arkanaOS-update-client-system-update.txt"
+BASE_PROVENANCE = runpy.run_path(
+    str(REPOSITORY / "scripts/verify-weekly-base-provenance.py")
+)
 
 
 class WeeklyUpdateBaseTests(unittest.TestCase):
+    def test_weekly_release_tag_resolves_to_the_expected_retained_iso_artifact(self) -> None:
+        self.assertEqual(
+            BASE_PROVENANCE["release_artifact_name"]("weekly-233"),
+            ("arkanaOS-weekly-233-iso", "233"),
+        )
+
     def test_scheduled_preflight_selects_an_update_or_bootstrap_iso_before_stage_one(self) -> None:
         workflow = RUN_ALL.read_text(encoding="utf-8")
         preflight = workflow.split("  stage1:", 1)[0]
@@ -90,6 +100,7 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
         self.assertIn(
             "python3 scripts/select-weekly-update-base.py", RUN_ALL.read_text()
         )
+        self.assertIn("weekly-[0-9]+", workflow)
 
     def test_all_scheduled_releases_upload_signed_update_artifacts(self) -> None:
         workflow = ISO_WORKFLOW.read_text(encoding="utf-8")

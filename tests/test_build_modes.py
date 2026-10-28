@@ -205,22 +205,22 @@ class WorkflowSecurityTests(unittest.TestCase):
 
 
 class BuildNumberSeedTests(unittest.TestCase):
-    def test_legacy_nightly_tag_advances_build_counter(self) -> None:
+    def test_scheduled_release_tags_advance_build_counter(self) -> None:
         script = Path(__file__).resolve().parents[1] / "scripts/seed-build-number.py"
         with tempfile.TemporaryDirectory(prefix="arkana-build-seed-test-") as temporary:
             build_file = Path(temporary) / ".buildnum"
             build_file.write_text("907\n", encoding="ascii")
             result = subprocess.run(
                 [sys.executable, str(script), "--build-file", str(build_file)],
-                input="nightly-build-912\n",
+                input="nightly-build-912\nweekly-915\n",
                 text=True,
                 capture_output=True,
                 check=False,
             )
 
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            self.assertEqual(build_file.read_text(encoding="ascii"), "912\n")
-            self.assertIn("latest-published=912", result.stdout)
+            self.assertEqual(build_file.read_text(encoding="ascii"), "915\n")
+            self.assertIn("latest-published=915", result.stdout)
 
 
 if __name__ == "__main__":

@@ -16,7 +16,7 @@ MARKER_VALUES = {
     "system-update": "1",
 }
 RELEASE_TAG = re.compile(
-    r"(?:nightly-(?P<nightly_build>[0-9]+)|"
+    r"(?:(?:nightly|weekly)-(?P<scheduled_build>[0-9]+)|"
     r"v[1-9][0-9]*\.0-(?:(?:alpha[1-9][0-9]*|beta[1-9][0-9]*)-build|build)-"
     r"(?P<release_build>[0-9]+))\Z"
 )
@@ -61,7 +61,7 @@ def release_artifact_name(release_tag: str) -> tuple[str, str]:
     match = RELEASE_TAG.fullmatch(release_tag)
     if match is None:
         raise ProvenanceError("release tag does not use a supported arkanaOS format")
-    build_number = match.group("nightly_build") or match.group("release_build")
+    build_number = match.group("scheduled_build") or match.group("release_build")
     version = release_tag.removeprefix("v")
     return f"arkanaOS-{version}-iso", build_number
 

@@ -433,8 +433,8 @@ timestamp:
 	flock -x 9; \
 	PREFIX="$${ARKANA_RELEASE_PREFIX:-nightly}"; \
 	PRERELEASE=true; \
-	if [[ "$$PREFIX" == nightly ]]; then \
-	  RELEASE_VERSION=nightly; VERSION_ID=nightly; TAG_PREFIX=nightly; \
+	if [[ "$$PREFIX" == nightly || "$$PREFIX" == weekly ]]; then \
+	  RELEASE_VERSION="$$PREFIX"; VERSION_ID="$$PREFIX"; TAG_PREFIX="$$PREFIX"; \
 	elif [[ "$$PREFIX" =~ ^r([1-9][0-9]*)-a([1-9][0-9]*)$$ ]]; then \
 	  RELEASE_VERSION="$${BASH_REMATCH[1]}.0 (alpha $${BASH_REMATCH[2]})"; \
 	  VERSION_ID="$${BASH_REMATCH[1]}.0-alpha$${BASH_REMATCH[2]}"; \
@@ -466,8 +466,8 @@ timestamp:
 	  chmod --reference="$(BUILDNUM_FILE)" "$$TMP"; chown --reference="$(BUILDNUM_FILE)" "$$TMP"; \
 	  mv -f "$$TMP" "$(BUILDNUM_FILE)"; \
 	fi; \
-	if [[ "$$PREFIX" == nightly ]]; then \
-	  RELEASE_ID="nightly-$$BUILD"; \
+	if [[ "$$PREFIX" == nightly || "$$PREFIX" == weekly ]]; then \
+	  RELEASE_ID="$$PREFIX-$$BUILD"; \
 	else \
 	  RELEASE_ID="$$TAG_PREFIX-build-$$BUILD"; \
 	fi; \

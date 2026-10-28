@@ -10,7 +10,7 @@ from typing import Any
 
 UPDATE_CLIENT_ASSET = "arkanaOS-update-client-system-update.txt"
 SUPPORTED_RELEASE_TAG = re.compile(
-    r"(?:nightly-[0-9]+|v[1-9][0-9]*\.0-(?:alpha[1-9][0-9]*|beta[1-9][0-9]*|build)-[0-9]+)\Z"
+    r"(?:nightly-[0-9]+|weekly-[0-9]+|v[1-9][0-9]*\.0-(?:alpha[1-9][0-9]*|beta[1-9][0-9]*|build)-[0-9]+)\Z"
 )
 
 

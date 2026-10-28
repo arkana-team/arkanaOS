@@ -12,7 +12,6 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts/build-update-pack.py"
 SPEC = importlib.util.spec_from_file_location("arkana_update_builder", SCRIPT)
 assert SPEC and SPEC.loader
@@ -28,6 +27,13 @@ def release_files(root: Path, build: int, prefix: str = "r1-a1") -> None:
             "nightly",
             "nightly",
             f"nightly-{build}",
+            "true",
+        )
+    elif prefix == "weekly":
+        version, version_id, release_id, prerelease = (
+            "weekly",
+            "weekly",
+            f"weekly-{build}",
             "true",
         )
     elif prefix == "r1-a1":
@@ -60,6 +66,16 @@ def release_files(root: Path, build: int, prefix: str = "r1-a1") -> None:
 
 
 class ReleaseMetadataTests(unittest.TestCase):
+    def test_validates_nightly_to_weekly_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary) / "base"
+            target = Path(temporary) / "target"
+            release_files(base, 9, "nightly")
+            release_files(target, 10, "weekly")
+            self.assertEqual(builder.read_release(base).release_id, "nightly-9")
+            self.assertEqual(builder.read_release(target).release_id, "weekly-10")
+            self.assertEqual(builder.read_release(target).display, "weekly build 10")
+
     def test_validates_nightly_to_alpha_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary) / "base"
