@@ -58,7 +58,13 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
         self.assertIn("artifact-ids: ${{ inputs.weekly_base_artifact_id }}", workflow)
         self.assertIn('cmp -s -- "$BASE_MARKER" "$RELEASE_MARKER"', update_step)
         self.assertIn("unsquashfs -no-progress -processors 1", update_step)
-        self.assertNotIn('sudo chroot "$BASE_ROOT"', update_step)
+        self.assertNotIn("chroot", update_step.lower())
+        self.assertEqual(
+            update_step.count('"$BASE_ROOT/usr/bin/arkup"'),
+            3,
+            "the base Arkup path should only appear in file and executable checks",
+        )
+        self.assertIn('! -x "$BASE_ROOT/usr/bin/arkup"', update_step)
         self.assertNotIn("sudo unsquashfs", update_step)
         self.assertNotIn("gh release download", update_step)
         update_builder = (REPOSITORY / "scripts/build-update-pack.py").read_text()
