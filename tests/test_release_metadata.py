@@ -214,6 +214,12 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
                     expected_template,
                 )
                 self.assertIn(
+                    "sudo arkup trust ./arkanaOS-update-signing.pub", expected_template
+                )
+                self.assertIn(
+                    "sudo arkup apply ./path/to/update.aup", expected_template
+                )
+                self.assertIn(
                     f"RELEASE_ID={release_id}\n",
                     (root / "github-env").read_text(encoding="utf-8"),
                 )
