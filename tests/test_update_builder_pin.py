@@ -6,7 +6,7 @@ import unittest
 from pathlib import Path
 
 REPOSITORY = Path(__file__).resolve().parents[1]
-ARKUP_COMMIT = "2df9786e00cf8a82b9ceecdae295972692ee653a"
+ARKUP_COMMIT = "01f6af6a2a6ab28052cb6846d8471e6b66fc8a8b"
 ARKUP_REPOSITORY = "https://github.com/arkana-team/arkup.git"
 
 

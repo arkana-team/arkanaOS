@@ -6,8 +6,8 @@ import unittest
 from pathlib import Path
 
 REPOSITORY = Path(__file__).resolve().parents[1]
-ARKUP_COMMIT = "2df9786e00cf8a82b9ceecdae295972692ee653a"
-ARKUP_SHA256 = "3d898cafde63eca84e9195cc65ffb1f7e19b1afcb6cb5da1934df6ca3e989d95"
+ARKUP_COMMIT = "01f6af6a2a6ab28052cb6846d8471e6b66fc8a8b"
+ARKUP_SHA256 = "ebecac463dbce6435dac7bf1a76977a48d8957f0150d2a4209f495c6b522ad2f"
 
 
 class ArkupSystemInstallTests(unittest.TestCase):

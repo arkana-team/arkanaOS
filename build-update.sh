@@ -70,7 +70,7 @@ HOST_CPUS=$(nproc)
 AVAILABLE_RAM_MB=$(awk '/MemAvailable/ {print int($2/1024)}' /proc/meminfo)
 RAM_MB=${ARKANA_UPDATE_BUILD_RAM_MB:-2048}
 CPUS=${ARKANA_UPDATE_BUILD_CPUS:-2}
-ARKUP_GIT_REF=${ARKUP_GIT_REF:-2df9786e00cf8a82b9ceecdae295972692ee653a}
+ARKUP_GIT_REF=${ARKUP_GIT_REF:-01f6af6a2a6ab28052cb6846d8471e6b66fc8a8b}
 if ! [[ "$RAM_MB" =~ ^[0-9]+$ ]] || ((RAM_MB < 512 || RAM_MB > AVAILABLE_RAM_MB)); then
   echo "ARKANA_UPDATE_BUILD_RAM_MB must be 512..${AVAILABLE_RAM_MB} MiB." >&2
   exit 2
