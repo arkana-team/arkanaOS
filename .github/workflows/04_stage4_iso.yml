@@ -266,7 +266,7 @@ jobs:
             jq -s 'add' |
             python3 scripts/select-weekly-update-base.py --exclude-tag "$RELEASE_ID")
           if [[ -z "$BASE_RELEASE_TAG" ]]; then
-            echo "No previous weekly update release or arkup-capable ISO is available as the update base." >&2
+            echo "No previous weekly update release or system-update-compatible ISO is available as the update base." >&2
             exit 1
           fi
 
