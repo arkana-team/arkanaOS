@@ -15,7 +15,8 @@ class ToolchainCompilerFlagTests(unittest.TestCase):
             .split("# Install pure-Python desktop integration dependencies", 1)[0]
         )
 
-        self.assertIn("AST_NO_DYLIB=y bin/package CC=gcc make", ksh_target)
+        self.assertIn("AST_NO_DYLIB=y CC=gcc bin/package make", ksh_target)
+        self.assertNotIn("bin/package CC=gcc", ksh_target)
 
     def test_graphics_cpp_recipes_use_a_cpp_language_standard(self):
         recipe = (REPO_ROOT / "arkanas/06_graphics_ext.mk").read_text(
