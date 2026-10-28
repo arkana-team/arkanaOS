@@ -8,7 +8,7 @@ from pathlib import Path
 REPOSITORY = Path(__file__).resolve().parents[1]
 RUN_ALL = REPOSITORY / ".github/workflows/00_run_all.yml"
 ISO_WORKFLOW = REPOSITORY / ".github/workflows/04_stage4_iso.yml"
-MARKER = "arkanaOS-update-client.txt"
+MARKER = "arkanaOS-update-client-base-sequence.txt"
 
 
 class WeeklyUpdateBaseTests(unittest.TestCase):
@@ -17,9 +17,12 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
         preflight = workflow.split("  stage1:", 1)[0]
 
         self.assertIn("if: github.event_name == 'schedule'", preflight)
-        self.assertIn("Require a published Arkup-capable ISO as the update base", preflight)
+        self.assertIn(
+            "Require a published base-sequence-compatible ISO as the update base",
+            preflight,
+        )
         self.assertIn(MARKER, preflight)
-        self.assertIn("Run workflow_dispatch once", preflight)
+        self.assertIn("Publish a compatible ISO before scheduled .aup releases", preflight)
         self.assertIn("needs: validate-weekly-signing-keys", workflow)
 
     def test_signing_preflight_validates_key_material_before_stage_one(self) -> None:
@@ -41,7 +44,11 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
 
         self.assertIn("! -x output/iso-root/usr/bin/arkup", marker_step)
         self.assertIn("arkup-client=/usr/bin/arkup", marker_step)
+        self.assertIn("--base-sequence", marker_step)
+        self.assertIn("base-sequence=1", marker_step)
         self.assertIn('! -x "$BASE_ROOT/usr/bin/arkup"', update_step)
+        update_builder = (REPOSITORY / "scripts/build-update-pack.py").read_text()
+        self.assertIn("--base-sequence", update_builder)
         self.assertIn(f'echo "output/{MARKER}"', release_assets)
         self.assertIn(MARKER, (REPOSITORY / "RELEASE_TEMPLATE.md").read_text())
 

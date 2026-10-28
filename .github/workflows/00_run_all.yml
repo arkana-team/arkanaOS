@@ -63,7 +63,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Require a published Arkup-capable ISO as the update base
+      - name: Require a published base-sequence-compatible ISO as the update base
         if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -78,9 +78,9 @@ jobs:
           fi
 
           HAS_ARKUP_CLIENT=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$BASE_RELEASE_TAG" \
-            --jq 'any(.assets[]?; .name == "arkanaOS-update-client.txt")')
+            --jq 'any(.assets[]?; .name == "arkanaOS-update-client-base-sequence.txt")')
           if [[ "$HAS_ARKUP_CLIENT" != true ]]; then
-            echo "The selected update base $BASE_RELEASE_TAG predates the Arkup client. Run workflow_dispatch once to publish an Arkup-capable ISO before scheduled .aup releases." >&2
+            echo "The selected update base $BASE_RELEASE_TAG does not contain the base-sequence-capable Arkup client. Publish a compatible ISO before scheduled .aup releases." >&2
             exit 1
           fi
 

@@ -1,4 +1,4 @@
-"""Choose the prior weekly Arkup release, with an initial ISO bootstrap fallback."""
+"""Choose the prior base-bound weekly release, with an ISO bootstrap fallback."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import json
 import sys
 from typing import Any
 
-UPDATE_CLIENT_ASSET = "arkanaOS-update-client.txt"
+UPDATE_CLIENT_ASSET = "arkanaOS-update-client-base-sequence.txt"
 
 
 def release_assets(release: dict[str, Any]) -> set[str]:
@@ -58,7 +58,7 @@ def select_base(releases: list[Any], excluded_tags: set[str]) -> str:
     if bootstrap:
         return max(bootstrap, key=lambda release: release["published_at"])["tag_name"]
 
-    raise ValueError("no weekly update release or Arkup-capable ISO is available")
+    raise ValueError("no base-sequence-capable weekly release or ISO is available")
 
 
 def main() -> int:
