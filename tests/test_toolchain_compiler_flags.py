@@ -15,7 +15,12 @@ class ToolchainCompilerFlagTests(unittest.TestCase):
             .split("# Install pure-Python desktop integration dependencies", 1)[0]
         )
 
+        self.assertIn("AST_NO_DYLIB=y bin/package clobber", ksh_target)
         self.assertIn("AST_NO_DYLIB=y bin/package make CC=gcc", ksh_target)
+        self.assertLess(
+            ksh_target.index("AST_NO_DYLIB=y bin/package clobber"),
+            ksh_target.index("AST_NO_DYLIB=y bin/package make CC=gcc"),
+        )
         self.assertNotIn("bin/package CC=gcc", ksh_target)
         self.assertNotIn("CC=gcc bin/package", ksh_target)
 
