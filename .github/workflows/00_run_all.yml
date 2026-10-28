@@ -9,6 +9,9 @@ on:
         default: nightly
         type: string
   schedule:
+    # Publish a nightly ISO Sunday and Tuesday through Saturday.
+    - cron: "0 3 * * 0,2-6"
+    # Monday is the weekly developer release and includes the signed .aup.
     - cron: "0 3 * * 1"
 
 concurrency:
@@ -26,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Require the release signing keypair for scheduled builds
-        if: github.event_name == 'schedule'
+        if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1'
         env:
           ARKUP_UPDATE_SIGNING_KEY_B64: ${{ secrets.ARKUP_UPDATE_SIGNING_KEY_B64 }}
           ARKUP_UPDATE_PUBLIC_KEY_B64: ${{ secrets.ARKUP_UPDATE_PUBLIC_KEY_B64 }}
@@ -55,7 +58,7 @@ jobs:
           done
 
       - name: Require a published Arkup-capable ISO as the update base
-        if: github.event_name == 'schedule'
+        if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

@@ -240,7 +240,7 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Build signed update package for weekly developer release
-        if: github.event_name == 'schedule'
+        if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ARKUP_UPDATE_SIGNING_KEY_B64: ${{ secrets.ARKUP_UPDATE_SIGNING_KEY_B64 }}
@@ -328,7 +328,7 @@ jobs:
           retention-days: 14
 
       - name: Upload Signed arkanaOS Update Artifact
-        if: github.event_name == 'schedule'
+        if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.RELEASE_ARTIFACT_NAME }}-update
@@ -341,13 +341,15 @@ jobs:
 
       - name: Select release assets
         id: release-assets
+        env:
+          WEEKLY_UPDATE_RELEASE: ${{ github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1' }}
         run: |
           set -euo pipefail
           {
             echo "files<<EOF"
             echo "output/arkana.iso"
             echo "output/arkanaOS-update-client.txt"
-            if [[ "$GITHUB_EVENT_NAME" == schedule ]]; then
+            if [[ "$WEEKLY_UPDATE_RELEASE" == true ]]; then
               find output/updates -maxdepth 1 -type f \
                 \( -name '*.aup' -o -name '*.aup.sha256' -o -name 'arkanaOS-update-signing.pub' \) \
                 -print | sort

@@ -15,6 +15,7 @@ from pathlib import Path
 REPOSITORY = Path(__file__).resolve().parents[1]
 MAKEFILE = REPOSITORY / "arkanas/01_base.mk"
 ISO_WORKFLOW = REPOSITORY / ".github/workflows/04_stage4_iso.yml"
+RUN_ALL_WORKFLOW = REPOSITORY / ".github/workflows/00_run_all.yml"
 RELEASE_TEMPLATE = REPOSITORY / "RELEASE_TEMPLATE.md"
 
 
@@ -242,6 +243,51 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
                 (root / "RELEASE_TEMPLATE.md").read_text(encoding="utf-8"),
                 RELEASE_TEMPLATE.read_text(encoding="utf-8"),
             )
+
+
+class ScheduledReleaseWorkflowTests(unittest.TestCase):
+    def test_pipeline_schedules_nightly_and_weekly_releases_once_per_day(self) -> None:
+        """Run the nightly pipeline Sunday and Tuesday-Saturday, weekly Monday."""
+        workflow = RUN_ALL_WORKFLOW.read_text(encoding="utf-8")
+        schedule = workflow.split("  schedule:\n", 1)[1].split(
+            "\n\nconcurrency:", 1
+        )[0]
+        cron_entries = [
+            line.strip()
+            for line in schedule.splitlines()
+            if line.lstrip().startswith("- cron:")
+        ]
+        self.assertEqual(
+            cron_entries,
+            ['- cron: "0 3 * * 0,2-6"', '- cron: "0 3 * * 1"'],
+        )
+        self.assertIn(
+            "release_prefix: ${{ inputs.release_prefix || 'nightly' }}", workflow
+        )
+
+    def test_only_the_monday_weekly_schedule_builds_and_publishes_updates(self) -> None:
+        """Keep daily nightlies ISO-only and reserve signed updates for Mondays."""
+        weekly_condition = (
+            "if: github.event_name == 'schedule' "
+            "&& github.event.schedule == '0 3 * * 1'"
+        )
+        run_all = RUN_ALL_WORKFLOW.read_text(encoding="utf-8")
+        iso = ISO_WORKFLOW.read_text(encoding="utf-8")
+        self.assertEqual(run_all.count(weekly_condition), 2)
+        self.assertEqual(iso.count(weekly_condition), 2)
+        self.assertIn(
+            "WEEKLY_UPDATE_RELEASE: ${{ github.event_name == 'schedule' "
+            "&& github.event.schedule == '0 3 * * 1' }}",
+            iso,
+        )
+        self.assertIn('if [[ "$WEEKLY_UPDATE_RELEASE" == true ]]; then', iso)
+
+    def test_release_notes_document_nightly_and_weekly_assets(self) -> None:
+        """Keep scheduled assets clear while reusing the existing release template."""
+        template = RELEASE_TEMPLATE.read_text(encoding="utf-8")
+        self.assertIn("Scheduled nightly releases include the bootable ISO.", template)
+        self.assertIn("Monday weekly developer release", template)
+        self.assertIn("signed Arkup `.aup` update package", template)
 
 
 if __name__ == "__main__":

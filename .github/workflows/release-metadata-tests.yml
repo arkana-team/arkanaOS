@@ -4,11 +4,17 @@ on:
   pull_request:
     paths:
       - "arkanas/01_base.mk"
+      - ".github/workflows/00_run_all.yml"
+      - ".github/workflows/04_stage4_iso.yml"
+      - "RELEASE_TEMPLATE.md"
       - "tests/test_release_metadata.py"
       - ".github/workflows/release-metadata-tests.yml"
   push:
     paths:
       - "arkanas/01_base.mk"
+      - ".github/workflows/00_run_all.yml"
+      - ".github/workflows/04_stage4_iso.yml"
+      - "RELEASE_TEMPLATE.md"
       - "tests/test_release_metadata.py"
       - ".github/workflows/release-metadata-tests.yml"
 
