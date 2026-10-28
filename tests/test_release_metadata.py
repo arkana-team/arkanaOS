@@ -442,6 +442,10 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
         self.assertIn("artifact-ids: ${{ inputs.update_base_artifact_id }}", iso)
         self.assertNotIn("gh release download", iso)
         self.assertIn("target_commitish: ${{ steps.source.outputs.sha }}", iso)
+        self.assertIn("uses: softprops/action-gh-release@v3", iso)
+        self.assertNotIn("uses: softprops/action-gh-release@v2", iso)
+        self.assertIn("body_path: RELEASE_TEMPLATE.md", iso)
+        self.assertIn("generate_release_notes: true", iso)
         self.assertNotIn("sort_by(.published_at) | last", run_all + iso)
 
     def test_manual_pipeline_rejects_weekly_before_building(self) -> None:
