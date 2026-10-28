@@ -11,6 +11,7 @@ Built by GitHub Actions on `ubuntu-latest`. This automated workflow does not boo
 ### Release Assets
 Scheduled nightly releases and the Monday weekly developer release include the bootable ISO and a signed arkup `.aup` update package, checksum, and verification public key. Manually triggered releases include the ISO.
 Every ISO release includes `arkanaOS-update-client.txt`. Run All releases built from the default branch also include `arkanaOS-update-client-system-update.txt`, which binds scheduled updates to a verified base build.
+Scheduled updates form one release sequence. If your installed build predates an update's base build, apply each intervening `.aup` in release order.
 
 Before applying the first scheduled update, download the verification key from the official arkanaOS release and trust it once on the installed system:
 

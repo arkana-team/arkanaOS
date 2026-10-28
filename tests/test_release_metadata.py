@@ -489,6 +489,10 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
         )
         self.assertIn("Monday weekly developer release", template)
         self.assertIn("signed arkup `.aup` update package", template)
+        self.assertIn(
+            "apply each intervening `.aup` in release order",
+            template,
+        )
         self.assertIn("# GitHub Generated release notes", template)
 
 
