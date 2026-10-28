@@ -445,9 +445,36 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
         self.assertNotIn("sort_by(.published_at) | last", run_all + iso)
 
     def test_manual_pipeline_rejects_weekly_before_building(self) -> None:
-        run_all = RUN_ALL_WORKFLOW.read_text(encoding="utf-8")
-        self.assertIn("- name: Reject manual weekly release labels", run_all)
-        self.assertIn("Weekly releases are published by the Monday schedule", run_all)
+        workflow = RUN_ALL_WORKFLOW.read_text(encoding="utf-8")
+        step = workflow.split(
+            "      - name: Reject manual weekly release labels\n", 1
+        )[1].split("\n      - name:", 1)[0]
+        script = textwrap.dedent(step.split("        run: |\n", 1)[1])
+
+        for prefix, expected_returncode in (("weekly", 1), ("nightly", 0)):
+            with self.subTest(prefix=prefix):
+                environment = os.environ.copy()
+                environment["RELEASE_PREFIX"] = prefix
+                result = subprocess.run(
+                    [
+                        "bash",
+                        "--noprofile",
+                        "--norc",
+                        "-e",
+                        "-o",
+                        "pipefail",
+                        "-c",
+                        script,
+                    ],
+                    env=environment,
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                    check=False,
+                )
+                self.assertEqual(result.returncode, expected_returncode, result.stderr)
+                if prefix == "weekly":
+                    self.assertIn("cannot be manually labeled weekly", result.stderr)
 
     def test_release_notes_document_nightly_and_weekly_assets(self) -> None:
         """Keep scheduled assets clear while reusing the existing release template."""
