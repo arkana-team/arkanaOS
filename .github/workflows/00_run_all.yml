@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       release_prefix:
-        description: "Release label before the automatic build number (nightly, weekly, r1-a1, r1-b1, r1-1)"
+        description: "Release label before the automatic build number (nightly, r1-a1, r1-b1, r1-1); weekly releases run on Mondays"
         required: true
         default: nightly
         type: string
@@ -35,6 +35,17 @@ jobs:
       update_base_build_number: ${{ steps.verify-update-base.outputs.build_number }}
       update_base_source_sha: ${{ steps.verify-update-base.outputs.source_sha }}
     steps:
+      - name: Reject manual weekly release labels
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          RELEASE_PREFIX: ${{ inputs.release_prefix }}
+        run: |
+          set -euo pipefail
+          if [[ "$RELEASE_PREFIX" == weekly ]]; then
+            echo "Weekly releases are published by the Monday schedule and cannot be manually labeled weekly." >&2
+            exit 1
+          fi
+
       - name: Check out source for scheduled release preflight
         if: github.event_name == 'schedule'
         uses: actions/checkout@v4

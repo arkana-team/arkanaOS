@@ -133,7 +133,7 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
 
     def run_release_step(
         self, root: Path, *, prefix: str, release_id: str, version: str,
-        prerelease: str,
+        prerelease: str, event_name: str = "workflow_dispatch",
     ) -> subprocess.CompletedProcess[str]:
         """Run release processing with isolated metadata and template files."""
         metadata = root / "staging/etc"
@@ -151,6 +151,7 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
         github_env = root / "github-env"
         environment = os.environ.copy()
         environment["GITHUB_ENV"] = str(github_env)
+        environment["GITHUB_EVENT_NAME"] = event_name
         return subprocess.run(
             [
                 "bash",
@@ -205,6 +206,9 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
                     release_id=release_id,
                     version=f"{version}\n",
                     prerelease=prerelease,
+                    event_name=(
+                        "schedule" if prefix == "weekly" else "workflow_dispatch"
+                    ),
                 )
                 self.assertEqual(result.returncode, 0, result.stderr)
                 expected_name = f"arkanaOS {version} build 233"
@@ -232,6 +236,20 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
                     f"RELEASE_NAME={expected_name}\n",
                     (root / "github-env").read_text(encoding="utf-8"),
                 )
+
+    def test_weekly_release_label_is_rejected_for_manual_dispatch(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="arkana-iso-release-") as temporary:
+            root = Path(temporary)
+            result = self.run_release_step(
+                root,
+                prefix="weekly",
+                release_id="weekly-233",
+                version="weekly",
+                prerelease="true",
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("reserved for the Monday schedule", result.stderr)
 
     def test_release_version_cannot_inject_commands_into_template_processing(self) -> None:
         """Reject a multiline version that could add a sed file-write command."""
@@ -408,7 +426,6 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
             "release_prefix: ${{ inputs.release_prefix || (github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1' && 'weekly' || 'nightly') }}",
             workflow,
         )
-
     def test_all_scheduled_runs_build_and_publish_updates(self) -> None:
         """Publish both ISO and signed update packages on nightlies and Mondays."""
         scheduled_condition = "if: github.event_name == 'schedule'"
@@ -426,6 +443,11 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
         self.assertNotIn("gh release download", iso)
         self.assertIn("target_commitish: ${{ steps.source.outputs.sha }}", iso)
         self.assertNotIn("sort_by(.published_at) | last", run_all + iso)
+
+    def test_manual_pipeline_rejects_weekly_before_building(self) -> None:
+        run_all = RUN_ALL_WORKFLOW.read_text(encoding="utf-8")
+        self.assertIn("- name: Reject manual weekly release labels", run_all)
+        self.assertIn("Weekly releases are published by the Monday schedule", run_all)
 
     def test_release_notes_document_nightly_and_weekly_assets(self) -> None:
         """Keep scheduled assets clear while reusing the existing release template."""

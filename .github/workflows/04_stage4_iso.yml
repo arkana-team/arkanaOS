@@ -218,6 +218,10 @@ jobs:
           RELEASE_ID=$(cat staging/etc/arkana-release-id)
           RELEASE_VERSION=$(cat staging/etc/arkana-release-version)
           RELEASE_PRERELEASE=$(cat staging/etc/arkana-release-prerelease)
+          if [[ "$RELEASE_PREFIX" == weekly && "$GITHUB_EVENT_NAME" != schedule ]]; then
+            echo "Weekly release labels are reserved for the Monday schedule." >&2
+            exit 1
+          fi
           if ! [[ "$BUILD_NUM" =~ ^[0-9]+$ ]]; then
             echo "Invalid arkanaOS build number: $BUILD_NUM" >&2
             exit 1
