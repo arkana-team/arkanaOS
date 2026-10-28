@@ -12,8 +12,11 @@ on:
       - "tests/test_build_modes.py"
       - "tests/test_weekly_update_baseline.py"
       - "tests/test_weekly_base_provenance.py"
+      - "tests/test_update_signing_keypair.py"
       - "scripts/select-weekly-update-base.py"
       - "scripts/verify-weekly-base-provenance.py"
+      - "scripts/verify-update-signing-keypair.py"
+      - "scripts/seed-build-number.py"
       - "build.sh"
       - "build-update.sh"
       - "Dockerfile.update-builder"
@@ -34,8 +37,11 @@ on:
       - "tests/test_build_modes.py"
       - "tests/test_weekly_update_baseline.py"
       - "tests/test_weekly_base_provenance.py"
+      - "tests/test_update_signing_keypair.py"
       - "scripts/select-weekly-update-base.py"
       - "scripts/verify-weekly-base-provenance.py"
+      - "scripts/verify-update-signing-keypair.py"
+      - "scripts/seed-build-number.py"
       - "build.sh"
       - "build-update.sh"
       - "Dockerfile.update-builder"
@@ -76,6 +82,9 @@ jobs:
 
       - name: Check weekly base artifact provenance
         run: python3 -m unittest discover -s tests -p 'test_weekly_base_provenance.py' -v
+
+      - name: Test update signing keypair validation
+        run: python3 -m unittest discover -s tests -p 'test_update_signing_keypair.py' -v
 
   builder-image:
     name: Build and smoke-test arkana-update-builder

@@ -89,11 +89,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          UPDATE_BASE_CHANNEL: ${{ github.event.schedule == '0 3 * * 1' && 'weekly' || 'nightly' }}
         run: |
           set -euo pipefail
           BASE_RELEASE_TAG=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
             jq -s 'add' |
-            python3 scripts/select-weekly-update-base.py)
+            python3 scripts/select-weekly-update-base.py --channel "$UPDATE_BASE_CHANNEL")
           if [[ -z "$BASE_RELEASE_TAG" ]]; then
             echo "No published system-update-capable release with a supported arkanaOS tag is available as the update base. Publish a compatible ISO from Run All before scheduled .aup releases." >&2
             exit 1

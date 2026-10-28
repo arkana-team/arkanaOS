@@ -329,7 +329,7 @@ jobs:
             exit 1
           fi
 
-          if ! [[ "$UPDATE_BASE_RELEASE_TAG" =~ ^(nightly-[0-9]+|weekly-[0-9]+|v[1-9][0-9]*\.0-(alpha[1-9][0-9]*|beta[1-9][0-9]*|build)-[0-9]+)$ && \
+          if ! [[ "$UPDATE_BASE_RELEASE_TAG" =~ ^(nightly-[0-9]+|weekly-[0-9]+|v[1-9][0-9]*\.0-((alpha[1-9][0-9]*|beta[1-9][0-9]*)-build|build)-[0-9]+)$ && \
                 "$UPDATE_BASE_RUN_ID" =~ ^[1-9][0-9]*$ && \
                 "$UPDATE_BASE_ARTIFACT_ID" =~ ^[1-9][0-9]*$ && \
                 "$UPDATE_BASE_BUILD_NUMBER" =~ ^[0-9]+$ && \

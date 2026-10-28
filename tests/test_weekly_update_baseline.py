@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import os
 import runpy
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -34,6 +36,14 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
         self.assertIn(MARKER, preflight)
         self.assertIn("Publish a compatible ISO from Run All before scheduled .aup releases", preflight)
         self.assertIn("scripts/verify-weekly-base-provenance.py", preflight)
+        self.assertIn(
+            "UPDATE_BASE_CHANNEL: ${{ github.event.schedule == '0 3 * * 1' && 'weekly' || 'nightly' }}",
+            preflight,
+        )
+        self.assertIn(
+            'python3 scripts/select-weekly-update-base.py --channel "$UPDATE_BASE_CHANNEL"',
+            preflight,
+        )
         self.assertIn("actions/runs/$SOURCE_RUN_ID/artifacts", preflight)
         self.assertIn("artifact_id", preflight)
         self.assertIn("needs: validate-scheduled-update-prerequisites", workflow)
@@ -100,7 +110,42 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
         self.assertIn(
             "python3 scripts/select-weekly-update-base.py", RUN_ALL.read_text()
         )
+        self.assertIn('--channel "$UPDATE_BASE_CHANNEL"', RUN_ALL.read_text())
         self.assertIn("weekly-[0-9]+", workflow)
+
+    def test_update_base_tag_validation_accepts_alpha_and_beta_builds(self) -> None:
+        workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
+        validation_line = next(
+            line
+            for line in workflow.splitlines()
+            if '"$UPDATE_BASE_RELEASE_TAG" =~' in line
+        )
+        pattern = validation_line.split(" =~ ", 1)[1].split(" && \\", 1)[0]
+        self.assertTrue(pattern.startswith("^(") and pattern.endswith(")$"))
+        accepted_tags = (
+            "nightly-231",
+            "weekly-232",
+            "v1.0-alpha1-build-233",
+            "v1.0-beta2-build-234",
+            "v1.0-build-235",
+        )
+        rejected_tags = ("v1.0-alpha1-233", "v1.0-beta2-234", "Nightly-231")
+        for tag in accepted_tags:
+            with self.subTest(tag=tag):
+                result = subprocess.run(
+                    ["bash", "--noprofile", "--norc", "-c", '[[ "$TAG" =~ $PATTERN ]]'],
+                    env={**os.environ, "TAG": tag, "PATTERN": pattern},
+                    check=False,
+                )
+                self.assertEqual(result.returncode, 0, tag)
+        for tag in rejected_tags:
+            with self.subTest(tag=tag):
+                result = subprocess.run(
+                    ["bash", "--noprofile", "--norc", "-c", '[[ "$TAG" =~ $PATTERN ]]'],
+                    env={**os.environ, "TAG": tag, "PATTERN": pattern},
+                    check=False,
+                )
+                self.assertNotEqual(result.returncode, 0, tag)
 
     def test_all_scheduled_releases_upload_signed_update_artifacts(self) -> None:
         workflow = ISO_WORKFLOW.read_text(encoding="utf-8")

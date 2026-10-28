@@ -286,9 +286,14 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
             "assets": [{"name": name} for name in assets],
         }
 
-    def select(self, releases: list[dict], *arguments: str) -> subprocess.CompletedProcess[str]:
+    def select(
+        self,
+        releases: list[dict],
+        *arguments: str,
+        channel: str = "nightly",
+    ) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
-            ["python3", str(WEEKLY_BASE_SELECTOR), *arguments],
+            ["python3", str(WEEKLY_BASE_SELECTOR), "--channel", channel, *arguments],
             input=json.dumps(releases),
             capture_output=True,
             text=True,
@@ -331,6 +336,67 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.strip(), "nightly-233")
 
+    def test_weekly_release_uses_previous_weekly_instead_of_sunday_nightly(self) -> None:
+        releases = [
+            self.release(
+                "weekly-230",
+                "2026-10-19T03:00:00Z",
+                "arkana.iso",
+                "weekly-230.aup",
+                "arkanaOS-update-client-system-update.txt",
+            ),
+            self.release(
+                "nightly-233",
+                "2026-10-25T03:00:00Z",
+                "arkana.iso",
+                "nightly-233.aup",
+                "arkanaOS-update-client-system-update.txt",
+            ),
+        ]
+        result = self.select(releases, channel="weekly")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), "weekly-230")
+
+    def test_nightly_uses_newer_weekly_as_base_after_monday(self) -> None:
+        releases = [
+            self.release(
+                "nightly-233",
+                "2026-10-25T03:00:00Z",
+                "arkana.iso",
+                "nightly-233.aup",
+                "arkanaOS-update-client-system-update.txt",
+            ),
+            self.release(
+                "weekly-234",
+                "2026-10-26T03:00:00Z",
+                "arkana.iso",
+                "weekly-234.aup",
+                "arkanaOS-update-client-system-update.txt",
+            ),
+        ]
+        result = self.select(releases, channel="nightly")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.strip(), "weekly-234")
+
+    def test_alpha_and_beta_release_tags_are_eligible_as_update_bases(self) -> None:
+        for tag, published_at in (
+            ("v1.0-alpha1-build-233", "2026-10-28T03:00:00Z"),
+            ("v1.0-beta1-build-240", "2026-10-29T03:00:00Z"),
+        ):
+            with self.subTest(tag=tag):
+                result = self.select(
+                    [
+                        self.release(
+                            tag,
+                            published_at,
+                            "arkana.iso",
+                            "arkanaOS-update-client-system-update.txt",
+                        )
+                    ]
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout.strip(), tag)
+
     def test_weekly_without_arkup_marker_is_skipped(self) -> None:
         releases = [
             self.release(
@@ -366,7 +432,7 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
             self.release("nightly-233", "2026-10-25T03:00:00Z", "nightly.iso", "arkanaOS-update-client-system-update.txt"),
             self.release("nightly-234", "2026-10-26T03:00:00Z", "legacy.iso"),
         ]
-        result = self.select(releases)
+        result = self.select(releases, channel="weekly")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.strip(), "nightly-233")
 
@@ -495,6 +561,22 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
             template,
         )
         self.assertIn("# GitHub Generated release notes", template)
+
+    def test_seed_and_signing_keypair_changes_trigger_their_tests(self) -> None:
+        workflow = (REPOSITORY / ".github/workflows/update-builder-tests.yml").read_text(
+            encoding="utf-8"
+        )
+        for path in (
+            "scripts/seed-build-number.py",
+            "scripts/verify-update-signing-keypair.py",
+            "tests/test_update_signing_keypair.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(workflow.count(f'      - "{path}"'), 2)
+        self.assertIn(
+            "python3 -m unittest discover -s tests -p 'test_update_signing_keypair.py' -v",
+            workflow,
+        )
 
 
 if __name__ == "__main__":

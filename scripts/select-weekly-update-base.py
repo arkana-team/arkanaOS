@@ -1,4 +1,4 @@
-"""Choose the prior update-capable release, with an ISO bootstrap fallback."""
+"""Choose a channel-compatible update base, with an ISO bootstrap fallback."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from typing import Any
 
 UPDATE_CLIENT_ASSET = "arkanaOS-update-client-system-update.txt"
 SUPPORTED_RELEASE_TAG = re.compile(
-    r"(?:nightly-[0-9]+|weekly-[0-9]+|v[1-9][0-9]*\.0-(?:alpha[1-9][0-9]*|beta[1-9][0-9]*|build)-[0-9]+)\Z"
+    r"(?:nightly-[0-9]+|weekly-[0-9]+|v[1-9][0-9]*\.0-(?:(?:alpha[1-9][0-9]*|beta[1-9][0-9]*)-build|build)-[0-9]+)\Z"
 )
 
 
@@ -37,7 +37,7 @@ def is_published(release: dict[str, Any], excluded_tags: set[str]) -> bool:
     )
 
 
-def select_base(releases: list[Any], excluded_tags: set[str]) -> str:
+def select_base(releases: list[Any], excluded_tags: set[str], channel: str) -> str:
     published = [
         release
         for release in releases
@@ -50,8 +50,21 @@ def select_base(releases: list[Any], excluded_tags: set[str]) -> str:
         and any(name.endswith(".iso") for name in release_assets(release))
         and UPDATE_CLIENT_ASSET in release_assets(release)
     ]
-    if update_releases:
-        return max(update_releases, key=lambda release: release["published_at"])[
+    # Weekly packages must be based on the previous weekly release. A Sunday
+    # nightly may be newer, but users upgrading from the previous Monday do
+    # not have that nightly's changes. Nightly packages follow the latest
+    # scheduled release so Tuesday can start from Monday's weekly build.
+    preferred_updates = update_releases
+    if channel == "weekly":
+        weekly_updates = [
+            release
+            for release in update_releases
+            if release["tag_name"].startswith("weekly-")
+        ]
+        if weekly_updates:
+            preferred_updates = weekly_updates
+    if preferred_updates:
+        return max(preferred_updates, key=lambda release: release["published_at"])[
             "tag_name"
         ]
 
@@ -75,12 +88,18 @@ def main() -> int:
         default=[],
         help="exclude a release tag, such as the release currently being built",
     )
+    parser.add_argument(
+        "--channel",
+        choices=("nightly", "weekly"),
+        required=True,
+        help="scheduled release channel that will consume the selected base",
+    )
     args = parser.parse_args()
     try:
         payload = json.load(sys.stdin)
         if not isinstance(payload, list):
             raise TypeError("release API input must be a JSON array")
-        print(select_base(payload, set(args.exclude_tag)))
+        print(select_base(payload, set(args.exclude_tag), args.channel))
     except (json.JSONDecodeError, TypeError, ValueError) as error:
         print(f"select-weekly-update-base: {error}", file=sys.stderr)
         return 1

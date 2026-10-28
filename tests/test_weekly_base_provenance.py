@@ -276,6 +276,7 @@ class WeeklyBasePreflightTests(unittest.TestCase):
             "GITHUB_OUTPUT": str(self.output),
             "GITHUB_REPOSITORY": "arkana-team/arkanaOS",
             "DEFAULT_BRANCH": "main",
+            "UPDATE_BASE_CHANNEL": "nightly",
             "GH_TOKEN": "test-token",
         }
         self.environment.pop("BASH_ENV", None)
