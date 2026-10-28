@@ -60,6 +60,8 @@ jobs:
       - name: Check out source for weekly update-base selection
         if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1'
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Require a published Arkup-capable ISO as the update base
         if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1'
