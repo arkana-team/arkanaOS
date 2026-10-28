@@ -8,6 +8,25 @@ on:
         required: true
         type: string
   workflow_call:
+    inputs:
+      weekly_base_release_tag:
+        required: false
+        type: string
+      weekly_base_run_id:
+        required: false
+        type: string
+      weekly_base_artifact_id:
+        required: false
+        type: string
+      weekly_base_artifact_name:
+        required: false
+        type: string
+      weekly_base_build_number:
+        required: false
+        type: string
+      weekly_base_source_sha:
+        required: false
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -151,14 +170,21 @@ jobs:
             arkana-builder bash -c "sudo --preserve-env make -f arkanas/07_iso.mk"
 
       - name: Mark ISO as arkup system-update-capable
+        id: mark-update-capability
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          SOURCE_RUN_ID: ${{ steps.source.outputs.run_id }}
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
         run: |
           set -euo pipefail
           if [[ ! -x output/iso-root/usr/bin/arkup ]]; then
             echo "The ISO root does not contain the arkup update client." >&2
             exit 1
           fi
-          if ! sudo chroot output/iso-root /usr/bin/arkup pack --help \
-            > "$RUNNER_TEMP/arkup-pack-help.txt" 2>&1 || \
+          if ! sudo chroot --groups="$(id -G)" \
+            --userspec="$(id -u):$(id -g)" output/iso-root \
+            /usr/bin/arkup pack --help 2>&1 | \
+            tee "$RUNNER_TEMP/arkup-pack-help.txt" >/dev/null || \
             ! grep -Fq -- '--base-sequence' "$RUNNER_TEMP/arkup-pack-help.txt" || \
             ! grep -Fq -- '--system-update' "$RUNNER_TEMP/arkup-pack-help.txt"; then
             echo "The ISO root arkup client cannot validate base-bound system updates." >&2
@@ -166,9 +192,24 @@ jobs:
           fi
           printf 'arkup-client=/usr/bin/arkup\n' > output/arkanaOS-update-client.txt
           chmod 0644 output/arkanaOS-update-client.txt
-          printf 'arkup-client=/usr/bin/arkup\nbase-sequence=1\nsystem-update=1\n' \
-            > output/arkanaOS-update-client-system-update.txt
-          chmod 0644 output/arkanaOS-update-client-system-update.txt
+          if [[ "$SOURCE_RUN_ID" == "$GITHUB_RUN_ID" && \
+                "$SOURCE_SHA" == "$GITHUB_SHA" && \
+                "$GITHUB_REF" == "refs/heads/$DEFAULT_BRANCH" && \
+                "$GITHUB_WORKFLOW_REF" == "$GITHUB_REPOSITORY/.github/workflows/00_run_all.yml@$GITHUB_REF" ]]; then
+            if ! [[ "$SOURCE_RUN_ID" =~ ^[1-9][0-9]*$ && "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ && \
+                  "$(cat staging/etc/arkana-build-number)" =~ ^[0-9]+$ ]]; then
+              echo "The source run or build metadata is malformed; refusing to mark this ISO as a weekly base." >&2
+              exit 1
+            fi
+            printf 'arkup-client=/usr/bin/arkup\nbase-sequence=1\nsystem-update=1\nsource-run-id=%s\nsource-sha=%s\nbuild-number=%s\n' \
+              "$SOURCE_RUN_ID" "$SOURCE_SHA" "$(cat staging/etc/arkana-build-number)" \
+              > output/arkanaOS-update-client-system-update.txt
+            chmod 0644 output/arkanaOS-update-client-system-update.txt
+            echo 'system_update_capable=true' >> "$GITHUB_OUTPUT"
+          else
+            rm -f -- output/arkanaOS-update-client-system-update.txt
+            echo 'system_update_capable=false' >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Generate Release Notes & Tags from Template
         run: |
@@ -249,12 +290,28 @@ jobs:
             echo "RELEASE_PRERELEASE=$RELEASE_PRERELEASE"
           } >> "$GITHUB_ENV"
 
+      - name: Download verified weekly base ISO artifact
+        if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1'
+        uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ inputs.weekly_base_artifact_id }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.weekly_base_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: ${{ runner.temp }}/arkana-base-artifact
+
       - name: Build signed update package for weekly developer release
         if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ARKUP_UPDATE_SIGNING_KEY_B64: ${{ secrets.ARKUP_UPDATE_SIGNING_KEY_B64 }}
           ARKUP_UPDATE_PUBLIC_KEY_B64: ${{ secrets.ARKUP_UPDATE_PUBLIC_KEY_B64 }}
+          WEEKLY_BASE_RELEASE_TAG: ${{ inputs.weekly_base_release_tag }}
+          WEEKLY_BASE_RUN_ID: ${{ inputs.weekly_base_run_id }}
+          WEEKLY_BASE_ARTIFACT_ID: ${{ inputs.weekly_base_artifact_id }}
+          WEEKLY_BASE_ARTIFACT_NAME: ${{ inputs.weekly_base_artifact_name }}
+          WEEKLY_BASE_BUILD_NUMBER: ${{ inputs.weekly_base_build_number }}
+          WEEKLY_BASE_SOURCE_SHA: ${{ inputs.weekly_base_source_sha }}
         run: |
           set -euo pipefail
           if [[ -z "$ARKUP_UPDATE_SIGNING_KEY_B64" || -z "$ARKUP_UPDATE_PUBLIC_KEY_B64" ]]; then
@@ -262,40 +319,69 @@ jobs:
             exit 1
           fi
 
-          BASE_RELEASE_TAG=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
-            jq -s 'add' |
-            python3 scripts/select-weekly-update-base.py --exclude-tag "$RELEASE_ID")
-          if [[ -z "$BASE_RELEASE_TAG" ]]; then
-            echo "No previous weekly update release or system-update-compatible ISO is available as the update base." >&2
+          if ! [[ "$WEEKLY_BASE_RELEASE_TAG" =~ ^(nightly-[0-9]+|v[1-9][0-9]*\.0-(alpha[1-9][0-9]*|beta[1-9][0-9]*|build)-[0-9]+)$ && \
+                "$WEEKLY_BASE_RUN_ID" =~ ^[1-9][0-9]*$ && \
+                "$WEEKLY_BASE_ARTIFACT_ID" =~ ^[1-9][0-9]*$ && \
+                "$WEEKLY_BASE_BUILD_NUMBER" =~ ^[0-9]+$ && \
+                "$WEEKLY_BASE_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Weekly base provenance inputs are missing or invalid." >&2
+            exit 1
+          fi
+          EXPECTED_ARTIFACT_NAME="arkanaOS-${WEEKLY_BASE_RELEASE_TAG#v}-iso"
+          if [[ "$WEEKLY_BASE_ARTIFACT_NAME" != "$EXPECTED_ARTIFACT_NAME" ]]; then
+            echo "The verified weekly base artifact name does not match its release tag." >&2
             exit 1
           fi
 
-          BASE_ISO_DIR="$RUNNER_TEMP/arkana-base-iso"
-          BASE_ROOT="$RUNNER_TEMP/arkana-base-root"
-          mkdir -p "$BASE_ISO_DIR" "$BASE_ROOT"
-          gh release download "$BASE_RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
-            --pattern '*.iso' --dir "$BASE_ISO_DIR"
-          mapfile -d '' BASE_ISOS < <(find "$BASE_ISO_DIR" -maxdepth 1 -type f -name '*.iso' -print0)
-          if ((${#BASE_ISOS[@]} != 1)); then
-            echo "Expected exactly one ISO in base release $BASE_RELEASE_TAG; found ${#BASE_ISOS[@]}." >&2
+          BASE_ARTIFACT_DIR="$RUNNER_TEMP/arkana-base-artifact"
+          BASE_ISO="$BASE_ARTIFACT_DIR/arkana.iso"
+          BASE_MARKER="$BASE_ARTIFACT_DIR/arkanaOS-update-client-system-update.txt"
+          RELEASE_MARKER="$RUNNER_TEMP/arkana-base-release-marker.txt"
+          if [[ ! -f "$BASE_ISO" || -L "$BASE_ISO" || ! -f "$BASE_MARKER" || -L "$BASE_MARKER" ]]; then
+            echo "The verified weekly base artifact is missing its ISO or provenance marker." >&2
             exit 1
           fi
 
+          RELEASE_JSON="$RUNNER_TEMP/arkana-base-release.json"
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$WEEKLY_BASE_RELEASE_TAG" > "$RELEASE_JSON"
+          TAG_SHA=$(gh api "repos/$GITHUB_REPOSITORY/commits/$WEEKLY_BASE_RELEASE_TAG" --jq .sha)
+          if [[ "$TAG_SHA" != "$WEEKLY_BASE_SOURCE_SHA" ]]; then
+            echo "The weekly base release tag changed after provenance validation." >&2
+            exit 1
+          fi
+          MARKER_ASSET=$(jq -cer '
+            [.assets[]? | select(.name == "arkanaOS-update-client-system-update.txt")]
+            | if length == 1 and .[0].size > 0 and .[0].size <= 512
+              then .[0] else error("expected one small system-update marker asset") end
+          ' "$RELEASE_JSON")
+          MARKER_ASSET_ID=$(jq -er '.id | select(type == "number" and . > 0)' <<< "$MARKER_ASSET")
+          MARKER_ASSET_SIZE=$(jq -er '.size | select(type == "number" and . > 0 and . <= 512)' <<< "$MARKER_ASSET")
+          gh api -H 'Accept: application/octet-stream' \
+            "repos/$GITHUB_REPOSITORY/releases/assets/$MARKER_ASSET_ID" > "$RELEASE_MARKER"
+          if [[ "$(wc -c < "$RELEASE_MARKER")" -ne "$MARKER_ASSET_SIZE" ]] || \
+             ! cmp -s -- "$BASE_MARKER" "$RELEASE_MARKER"; then
+            echo "The release marker does not match the verified immutable Actions artifact." >&2
+            exit 1
+          fi
+
+          BASE_ROOT=$(mktemp -d "$RUNNER_TEMP/arkana-base-root.XXXXXX")
+          trap 'rm -rf -- "$BASE_ROOT"' EXIT
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends xorriso squashfs-tools
           BASE_SQUASHFS="$RUNNER_TEMP/arkana-base-rootfs.sfs"
-          xorriso -osirrox on -indev "${BASE_ISOS[0]}" \
+          xorriso -osirrox on -indev "$BASE_ISO" \
             -extract /boot/rootfs.sfs "$BASE_SQUASHFS"
-          sudo unsquashfs -no-progress -d "$BASE_ROOT" "$BASE_SQUASHFS"
-          if [[ ! -x "$BASE_ROOT/usr/bin/arkup" ]]; then
-            echo "The selected base ISO does not include the arkup update client; refusing to publish an unusable .aup package." >&2
+          unsquashfs -no-progress -processors 1 -d "$BASE_ROOT" "$BASE_SQUASHFS"
+          if [[ -L "$BASE_ROOT/etc" || -L "$BASE_ROOT/etc/arkana-build-number" || \
+                ! -f "$BASE_ROOT/etc/arkana-build-number" || \
+                "$(cat "$BASE_ROOT/etc/arkana-build-number")" != "$WEEKLY_BASE_BUILD_NUMBER" ]]; then
+            echo "The weekly base ISO build number does not match its verified release metadata." >&2
             exit 1
           fi
-          if ! sudo chroot "$BASE_ROOT" /usr/bin/arkup pack --help \
-            > "$RUNNER_TEMP/base-arkup-pack-help.txt" 2>&1 || \
-            ! grep -Fq -- '--base-sequence' "$RUNNER_TEMP/base-arkup-pack-help.txt" || \
-            ! grep -Fq -- '--system-update' "$RUNNER_TEMP/base-arkup-pack-help.txt"; then
-            echo "The selected base ISO has an arkup client that cannot validate system updates." >&2
+          if [[ -L "$BASE_ROOT/usr" || -L "$BASE_ROOT/usr/bin" || \
+                -L "$BASE_ROOT/usr/bin/arkup" || ! -f "$BASE_ROOT/usr/bin/arkup" || \
+                ! -x "$BASE_ROOT/usr/bin/arkup" ]]; then
+            echo "The selected base ISO does not include the arkup update client; refusing to publish an unusable .aup package." >&2
             exit 1
           fi
           if [[ ! -f "$BASE_ROOT/etc/arkana-build-number" || ! -f output/iso-root/etc/arkana-build-number ]]; then
@@ -305,7 +391,7 @@ jobs:
 
           # The build containers create root-owned trees. The bounded packer runs
           # as the runner account and records modes, not filesystem ownership.
-          sudo chown -R "$(id -u):$(id -g)" "$BASE_ROOT" output/iso-root
+          sudo chown -R "$(id -u):$(id -g)" output/iso-root
 
           KEY_DIR="$RUNNER_TEMP/arkana-update-key"
           mkdir -m 700 "$KEY_DIR"
@@ -322,7 +408,7 @@ jobs:
             --signing-key "$KEY_DIR/release.key" \
             --public-key "$KEY_DIR/release.pub" \
             --output-dir "$PWD/output/updates" \
-            --description "Weekly arkanaOS developer update based on $BASE_RELEASE_TAG"
+            --description "Weekly arkanaOS developer update based on $WEEKLY_BASE_RELEASE_TAG"
 
           UPDATE_PACKAGE=$(find output/updates -maxdepth 1 -type f -name '*.aup' -print -quit)
           if [[ -z "$UPDATE_PACKAGE" ]]; then
@@ -331,9 +417,21 @@ jobs:
           fi
           cp "$KEY_DIR/release.pub" output/updates/arkanaOS-update-signing.pub
           chmod 0644 output/updates/arkanaOS-update-signing.pub
-          echo "Weekly update package built from $BASE_RELEASE_TAG: $UPDATE_PACKAGE"
+          echo "Weekly update package built from $WEEKLY_BASE_RELEASE_TAG: $UPDATE_PACKAGE"
 
-      - name: Upload Final arkanaOS ISO Artifact
+      - name: Upload Verified arkanaOS ISO Base Artifact
+        if: steps.mark-update-capability.outputs.system_update_capable == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.RELEASE_ARTIFACT_NAME }}
+          path: |
+            output/arkana.iso
+            output/arkanaOS-update-client-system-update.txt
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload arkanaOS ISO Artifact
+        if: steps.mark-update-capability.outputs.system_update_capable != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.RELEASE_ARTIFACT_NAME }}
@@ -363,7 +461,9 @@ jobs:
             echo "files<<EOF"
             echo "output/arkana.iso"
             echo "output/arkanaOS-update-client.txt"
-            echo "output/arkanaOS-update-client-system-update.txt"
+            if [[ -f output/arkanaOS-update-client-system-update.txt ]]; then
+              echo "output/arkanaOS-update-client-system-update.txt"
+            fi
             if [[ "$WEEKLY_UPDATE_RELEASE" == true ]]; then
               find output/updates -maxdepth 1 -type f \
                 \( -name '*.aup' -o -name '*.aup.sha256' -o -name 'arkanaOS-update-signing.pub' \) \
@@ -378,6 +478,7 @@ jobs:
         with:
           tag_name: ${{ env.RELEASE_ID }}
           name: ${{ env.RELEASE_NAME }}
+          target_commitish: ${{ steps.source.outputs.sha }}
           body_path: RELEASE_TEMPLATE.md
           files: ${{ steps.release-assets.outputs.files }}
           prerelease: ${{ env.RELEASE_PRERELEASE }}

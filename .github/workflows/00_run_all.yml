@@ -27,6 +27,13 @@ jobs:
   validate-weekly-signing-keys:
     name: Validate weekly update release prerequisites
     runs-on: ubuntu-latest
+    outputs:
+      weekly_base_release_tag: ${{ steps.verify-weekly-base.outputs.release_tag }}
+      weekly_base_run_id: ${{ steps.verify-weekly-base.outputs.run_id }}
+      weekly_base_artifact_id: ${{ steps.verify-weekly-base.outputs.artifact_id }}
+      weekly_base_artifact_name: ${{ steps.verify-weekly-base.outputs.artifact_name }}
+      weekly_base_build_number: ${{ steps.verify-weekly-base.outputs.build_number }}
+      weekly_base_source_sha: ${{ steps.verify-weekly-base.outputs.source_sha }}
     steps:
       - name: Require the release signing keypair for scheduled builds
         if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1'
@@ -64,25 +71,69 @@ jobs:
           persist-credentials: false
 
       - name: Require a published system-update-compatible ISO as the update base
+        id: verify-weekly-base
         if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
           BASE_RELEASE_TAG=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
             jq -s 'add' |
             python3 scripts/select-weekly-update-base.py)
           if [[ -z "$BASE_RELEASE_TAG" ]]; then
-            echo "No published weekly update release or system-update-compatible ISO is available as the update base." >&2
+            echo "No published system-update-capable release with a supported arkanaOS tag is available as the update base. Publish a compatible ISO from Run All before scheduled .aup releases." >&2
             exit 1
           fi
 
-          HAS_ARKUP_CLIENT=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$BASE_RELEASE_TAG" \
-            --jq 'any(.assets[]?; .name == "arkanaOS-update-client-system-update.txt")')
-          if [[ "$HAS_ARKUP_CLIENT" != true ]]; then
-            echo "The selected update base $BASE_RELEASE_TAG does not contain the system-update-capable arkup client. Publish a compatible ISO before scheduled .aup releases." >&2
+          VERIFY_DIR=$(mktemp -d "$RUNNER_TEMP/arkana-weekly-base.XXXXXX")
+          trap 'rm -rf -- "$VERIFY_DIR"' EXIT
+          RELEASE_JSON="$VERIFY_DIR/release.json"
+          MARKER_FILE="$VERIFY_DIR/system-update-marker.txt"
+          RUN_JSON="$VERIFY_DIR/run.json"
+          ARTIFACTS_JSON="$VERIFY_DIR/artifacts.json"
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$BASE_RELEASE_TAG" > "$RELEASE_JSON"
+
+          MARKER_ASSET=$(jq -cer '
+            [.assets[]? | select(.name == "arkanaOS-update-client-system-update.txt")]
+            | if length == 1 and .[0].size > 0 and .[0].size <= 512
+              then .[0] else error("expected one small system-update marker asset") end
+          ' "$RELEASE_JSON")
+          MARKER_ASSET_ID=$(jq -er '.id | select(type == "number" and . > 0)' <<< "$MARKER_ASSET")
+          MARKER_ASSET_SIZE=$(jq -er '.size | select(type == "number" and . > 0 and . <= 512)' <<< "$MARKER_ASSET")
+          gh api -H 'Accept: application/octet-stream' \
+            "repos/$GITHUB_REPOSITORY/releases/assets/$MARKER_ASSET_ID" > "$MARKER_FILE"
+          if [[ "$(wc -c < "$MARKER_FILE")" -ne "$MARKER_ASSET_SIZE" ]]; then
+            echo "The selected release marker changed while it was being downloaded." >&2
             exit 1
           fi
+
+          SOURCE_RUN_ID=$(awk -F= '$1 == "source-run-id" { print substr($0, index($0, "=") + 1) }' "$MARKER_FILE")
+          if ! [[ "$SOURCE_RUN_ID" =~ ^[1-9][0-9]*$ ]]; then
+            echo "The selected release marker has no valid source run ID." >&2
+            exit 1
+          fi
+          WORKFLOW_ID=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/00_run_all.yml" --jq .id)
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" > "$RUN_JSON"
+          gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/artifacts?per_page=100" |
+            jq -s '{artifacts: [ .[] | .artifacts[]? ]}' > "$ARTIFACTS_JSON"
+          TAG_SHA=$(gh api "repos/$GITHUB_REPOSITORY/commits/$BASE_RELEASE_TAG" --jq .sha)
+
+          python3 scripts/verify-weekly-base-provenance.py \
+            --release-tag "$BASE_RELEASE_TAG" \
+            --tag-sha "$TAG_SHA" \
+            --marker "$MARKER_FILE" \
+            --run-json "$RUN_JSON" \
+            --artifacts-json "$ARTIFACTS_JSON" \
+            --repository "$GITHUB_REPOSITORY" \
+            --default-branch "$DEFAULT_BRANCH" \
+            --workflow-id "$WORKFLOW_ID" > "$VERIFY_DIR/verified-base.json"
+
+          for output_name in run_id artifact_id artifact_name build_number source_sha; do
+            output_value=$(jq -er ".$output_name" "$VERIFY_DIR/verified-base.json")
+            printf '%s=%s\n' "$output_name" "$output_value" >> "$GITHUB_OUTPUT"
+          done
+          printf 'release_tag=%s\n' "$BASE_RELEASE_TAG" >> "$GITHUB_OUTPUT"
 
   stage1:
     uses: ./.github/workflows/01_stage1_base.yml
@@ -102,6 +153,13 @@ jobs:
     secrets: inherit
 
   stage4:
-    needs: stage3
+    needs: [stage3, validate-weekly-signing-keys]
     uses: ./.github/workflows/04_stage4_iso.yml
+    with:
+      weekly_base_release_tag: ${{ needs.validate-weekly-signing-keys.outputs.weekly_base_release_tag }}
+      weekly_base_run_id: ${{ needs.validate-weekly-signing-keys.outputs.weekly_base_run_id }}
+      weekly_base_artifact_id: ${{ needs.validate-weekly-signing-keys.outputs.weekly_base_artifact_id }}
+      weekly_base_artifact_name: ${{ needs.validate-weekly-signing-keys.outputs.weekly_base_artifact_name }}
+      weekly_base_build_number: ${{ needs.validate-weekly-signing-keys.outputs.weekly_base_build_number }}
+      weekly_base_source_sha: ${{ needs.validate-weekly-signing-keys.outputs.weekly_base_source_sha }}
     secrets: inherit

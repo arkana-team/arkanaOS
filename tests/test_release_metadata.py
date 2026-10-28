@@ -270,27 +270,27 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
     def test_latest_weekly_release_wins_over_newer_nightly_iso(self) -> None:
         releases = [
             self.release(
-                "weekly-old",
+                "nightly-230",
                 "2026-10-19T03:00:00Z",
                 "arkana.iso",
                 "arkanaos-weekly-old.aup",
                 "arkanaOS-update-client-system-update.txt",
             ),
             self.release(
-                "nightly-sunday",
+                "nightly-233",
                 "2026-10-25T03:00:00Z",
                 "arkana.iso",
                 "arkanaOS-update-client-system-update.txt",
             ),
             self.release(
-                "weekly-latest",
+                "nightly-231",
                 "2026-10-20T03:00:00Z",
                 "arkana.iso",
                 "arkanaos-weekly-latest.aup",
                 "arkanaOS-update-client-system-update.txt",
             ),
             self.release(
-                "draft-weekly",
+                "nightly-234",
                 "2026-10-27T03:00:00Z",
                 "arkana.iso",
                 "draft.aup",
@@ -299,27 +299,27 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
         ]
         result = self.select(releases)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout.strip(), "weekly-latest")
+        self.assertEqual(result.stdout.strip(), "nightly-231")
 
     def test_weekly_without_arkup_marker_is_skipped(self) -> None:
         releases = [
             self.release(
-                "valid-weekly",
+                "nightly-230",
                 "2026-10-19T03:00:00Z",
                 "arkana.iso",
                 "valid.aup",
                 "arkanaOS-update-client-system-update.txt",
             ),
-            self.release("incomplete-weekly", "2026-10-26T03:00:00Z", "arkana.iso", "incomplete.aup"),
+            self.release("nightly-231", "2026-10-26T03:00:00Z", "arkana.iso", "incomplete.aup"),
         ]
         result = self.select(releases)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout.strip(), "valid-weekly")
+        self.assertEqual(result.stdout.strip(), "nightly-230")
 
     def test_base_sequence_only_marker_cannot_qualify_as_a_system_update_client(self) -> None:
         releases = [
             self.release(
-                "legacy-client",
+                "nightly-240",
                 "2026-10-25T03:00:00Z",
                 "arkana.iso",
                 "arkanaOS-update-client-base-sequence.txt",
@@ -332,31 +332,44 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
 
     def test_first_weekly_release_bootstraps_from_latest_arkup_capable_iso(self) -> None:
         releases = [
-            self.release("old-base", "2026-10-18T03:00:00Z", "old.iso", "arkanaOS-update-client-system-update.txt"),
-            self.release("latest-nightly", "2026-10-25T03:00:00Z", "nightly.iso", "arkanaOS-update-client-system-update.txt"),
-            self.release("newer-legacy-iso", "2026-10-26T03:00:00Z", "legacy.iso"),
+            self.release("nightly-220", "2026-10-18T03:00:00Z", "old.iso", "arkanaOS-update-client-system-update.txt"),
+            self.release("nightly-233", "2026-10-25T03:00:00Z", "nightly.iso", "arkanaOS-update-client-system-update.txt"),
+            self.release("nightly-234", "2026-10-26T03:00:00Z", "legacy.iso"),
         ]
         result = self.select(releases)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout.strip(), "latest-nightly")
+        self.assertEqual(result.stdout.strip(), "nightly-233")
 
     def test_build_excludes_current_tag_and_uses_previous_weekly(self) -> None:
         releases = [
-            self.release("previous-weekly", "2026-10-19T03:00:00Z", "arkana.iso", "update.aup", "arkanaOS-update-client-system-update.txt"),
-            self.release("current", "2026-10-26T03:00:00Z", "arkana.iso", "update.aup", "arkanaOS-update-client-system-update.txt"),
+            self.release("nightly-231", "2026-10-19T03:00:00Z", "arkana.iso", "update.aup", "arkanaOS-update-client-system-update.txt"),
+            self.release("nightly-232", "2026-10-26T03:00:00Z", "arkana.iso", "update.aup", "arkanaOS-update-client-system-update.txt"),
         ]
-        result = self.select(releases, "--exclude-tag", "current")
+        result = self.select(releases, "--exclude-tag", "nightly-232")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout.strip(), "previous-weekly")
+        self.assertEqual(result.stdout.strip(), "nightly-231")
 
     def test_requires_aup_and_iso_assets_for_weekly_base(self) -> None:
         releases = [
-            self.release("aup-only", "2026-10-25T03:00:00Z", "update.aup"),
-            self.release("iso-only", "2026-10-26T03:00:00Z", "arkana.iso"),
+            self.release("nightly-233", "2026-10-25T03:00:00Z", "update.aup"),
+            self.release("nightly-234", "2026-10-26T03:00:00Z", "arkana.iso"),
         ]
         result = self.select(releases)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("no system-update-capable weekly release or ISO", result.stderr)
+
+    def test_unsupported_tags_are_not_used_as_api_paths(self) -> None:
+        releases = [
+            self.release(
+                "../../attacker",
+                "2026-10-27T03:00:00Z",
+                "arkana.iso",
+                "arkanaOS-update-client-system-update.txt",
+            )
+        ]
+        result = self.select(releases)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
 
     def test_no_base_fails_clearly(self) -> None:
         result = self.select([])
@@ -393,7 +406,7 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
         run_all = RUN_ALL_WORKFLOW.read_text(encoding="utf-8")
         iso = ISO_WORKFLOW.read_text(encoding="utf-8")
         self.assertEqual(run_all.count(weekly_condition), 3)
-        self.assertEqual(iso.count(weekly_condition), 2)
+        self.assertEqual(iso.count(weekly_condition), 3)
         self.assertIn(
             "WEEKLY_UPDATE_RELEASE: ${{ github.event_name == 'schedule' "
             "&& github.event.schedule == '0 3 * * 1' }}",
@@ -401,10 +414,9 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
         )
         self.assertIn('if [[ "$WEEKLY_UPDATE_RELEASE" == true ]]; then', iso)
         self.assertIn("python3 scripts/select-weekly-update-base.py", run_all)
-        self.assertIn(
-            'python3 scripts/select-weekly-update-base.py --exclude-tag "$RELEASE_ID"',
-            iso,
-        )
+        self.assertIn("artifact-ids: ${{ inputs.weekly_base_artifact_id }}", iso)
+        self.assertNotIn("gh release download", iso)
+        self.assertIn("target_commitish: ${{ steps.source.outputs.sha }}", iso)
         self.assertNotIn("sort_by(.published_at) | last", run_all + iso)
 
     def test_release_notes_document_nightly_and_weekly_assets(self) -> None:

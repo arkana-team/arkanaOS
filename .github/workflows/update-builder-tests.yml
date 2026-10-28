@@ -11,7 +11,9 @@ on:
       - "tests/test_arkup_system_install.py"
       - "tests/test_build_modes.py"
       - "tests/test_weekly_update_baseline.py"
+      - "tests/test_weekly_base_provenance.py"
       - "scripts/select-weekly-update-base.py"
+      - "scripts/verify-weekly-base-provenance.py"
       - "build.sh"
       - "build-update.sh"
       - "Dockerfile.update-builder"
@@ -31,7 +33,9 @@ on:
       - "tests/test_arkup_system_install.py"
       - "tests/test_build_modes.py"
       - "tests/test_weekly_update_baseline.py"
+      - "tests/test_weekly_base_provenance.py"
       - "scripts/select-weekly-update-base.py"
+      - "scripts/verify-weekly-base-provenance.py"
       - "build.sh"
       - "build-update.sh"
       - "Dockerfile.update-builder"
@@ -69,6 +73,9 @@ jobs:
 
       - name: Check weekly update base compatibility
         run: python3 -m unittest discover -s tests -p 'test_weekly_update_baseline.py' -v
+
+      - name: Check weekly base artifact provenance
+        run: python3 -m unittest discover -s tests -p 'test_weekly_base_provenance.py' -v
 
   builder-image:
     name: Build and smoke-test arkana-update-builder

@@ -4,10 +4,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from typing import Any
 
 UPDATE_CLIENT_ASSET = "arkanaOS-update-client-system-update.txt"
+SUPPORTED_RELEASE_TAG = re.compile(
+    r"(?:nightly-[0-9]+|v[1-9][0-9]*\.0-(?:alpha[1-9][0-9]*|beta[1-9][0-9]*|build)-[0-9]+)\Z"
+)
 
 
 def release_assets(release: dict[str, Any]) -> set[str]:
@@ -26,7 +30,7 @@ def is_published(release: dict[str, Any], excluded_tags: set[str]) -> bool:
     return (
         release.get("draft") is False
         and isinstance(tag, str)
-        and bool(tag)
+        and SUPPORTED_RELEASE_TAG.fullmatch(tag) is not None
         and tag not in excluded_tags
         and isinstance(release.get("published_at"), str)
         and bool(release["published_at"])

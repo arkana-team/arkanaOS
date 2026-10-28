@@ -22,7 +22,10 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
             preflight,
         )
         self.assertIn(MARKER, preflight)
-        self.assertIn("Publish a compatible ISO before scheduled .aup releases", preflight)
+        self.assertIn("Publish a compatible ISO from Run All before scheduled .aup releases", preflight)
+        self.assertIn("scripts/verify-weekly-base-provenance.py", preflight)
+        self.assertIn("actions/runs/$SOURCE_RUN_ID/artifacts", preflight)
+        self.assertIn("artifact_id", preflight)
         self.assertIn("needs: validate-weekly-signing-keys", workflow)
 
     def test_signing_preflight_validates_key_material_before_stage_one(self) -> None:
@@ -46,30 +49,36 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
         self.assertIn("arkup-client=/usr/bin/arkup", marker_step)
         self.assertIn("--base-sequence", marker_step)
         self.assertIn("--system-update", marker_step)
+        self.assertIn("--userspec=", marker_step)
         self.assertIn("system-update=1", marker_step)
+        self.assertIn("source-run-id=%s", marker_step)
+        self.assertIn("source-sha=%s", marker_step)
+        self.assertIn('"$SOURCE_RUN_ID" == "$GITHUB_RUN_ID"', marker_step)
         self.assertIn('! -x "$BASE_ROOT/usr/bin/arkup"', update_step)
+        self.assertIn("artifact-ids: ${{ inputs.weekly_base_artifact_id }}", workflow)
+        self.assertIn('cmp -s -- "$BASE_MARKER" "$RELEASE_MARKER"', update_step)
+        self.assertIn("unsquashfs -no-progress -processors 1", update_step)
+        self.assertNotIn('sudo chroot "$BASE_ROOT"', update_step)
+        self.assertNotIn("sudo unsquashfs", update_step)
+        self.assertNotIn("gh release download", update_step)
         update_builder = (REPOSITORY / "scripts/build-update-pack.py").read_text()
         self.assertIn("--base-sequence", update_builder)
         self.assertIn("--system-update", update_builder)
         self.assertIn(f'echo "output/{MARKER}"', release_assets)
         self.assertIn(MARKER, (REPOSITORY / "RELEASE_TEMPLATE.md").read_text())
 
-    def test_update_base_lookup_selects_previous_weekly_from_paginated_history(self) -> None:
+    def test_weekly_base_selection_is_provenanced_before_building(self) -> None:
         workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
-        update_step = workflow.split(
-            "      - name: Build signed update package for weekly developer release", 1
+        download_step = workflow.split(
+            "      - name: Download verified weekly base ISO artifact", 1
         )[1].split("      - name:", 1)[0]
-
+        self.assertIn("artifact-ids: ${{ inputs.weekly_base_artifact_id }}", download_step)
+        self.assertIn("run-id: ${{ inputs.weekly_base_run_id }}", download_step)
+        self.assertIn("repository: ${{ github.repository }}", download_step)
+        self.assertNotIn("gh release download", workflow)
         self.assertIn(
-            'gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100"',
-            update_step,
+            "python3 scripts/select-weekly-update-base.py", RUN_ALL.read_text()
         )
-        self.assertIn("jq -s 'add'", update_step)
-        self.assertIn(
-            'python3 scripts/select-weekly-update-base.py --exclude-tag "$RELEASE_ID"',
-            update_step,
-        )
-        self.assertNotIn("sort_by(.published_at) | last", update_step)
 
 
 if __name__ == "__main__":
