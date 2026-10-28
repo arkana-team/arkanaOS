@@ -1,5 +1,5 @@
 import os
-import re
+import shlex
 import subprocess
 import tempfile
 import unittest
@@ -16,6 +16,24 @@ MAKEFILES = [
     "arkanas/06_graphics_ext.mk",
     "arkanas/07_iso.mk",
 ]
+
+
+def shell_tokens(line):
+    return set(shlex.split(line.rstrip().removesuffix("\\"), comments=True))
+
+
+def ldconfig_command_lines(lines):
+    calls = []
+    for line in lines:
+        if line.lstrip().startswith("#"):
+            continue
+        shell_line = line.rstrip().removesuffix("\\")
+        lexer = shlex.shlex(shell_line, posix=True, punctuation_chars=";&|<>()")
+        lexer.whitespace_split = True
+        lexer.commenters = "#"
+        if any(Path(token).name == "ldconfig" for token in lexer):
+            calls.append(line.strip())
+    return calls
 
 
 class StagingRootSafetyTests(unittest.TestCase):
@@ -88,10 +106,29 @@ class StagingRootSafetyTests(unittest.TestCase):
                 break
             if not line.lstrip().startswith("#"):
                 recipe_lines.append(line)
-        self.assertIn(
-            "$(MAKE) DESTDIR=$(STAGING_PATH) "
-            "install_root=$(STAGING_PATH) install",
-            "\n".join(recipe_lines),
+        required_tokens = {
+            "$(MAKE)",
+            "DESTDIR=$(STAGING_PATH)",
+            "install_root=$(STAGING_PATH)",
+            "install",
+        }
+        active_commands = [
+            shell_tokens(line)
+            for line in recipe_lines
+            if line.strip()
+        ]
+        self.assertTrue(
+            any(required_tokens.issubset(tokens) for tokens in active_commands),
+            "glibc install command must actively set DESTDIR and install_root",
+        )
+        self.assertFalse(
+            required_tokens.issubset(
+                shell_tokens(
+                    "\t# $(MAKE) DESTDIR=$(STAGING_PATH) "
+                    "install_root=$(STAGING_PATH) install"
+                )
+            ),
+            "shell comments must not satisfy the active install check",
         )
 
     def test_iso_ldconfig_runs_only_inside_the_iso_root(self):
@@ -101,13 +138,18 @@ class StagingRootSafetyTests(unittest.TestCase):
         self.assertIn(remove_cache, makefile)
         self.assertIn(target_ldconfig, makefile)
         self.assertLess(makefile.index(remove_cache), makefile.index(target_ldconfig))
-        ldconfig_calls = [
-            line.strip()
-            for line in makefile.splitlines()
-            if not line.lstrip().startswith("#")
-            and re.search(r"\bldconfig(?:\s|$)", line)
-        ]
+        ldconfig_calls = ldconfig_command_lines(makefile.splitlines())
         self.assertEqual(ldconfig_calls, [target_ldconfig])
+        self.assertEqual(
+            ldconfig_command_lines(["\t/sbin/ldconfig; true"]),
+            ["/sbin/ldconfig; true"],
+        )
+        self.assertEqual(
+            ldconfig_command_lines(
+                ["\t./configure --disable-ldconfig-at-install", "\t# ldconfig"]
+            ),
+            [],
+        )
 
     def test_build_container_masks_host_ldconfig(self):
         dockerfile = (REPO_ROOT / "Dockerfile").read_text(encoding="utf-8")
