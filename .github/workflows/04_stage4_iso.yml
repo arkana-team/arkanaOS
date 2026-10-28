@@ -150,18 +150,18 @@ jobs:
             -e CCACHE_DIR=/home/builder/.cache/ccache \
             arkana-builder bash -c "sudo --preserve-env make -f arkanas/07_iso.mk"
 
-      - name: Mark ISO as Arkup system-update-capable
+      - name: Mark ISO as arkup system-update-capable
         run: |
           set -euo pipefail
           if [[ ! -x output/iso-root/usr/bin/arkup ]]; then
-            echo "The ISO root does not contain the Arkup update client." >&2
+            echo "The ISO root does not contain the arkup update client." >&2
             exit 1
           fi
           if ! sudo chroot output/iso-root /usr/bin/arkup pack --help \
             > "$RUNNER_TEMP/arkup-pack-help.txt" 2>&1 || \
             ! grep -Fq -- '--base-sequence' "$RUNNER_TEMP/arkup-pack-help.txt" || \
             ! grep -Fq -- '--system-update' "$RUNNER_TEMP/arkup-pack-help.txt"; then
-            echo "The ISO root Arkup client cannot validate base-bound system updates." >&2
+            echo "The ISO root arkup client cannot validate base-bound system updates." >&2
             exit 1
           fi
           printf 'arkup-client=/usr/bin/arkup\n' > output/arkanaOS-update-client.txt
@@ -266,7 +266,7 @@ jobs:
             jq -s 'add' |
             python3 scripts/select-weekly-update-base.py --exclude-tag "$RELEASE_ID")
           if [[ -z "$BASE_RELEASE_TAG" ]]; then
-            echo "No previous weekly update release or Arkup-capable ISO is available as the update base." >&2
+            echo "No previous weekly update release or arkup-capable ISO is available as the update base." >&2
             exit 1
           fi
 
@@ -288,14 +288,14 @@ jobs:
             -extract /boot/rootfs.sfs "$BASE_SQUASHFS"
           sudo unsquashfs -no-progress -d "$BASE_ROOT" "$BASE_SQUASHFS"
           if [[ ! -x "$BASE_ROOT/usr/bin/arkup" ]]; then
-            echo "The selected base ISO does not include the Arkup update client; refusing to publish an unusable .aup package." >&2
+            echo "The selected base ISO does not include the arkup update client; refusing to publish an unusable .aup package." >&2
             exit 1
           fi
           if ! sudo chroot "$BASE_ROOT" /usr/bin/arkup pack --help \
             > "$RUNNER_TEMP/base-arkup-pack-help.txt" 2>&1 || \
             ! grep -Fq -- '--base-sequence' "$RUNNER_TEMP/base-arkup-pack-help.txt" || \
             ! grep -Fq -- '--system-update' "$RUNNER_TEMP/base-arkup-pack-help.txt"; then
-            echo "The selected base ISO has an Arkup client that cannot validate system updates." >&2
+            echo "The selected base ISO has an arkup client that cannot validate system updates." >&2
             exit 1
           fi
           if [[ ! -f "$BASE_ROOT/etc/arkana-build-number" || ! -f output/iso-root/etc/arkana-build-number ]]; then

@@ -412,7 +412,7 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
         template = RELEASE_TEMPLATE.read_text(encoding="utf-8")
         self.assertIn("Scheduled nightly releases include the bootable ISO.", template)
         self.assertIn("Monday weekly developer release", template)
-        self.assertIn("signed Arkup `.aup` update package", template)
+        self.assertIn("signed arkup `.aup` update package", template)
 
 
 if __name__ == "__main__":

@@ -52,7 +52,7 @@ jobs:
             raw_key="$key_file.raw"
             if ! base64 --decode "$key_file" > "$raw_key" 2>/dev/null || \
                [[ "$(wc -c < "$raw_key")" -ne 32 ]]; then
-              echo "Weekly Arkup signing and public key files must each decode to 32 bytes." >&2
+              echo "Weekly arkup signing and public key files must each decode to 32 bytes." >&2
               exit 1
             fi
           done
@@ -73,14 +73,14 @@ jobs:
             jq -s 'add' |
             python3 scripts/select-weekly-update-base.py)
           if [[ -z "$BASE_RELEASE_TAG" ]]; then
-            echo "No published weekly update release or Arkup-capable ISO is available as the update base." >&2
+            echo "No published weekly update release or arkup-capable ISO is available as the update base." >&2
             exit 1
           fi
 
           HAS_ARKUP_CLIENT=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$BASE_RELEASE_TAG" \
             --jq 'any(.assets[]?; .name == "arkanaOS-update-client-system-update.txt")')
           if [[ "$HAS_ARKUP_CLIENT" != true ]]; then
-            echo "The selected update base $BASE_RELEASE_TAG does not contain the system-update-capable Arkup client. Publish a compatible ISO before scheduled .aup releases." >&2
+            echo "The selected update base $BASE_RELEASE_TAG does not contain the system-update-capable arkup client. Publish a compatible ISO before scheduled .aup releases." >&2
             exit 1
           fi
 

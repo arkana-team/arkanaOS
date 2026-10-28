@@ -1,4 +1,4 @@
-"""Guard weekly updates against ISO releases without the Arkup client."""
+"""Guard weekly updates against ISO releases without the arkup client."""
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
 
     def test_iso_release_marker_is_created_only_when_arkup_is_installed(self) -> None:
         workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
-        marker_step = workflow.split("      - name: Mark ISO as Arkup system-update-capable", 1)[1]
+        marker_step = workflow.split("      - name: Mark ISO as arkup system-update-capable", 1)[1]
         marker_step = marker_step.split("      - name:", 1)[0]
         update_step = workflow.split(
             "      - name: Build signed update package for weekly developer release", 1
