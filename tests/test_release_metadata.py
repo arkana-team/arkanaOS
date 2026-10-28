@@ -413,6 +413,7 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
         self.assertIn("Scheduled nightly releases include the bootable ISO.", template)
         self.assertIn("Monday weekly developer release", template)
         self.assertIn("signed arkup `.aup` update package", template)
+        self.assertIn("# GitHub Generated release notes", template)
 
 
 if __name__ == "__main__":

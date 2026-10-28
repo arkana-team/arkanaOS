@@ -15,4 +15,4 @@ Every ISO release includes `arkanaOS-update-client.txt`. A compatible ISO also i
 ### Screenshots
 Not captured by the automated workflow.
 
-## GitHub Generated Release Notes
+# GitHub Generated release notes
