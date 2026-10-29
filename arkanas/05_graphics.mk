@@ -208,6 +208,11 @@ X11_LIB_VERS = 1.8.12 1.0.12 0.1.3 1.1.5 1.3.6 2.0.7 1.3.3 1.17.0 1.1.8 1.1.6 0.
 X11_PARSED_LIBS := $(foreach i, $(shell seq 1 $(words $(X11_LIBS))), \
   $(word $(i), $(X11_LIBS))/$(word $(i), $(X11_LIB_VERS)))
 
+# XCB protocol descriptions; libxcb uses these to generate extension APIs.
+XCB_PROTO_URL = https://xorg.freedesktop.org/archive/individual/proto/xcb-proto-1.17.0.tar.xz
+XCB_PROTO_VER = 1.17.0
+XCB_PROTO_PATH = $(SRC_PATH)/xcb-proto-$(XCB_PROTO_VER)
+
 X11_APPS = xauth xkbcomp xsetroot xrandr
 X11_APP_VERS = 1.1.4 1.4.7 1.1.3 1.5.2
 
@@ -368,6 +373,16 @@ xorg-server: download-xorg-server libepoxy mesa .xorg-server-done
 	touch .xorg-server-done
 
 # Download Xorg libraries
+download-xcb-proto: .xcb-proto-obtained
+.xcb-proto-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O xcb-proto-$(XCB_PROTO_VER).tar.xz $(XCB_PROTO_URL) && tar xf xcb-proto-$(XCB_PROTO_VER).tar.xz
+	touch .xcb-proto-obtained
+
+xcb-proto: download-xcb-proto .xcb-proto-done
+.xcb-proto-done:
+	cd $(XCB_PROTO_PATH) && PYTHON=python3 ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .xcb-proto-done
+
 download-xorg-libs: .xorg-libs-obtained
 .xorg-libs-obtained:
 	for pair in $(X11_PARSED_LIBS); do \
@@ -379,7 +394,7 @@ download-xorg-libs: .xorg-libs-obtained
 	touch .xorg-libs-obtained
 
 # Compile Xorg libraries
-xorg-libs: download-xorg-libs fontconfig .xorg-libs-done
+xorg-libs: download-xorg-libs xcb-proto fontconfig .xorg-libs-done
 .xorg-libs-done:
 	for pair in $(X11_PARSED_LIBS); do \
 	  lib=$${pair%%/*}; \

@@ -7,6 +7,18 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class GraphicsStageBuildWorkflowTests(unittest.TestCase):
+    def test_xcb_protocol_definitions_are_staged_before_libxcb(self) -> None:
+        recipe = (ROOT / "arkanas/05_graphics.mk").read_text(encoding="utf-8")
+        self.assertIn("XCB_PROTO_VER = 1.17.0", recipe)
+        self.assertIn("xcb-proto: download-xcb-proto .xcb-proto-done", recipe)
+        self.assertIn(
+            "PYTHON=python3 ./configure --prefix=/usr", recipe
+        )
+        self.assertIn(
+            "xorg-libs: download-xorg-libs xcb-proto fontconfig .xorg-libs-done",
+            recipe,
+        )
+
     def test_workflow_is_limited_to_graphics_pull_request_changes(self) -> None:
         workflow = (ROOT / ".github/workflows/graphics-stage-build.yml").read_text(
             encoding="utf-8"
