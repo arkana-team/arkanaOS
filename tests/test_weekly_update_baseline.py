@@ -33,7 +33,7 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
         self.assertIn(MARKER, preflight)
         self.assertIn("scripts/verify-weekly-base-provenance.py", preflight)
         self.assertIn(
-            "UPDATE_BASE_CHANNEL: ${{ github.event.schedule == '0 3 * * 1' && 'weekly' || 'nightly' }}",
+            "UPDATE_BASE_CHANNEL: ${{ github.event.schedule == '17 3 * * 1' && 'weekly' || 'nightly' }}",
             preflight,
         )
         self.assertIn(
