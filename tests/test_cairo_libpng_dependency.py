@@ -48,6 +48,13 @@ class CairoLibpngDependencyTests(unittest.TestCase):
         self.assertNotIn(".libpng-obtained", libpng)
         self.assertNotIn(".libpng-done", libpng)
 
+    def test_graphics_failure_artifact_includes_cmake_configure_log(self) -> None:
+        workflow = (ROOT / ".github/workflows/03_stage3_graphics.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("*/build/CMakeFiles/CMakeConfigureLog.yaml", workflow)
+        self.assertIn("src/*/build/CMakeFiles/CMakeConfigureLog.yaml", workflow)
+
 
 if __name__ == "__main__":
     unittest.main()
