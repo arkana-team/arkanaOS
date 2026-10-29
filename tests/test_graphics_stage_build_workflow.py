@@ -7,6 +7,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class GraphicsStageBuildWorkflowTests(unittest.TestCase):
+    def test_graphics_recipe_defaults_to_building_all_targets(self) -> None:
+        recipe = (ROOT / "arkanas/05_graphics.mk").read_text(encoding="utf-8")
+        self.assertIn(".DEFAULT_GOAL := all", recipe)
+
     def test_xcb_protocol_definitions_are_staged_before_libxcb(self) -> None:
         recipe = (ROOT / "arkanas/05_graphics.mk").read_text(encoding="utf-8")
         self.assertIn("XCB_PROTO_VER = 1.17.0", recipe)
@@ -53,6 +57,8 @@ class GraphicsStageBuildWorkflowTests(unittest.TestCase):
         self.assertIn("--cpus=2 --memory=3g --memory-swap=3g", workflow)
         self.assertIn("THREADS=2", workflow)
         self.assertIn("NINJAJOBS=2", workflow)
+        self.assertIn("make -f arkanas/05_graphics.mk all THREADS=2", workflow)
+        self.assertIn("make -f arkanas/06_graphics_ext.mk all THREADS=2", workflow)
         self.assertIn("ccache-stage3", workflow)
         self.assertIn("graphics-stage-build-logs", workflow)
 

@@ -165,7 +165,7 @@ jobs:
             -v "$(pwd)/output:/build/arkana/output" \
             -e THREADS=2 -e NINJAJOBS=2 \
             arkana-builder:graphics-test bash -c \
-            "sudo --preserve-env=THREADS,NINJAJOBS make -f arkanas/05_graphics.mk THREADS=2 && sudo --preserve-env=THREADS,NINJAJOBS make -f arkanas/06_graphics_ext.mk THREADS=2"
+            "sudo --preserve-env=THREADS,NINJAJOBS make -f arkanas/05_graphics.mk all THREADS=2 && sudo --preserve-env=THREADS,NINJAJOBS make -f arkanas/06_graphics_ext.mk all THREADS=2"
 
       - name: Make build logs readable after failure
         if: failure()
