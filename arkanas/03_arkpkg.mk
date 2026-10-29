@@ -7,7 +7,7 @@ include arkanas/staging-guard.mk
 STAGING_PATH = $(shell realpath ./staging)
 OUTPUT_PATH = $(shell realpath ./output)
 
-ARKPKG_VER = ecc4fe1983e295a9efe71ec27040a44f9d603752
+ARKPKG_VER = 5f4a64e0abfb591012894433b06a8ddd9d4eaa41
 ARKPKG_URL = https://github.com/arkana-team/arkpkg/archive/$(ARKPKG_VER).tar.gz
 ARKPKG_PATH = $(SRC_PATH)/arkpkg-$(ARKPKG_VER)
 ARKCFG_URL = https://github.com/arkana-team/arkcfg/archive/refs/heads/main.tar.gz
