@@ -855,16 +855,17 @@ vim: download-vim .vim-done
 	touch .vim-done
 
 # Download rsync
-download-rsync: .rsync-obtained
-.rsync-obtained:
+download-rsync: .rsync-verified-obtained
+.rsync-verified-obtained:
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O rsync-$(RSYNC_VER).tar.gz $(RSYNC_URL) && \
 		echo "$(RSYNC_SHA256)  rsync-$(RSYNC_VER).tar.gz" | sha256sum -c - && \
+		rm -rf "$(RSYNC_PATH)" && \
 		tar xf rsync-$(RSYNC_VER).tar.gz
-	touch .rsync-obtained
+	touch .rsync-verified-obtained
 
 # Compile rsync
 rsync: download-rsync .rsync-done
-.rsync-done:
+.rsync-done: .rsync-verified-obtained
 	cd $(RSYNC_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --disable-xxhash --without-included-zlib && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .rsync-done
 
