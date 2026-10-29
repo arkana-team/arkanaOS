@@ -33,6 +33,17 @@ class LiveNsCDEBackdropTests(unittest.TestCase):
 
         self.assertNotIn("fvwm-root", session[live_end:])
 
+    def test_iso_recipe_installs_the_live_session_backdrop(self) -> None:
+        recipe = (REPOSITORY / "arkanas/07_iso.mk").read_text(encoding="utf-8")
+
+        self.assertIn("$(ISO_ROOT_PATH)/root/.NsCDE/backer", recipe)
+        self.assertIn(
+            "$(ISO_ROOT_PATH)/root/.NsCDE/backer/Desk$$desk-Solyaris.pm", recipe
+        )
+        self.assertIn(
+            "$(ISO_ROOT_PATH)/etc/skel/.NsCDE/backer/", recipe
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
