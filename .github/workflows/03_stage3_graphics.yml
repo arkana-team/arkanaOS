@@ -137,6 +137,17 @@ jobs:
           path: arkana-stage3.tar
           retention-days: 7
 
+      - name: Make Build Logs Readable on Failure
+        if: failure()
+        run: |
+          if [ -d src ]; then
+            sudo find src -type d -exec chmod a+rx {} +
+            sudo find src -type f \
+              \( -path '*/build/meson-logs/*' -o -path '*/config.log' \
+              -o -path '*/build/CMakeOutput.log' -o -path '*/build/CMakeError.log' \) \
+              -exec chmod a+r {} +
+          fi
+
       - name: Upload Error Logs on Failure
         if: failure()
         uses: actions/upload-artifact@v4
