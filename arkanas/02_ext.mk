@@ -244,8 +244,9 @@ VIM_PATH = $(SRC_PATH)/vim-$(VIM_VER)
 
 # Rsync
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/basicnet/rsync.html
-RSYNC_URL = https://www.samba.org/ftp/rsync/src/rsync-3.4.1.tar.gz
+RSYNC_URL = https://github.com/RsyncProject/rsync/releases/download/v3.4.1/rsync-3.4.1.tar.gz
 RSYNC_VER = 3.4.1
+RSYNC_SHA256 = 2924bcb3a1ed8b551fc101f740b9f0fe0a202b115027647cf69850d65fd88c52
 RSYNC_PATH = $(SRC_PATH)/rsync-$(RSYNC_VER)
 
 # Dosfstools
@@ -856,7 +857,9 @@ vim: download-vim .vim-done
 # Download rsync
 download-rsync: .rsync-obtained
 .rsync-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O rsync-$(RSYNC_VER).tar.gz $(RSYNC_URL) && tar xf rsync-$(RSYNC_VER).tar.gz
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O rsync-$(RSYNC_VER).tar.gz $(RSYNC_URL) && \
+		echo "$(RSYNC_SHA256)  rsync-$(RSYNC_VER).tar.gz" | sha256sum -c - && \
+		tar xf rsync-$(RSYNC_VER).tar.gz
 	touch .rsync-obtained
 
 # Compile rsync
