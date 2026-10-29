@@ -9,6 +9,10 @@ proc:x:26:
 games:x:50:
 lock:x:54:
 network:x:90:
+dialout:x:91:
+cdrom:x:92:
+tape:x:93:
+uuidd:x:97:
 floppy:x:94:
 scanner:x:96:
 power:x:98:

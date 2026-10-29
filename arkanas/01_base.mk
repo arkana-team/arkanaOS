@@ -755,7 +755,8 @@ linux-pam: download-linux-pam .linux-pam-done .linux-pam-systemd-login-done
 	CFLAGS="-I$(STAGING_PATH)/usr/include" LDFLAGS="-L$(STAGING_PATH)/usr/lib" \
 	meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -Ddocs=disabled && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install && \
 	chmod 4755 $(STAGING_PATH)/usr/sbin/unix_chkpwd && cp -a /etc/pam.d/* $(STAGING_PATH)/etc/pam.d/ && cp ../../../passwd $(STAGING_PATH)/etc/passwd && \
-	cp ../../../shadow $(STAGING_PATH)/etc/shadow && cp ../../../group $(STAGING_PATH)/etc/group
+	cp ../../../shadow $(STAGING_PATH)/etc/shadow && cp ../../../group $(STAGING_PATH)/etc/group && \
+	find $(STAGING_PATH)/etc/pam.d -type f -exec sed -i -e '/pam_selinux\.so/d' -e '/pam_console\.so/d' {} +
 	touch .linux-pam-done
 
 # The copied host PAM stack may omit logind registration for console sessions.
