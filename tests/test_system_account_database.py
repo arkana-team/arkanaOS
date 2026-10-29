@@ -35,6 +35,16 @@ class SystemAccountDatabaseTests(unittest.TestCase):
         self.assertEqual(users["uuidd"][0], groups["uuidd"])
         self.assertEqual(users["uuidd"][1], groups["uuidd"])
 
+    def test_uuidd_has_a_locked_shadow_entry(self):
+        shadow_entries = {}
+        for line in (ROOT / "shadow").read_text(encoding="utf-8").splitlines():
+            fields = line.split(":")
+            self.assertEqual(len(fields), 9, f"invalid shadow record: {fields[0]}")
+            shadow_entries[fields[0]] = fields
+
+        self.assertIn("uuidd", shadow_entries)
+        self.assertTrue(shadow_entries["uuidd"][1].startswith("!"))
+
     def test_pam_stack_drops_modules_not_built_in_the_image(self):
         recipe = (ROOT / "arkanas/01_base.mk").read_text(encoding="utf-8")
         self.assertIn("/pam_selinux\\.so/d", recipe)
