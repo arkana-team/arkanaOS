@@ -4,12 +4,24 @@ on:
   pull_request:
     paths:
       - "arkanas/01_base.mk"
+      - ".github/workflows/00_run_all.yml"
+      - ".github/workflows/04_stage4_iso.yml"
+      - "RELEASE_TEMPLATE.md"
       - "tests/test_release_metadata.py"
+      - "scripts/select-weekly-update-base.py"
+      - "scripts/verify-weekly-base-provenance.py"
+      - "tests/test_weekly_base_provenance.py"
       - ".github/workflows/release-metadata-tests.yml"
   push:
     paths:
       - "arkanas/01_base.mk"
+      - ".github/workflows/00_run_all.yml"
+      - ".github/workflows/04_stage4_iso.yml"
+      - "RELEASE_TEMPLATE.md"
       - "tests/test_release_metadata.py"
+      - "scripts/select-weekly-update-base.py"
+      - "scripts/verify-weekly-base-provenance.py"
+      - "tests/test_weekly_base_provenance.py"
       - ".github/workflows/release-metadata-tests.yml"
 
 permissions:
@@ -24,3 +36,5 @@ jobs:
         uses: actions/checkout@v4
       - name: Run release metadata tests
         run: python3 -m unittest discover -s tests -p 'test_release_metadata.py' -v
+      - name: Run weekly base provenance tests
+        run: python3 -m unittest discover -s tests -p 'test_weekly_base_provenance.py' -v

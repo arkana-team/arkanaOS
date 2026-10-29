@@ -13,9 +13,9 @@ ARKPKG_PATH = $(SRC_PATH)/arkpkg-$(ARKPKG_VER)
 ARKCFG_URL = https://github.com/arkana-team/arkcfg/archive/refs/heads/main.tar.gz
 ARKCFG_VER = main
 ARKCFG_PATH = $(SRC_PATH)/arkcfg-$(ARKCFG_VER)
-ARKUP_VER = ab6a1b7ee9321587b3ab1d371f56b04362ac35cb
+ARKUP_VER = 01f6af6a2a6ab28052cb6846d8471e6b66fc8a8b
 ARKUP_URL = https://github.com/arkana-team/arkup/archive/$(ARKUP_VER).tar.gz
-ARKUP_SHA256 = 64e3d9a9e259ce4a1094f589cdd61dc3d3540e714cdae8bec27adf3f12fd485a
+ARKUP_SHA256 = ebecac463dbce6435dac7bf1a76977a48d8957f0150d2a4209f495c6b522ad2f
 ARKUP_PATH = $(SRC_PATH)/arkup-$(ARKUP_VER)
 
 .PHONY: all

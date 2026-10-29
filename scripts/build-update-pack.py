@@ -16,7 +16,6 @@ import tempfile
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 
-
 SYSTEM_METADATA = (
     "etc/arkana-build-number",
     "etc/arkana-release-prefix",
@@ -199,6 +198,8 @@ def _read_regular_text(root: Path, relative: str, *, single_line: bool = True) -
 def _expected_release(prefix: str, build: int) -> tuple[str, str, str, str]:
     if prefix == "nightly":
         return "nightly", "nightly", f"nightly-{build}", "true"
+    if prefix == "weekly":
+        return "weekly", "weekly", f"weekly-{build}", "true"
     patterns = (
         (r"r([1-9][0-9]*)-a([1-9][0-9]*)", "alpha", "true"),
         (r"r([1-9][0-9]*)-b([1-9][0-9]*)", "beta", "true"),
@@ -404,7 +405,9 @@ def build_update(
         print("No system changes found; no .aup package was created.")
         return None
 
-    filename = f"arkanaos-{target_release.release_id}.aup"
+    filename = (
+        f"arkanaos-{target_release.release_id}-from-build-{base_release.build}.aup"
+    )
     output = output_dir / filename
     sidecar = output_dir / f"{filename}.sha256"
     if os.path.lexists(output) or os.path.lexists(sidecar):
@@ -436,6 +439,9 @@ def build_update(
             target_release.display,
             "--sequence",
             str(target_release.build),
+            "--base-sequence",
+            str(base_release.build),
+            "--system-update",
             "--arch",
             architecture,
             "--description",

@@ -4,11 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       release_prefix:
-        description: "Release label before the automatic build number (nightly, r1-a1, r1-b1, r1-1)"
+        description: "Release label before the automatic build number (nightly, r1-a1, r1-b1, r1-1); weekly releases run on Mondays"
         required: true
         default: nightly
         type: string
   schedule:
+    # Publish a nightly ISO and signed update Sunday and Tuesday through Saturday.
+    - cron: "0 3 * * 0,2-6"
+    # Monday is the weekly developer release; it also includes the ISO and .aup.
     - cron: "0 3 * * 1"
 
 concurrency:
@@ -21,10 +24,29 @@ permissions:
   contents: write
 
 jobs:
-  validate-weekly-signing-keys:
-    name: Validate weekly update release prerequisites
+  validate-scheduled-update-prerequisites:
+    name: Validate scheduled update release prerequisites
     runs-on: ubuntu-latest
+    outputs:
+      update_bases_json: ${{ steps.verify-update-base.outputs.update_bases_json }}
     steps:
+      - name: Reject manual weekly release labels
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          RELEASE_PREFIX: ${{ inputs.release_prefix }}
+        run: |
+          set -euo pipefail
+          if [[ "$RELEASE_PREFIX" == weekly ]]; then
+            echo "Weekly releases are published by the Monday schedule and cannot be manually labeled weekly." >&2
+            exit 1
+          fi
+
+      - name: Check out source for scheduled release preflight
+        if: github.event_name == 'schedule'
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
       - name: Require the release signing keypair for scheduled builds
         if: github.event_name == 'schedule'
         env:
@@ -33,7 +55,7 @@ jobs:
         run: |
           set -euo pipefail
           if [[ -z "$ARKUP_UPDATE_SIGNING_KEY_B64" || -z "$ARKUP_UPDATE_PUBLIC_KEY_B64" ]]; then
-            echo "Add repository secrets ARKUP_UPDATE_SIGNING_KEY_B64 and ARKUP_UPDATE_PUBLIC_KEY_B64 before scheduled releases." >&2
+            echo "Configure the Actions secrets ARKUP_UPDATE_SIGNING_KEY_B64 and ARKUP_UPDATE_PUBLIC_KEY_B64 before scheduled releases." >&2
             exit 1
           fi
           KEY_DIR=$(mktemp -d)
@@ -42,49 +64,104 @@ jobs:
           if ! printf '%s' "$ARKUP_UPDATE_SIGNING_KEY_B64" | base64 --decode > "$KEY_DIR/release.key" 2>/dev/null || \
              ! printf '%s' "$ARKUP_UPDATE_PUBLIC_KEY_B64" | base64 --decode > "$KEY_DIR/release.pub" 2>/dev/null || \
              [[ ! -s "$KEY_DIR/release.key" || ! -s "$KEY_DIR/release.pub" ]]; then
-            echo "Weekly update signing secrets must be non-empty base64-encoded key files." >&2
+            echo "Update signing secrets must be non-empty base64-encoded key files." >&2
             exit 1
           fi
           for key_file in "$KEY_DIR/release.key" "$KEY_DIR/release.pub"; do
             raw_key="$key_file.raw"
             if ! base64 --decode "$key_file" > "$raw_key" 2>/dev/null || \
                [[ "$(wc -c < "$raw_key")" -ne 32 ]]; then
-              echo "Weekly Arkup signing and public key files must each decode to 32 bytes." >&2
+              echo "arkup signing and public key files must each decode to 32 bytes." >&2
               exit 1
             fi
           done
+          python3 scripts/verify-update-signing-keypair.py \
+            "$KEY_DIR/release.key" "$KEY_DIR/release.pub"
 
-      - name: Require a published Arkup-capable ISO as the update base
+      - name: Verify persistent release ISOs as update bases
+        id: verify-update-base
         if: github.event_name == 'schedule'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          UPDATE_BASE_CHANNEL: ${{ github.event.schedule == '0 3 * * 1' && 'weekly' || 'nightly' }}
         run: |
           set -euo pipefail
-          BASE_RELEASE_TAG=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
-            jq -s -r '
-              add
-              | [.[] | select(.draft == false and
-                  any(.assets[]?; .name | endswith(".iso")))]
-              | sort_by(.published_at)
-              | last
-              | .tag_name // empty')
-          if [[ -z "$BASE_RELEASE_TAG" ]]; then
-            echo "No published arkanaOS ISO release is available as the update base." >&2
+          BASE_RELEASE_TAGS_JSON=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
+            jq -s 'add' |
+            python3 scripts/select-weekly-update-base.py --channel "$UPDATE_BASE_CHANNEL")
+          if ! jq -e 'type == "array" and length > 0 and length <= 2 and all(.[]; type == "string")' \
+            <<< "$BASE_RELEASE_TAGS_JSON" >/dev/null; then
+            echo "No published release ISO with a supported arkanaOS tag is available as the update base. Publish a compatible ISO from Run All before scheduled .aup releases." >&2
             exit 1
           fi
 
-          HAS_ARKUP_CLIENT=$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$BASE_RELEASE_TAG" \
-            --jq 'any(.assets[]?; .name == "arkanaOS-update-client.txt")')
-          if [[ "$HAS_ARKUP_CLIENT" != true ]]; then
-            echo "The latest ISO release $BASE_RELEASE_TAG predates the Arkup client. Run workflow_dispatch once to publish an Arkup-capable ISO before scheduled .aup releases." >&2
+          VERIFY_DIR=$(mktemp -d "$RUNNER_TEMP/arkana-update-base.XXXXXX")
+          trap 'rm -rf -- "$VERIFY_DIR"' EXIT
+          WORKFLOW_ID=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/00_run_all.yml" --jq .id)
+          VERIFIED_BASES='[]'
+          while IFS= read -r BASE_RELEASE_TAG; do
+            if ! [[ "$BASE_RELEASE_TAG" =~ ^(nightly-[0-9]+|weekly-[0-9]+|v[1-9][0-9]*\.0-((alpha[1-9][0-9]*|beta[1-9][0-9]*)-build|build)-[0-9]+)$ ]]; then
+              echo "The update-base selector returned an unsupported release tag." >&2
+              exit 1
+            fi
+            RELEASE_JSON="$VERIFY_DIR/$BASE_RELEASE_TAG-release.json"
+            MARKER_FILE="$VERIFY_DIR/$BASE_RELEASE_TAG-marker.txt"
+            RUN_JSON="$VERIFY_DIR/$BASE_RELEASE_TAG-run.json"
+            VERIFIED_JSON="$VERIFY_DIR/$BASE_RELEASE_TAG-verified.json"
+            gh api "repos/$GITHUB_REPOSITORY/releases/tags/$BASE_RELEASE_TAG" > "$RELEASE_JSON"
+            MARKER_ASSET_ID=$(jq -er '
+              [.assets[]? | select(.name == "arkanaOS-update-client-system-update.txt")]
+              | if length == 1 and .[0].size > 0 and .[0].size <= 512 and .[0].id > 0
+                then .[0].id else error("expected one small system-update marker asset") end
+            ' "$RELEASE_JSON")
+            MARKER_ASSET_SIZE=$(jq -er '
+              [.assets[]? | select(.name == "arkanaOS-update-client-system-update.txt")]
+              | if length == 1 then .[0].size else error("expected one marker") end
+            ' "$RELEASE_JSON")
+            MARKER_ASSET_DIGEST=$(jq -er '
+              [.assets[]? | select(.name == "arkanaOS-update-client-system-update.txt")]
+              | if length == 1 and (.[0].digest | type == "string" and test("^sha256:[0-9a-f]{64}$"))
+                then .[0].digest else error("expected a SHA-256 marker digest") end
+            ' "$RELEASE_JSON")
+            gh api -H 'Accept: application/octet-stream' \
+              "repos/$GITHUB_REPOSITORY/releases/assets/$MARKER_ASSET_ID" > "$MARKER_FILE"
+            if [[ "$(wc -c < "$MARKER_FILE")" -ne "$MARKER_ASSET_SIZE" ]] || \
+               [[ "sha256:$(sha256sum "$MARKER_FILE" | cut -d' ' -f1)" != "$MARKER_ASSET_DIGEST" ]]; then
+              echo "The selected release marker changed while it was being downloaded." >&2
+              exit 1
+            fi
+            SOURCE_RUN_ID=$(awk -F= '$1 == "source-run-id" { print substr($0, index($0, "=") + 1) }' "$MARKER_FILE")
+            if ! [[ "$SOURCE_RUN_ID" =~ ^[1-9][0-9]*$ ]]; then
+              echo "The selected release marker has no valid source run ID." >&2
+              exit 1
+            fi
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" > "$RUN_JSON"
+            TAG_SHA=$(gh api "repos/$GITHUB_REPOSITORY/commits/$BASE_RELEASE_TAG" --jq .sha)
+
+            python3 scripts/verify-weekly-base-provenance.py \
+              --release-tag "$BASE_RELEASE_TAG" \
+              --tag-sha "$TAG_SHA" \
+              --marker "$MARKER_FILE" \
+              --run-json "$RUN_JSON" \
+              --release-json "$RELEASE_JSON" \
+              --repository "$GITHUB_REPOSITORY" \
+              --default-branch "$DEFAULT_BRANCH" \
+              --workflow-id "$WORKFLOW_ID" > "$VERIFIED_JSON"
+            VERIFIED_BASES=$(jq -c --argjson base "$(cat "$VERIFIED_JSON")" '. + [$base]' <<< "$VERIFIED_BASES")
+          done < <(jq -r '.[]' <<< "$BASE_RELEASE_TAGS_JSON")
+
+          if [[ "$(jq 'length' <<< "$VERIFIED_BASES")" -ne "$(jq 'length' <<< "$BASE_RELEASE_TAGS_JSON")" ]]; then
+            echo "Not all selected update bases passed provenance validation." >&2
             exit 1
           fi
+          printf 'update_bases_json=%s\n' "$VERIFIED_BASES" >> "$GITHUB_OUTPUT"
 
   stage1:
     uses: ./.github/workflows/01_stage1_base.yml
-    needs: validate-weekly-signing-keys
+    needs: validate-scheduled-update-prerequisites
     with:
-      release_prefix: ${{ inputs.release_prefix || 'nightly' }}
+      release_prefix: ${{ inputs.release_prefix || (github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1' && 'weekly' || 'nightly') }}
     secrets: inherit
 
   stage2:
@@ -98,6 +175,8 @@ jobs:
     secrets: inherit
 
   stage4:
-    needs: stage3
+    needs: [stage3, validate-scheduled-update-prerequisites]
     uses: ./.github/workflows/04_stage4_iso.yml
+    with:
+      update_bases_json: ${{ needs.validate-scheduled-update-prerequisites.outputs.update_bases_json }}
     secrets: inherit

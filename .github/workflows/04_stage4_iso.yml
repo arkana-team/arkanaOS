@@ -8,6 +8,10 @@ on:
         required: true
         type: string
   workflow_call:
+    inputs:
+      update_bases_json:
+        required: false
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -150,15 +154,47 @@ jobs:
             -e CCACHE_DIR=/home/builder/.cache/ccache \
             arkana-builder bash -c "sudo --preserve-env make -f arkanas/07_iso.mk"
 
-      - name: Mark ISO as Arkup update-capable
+      - name: Mark ISO as arkup system-update-capable
+        id: mark-update-capability
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          SOURCE_RUN_ID: ${{ steps.source.outputs.run_id }}
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
         run: |
           set -euo pipefail
           if [[ ! -x output/iso-root/usr/bin/arkup ]]; then
-            echo "The ISO root does not contain the Arkup update client." >&2
+            echo "The ISO root does not contain the arkup update client." >&2
+            exit 1
+          fi
+          if ! sudo chroot --groups="$(id -G)" \
+            --userspec="$(id -u):$(id -g)" output/iso-root \
+            /usr/bin/arkup pack --help 2>&1 | \
+            tee "$RUNNER_TEMP/arkup-pack-help.txt" >/dev/null || \
+            ! grep -Fq -- '--base-sequence' "$RUNNER_TEMP/arkup-pack-help.txt" || \
+            ! grep -Fq -- '--system-update' "$RUNNER_TEMP/arkup-pack-help.txt"; then
+            echo "The ISO root arkup client cannot validate base-bound system updates." >&2
             exit 1
           fi
           printf 'arkup-client=/usr/bin/arkup\n' > output/arkanaOS-update-client.txt
           chmod 0644 output/arkanaOS-update-client.txt
+          if [[ "$SOURCE_RUN_ID" == "$GITHUB_RUN_ID" && \
+                "$SOURCE_SHA" == "$GITHUB_SHA" && \
+                "$GITHUB_REF" == "refs/heads/$DEFAULT_BRANCH" && \
+                "$GITHUB_WORKFLOW_REF" == "$GITHUB_REPOSITORY/.github/workflows/00_run_all.yml@$GITHUB_REF" ]]; then
+            if ! [[ "$SOURCE_RUN_ID" =~ ^[1-9][0-9]*$ && "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ && \
+                  "$(cat staging/etc/arkana-build-number)" =~ ^[0-9]+$ ]]; then
+              echo "The source run or build metadata is malformed; refusing to mark this ISO as an update base." >&2
+              exit 1
+            fi
+            printf 'arkup-client=/usr/bin/arkup\nbase-sequence=1\nsystem-update=1\nsource-run-id=%s\nsource-sha=%s\nbuild-number=%s\n' \
+              "$SOURCE_RUN_ID" "$SOURCE_SHA" "$(cat staging/etc/arkana-build-number)" \
+              > output/arkanaOS-update-client-system-update.txt
+            chmod 0644 output/arkanaOS-update-client-system-update.txt
+            echo 'system_update_capable=true' >> "$GITHUB_OUTPUT"
+          else
+            rm -f -- output/arkanaOS-update-client-system-update.txt
+            echo 'system_update_capable=false' >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Generate Release Notes & Tags from Template
         run: |
@@ -167,19 +203,28 @@ jobs:
           RELEASE_ID=$(cat staging/etc/arkana-release-id)
           RELEASE_VERSION=$(cat staging/etc/arkana-release-version)
           RELEASE_PRERELEASE=$(cat staging/etc/arkana-release-prerelease)
+          if [[ "$RELEASE_PREFIX" == weekly && "$GITHUB_EVENT_NAME" != schedule ]]; then
+            echo "Weekly release labels are reserved for the Monday schedule." >&2
+            exit 1
+          fi
           if ! [[ "$BUILD_NUM" =~ ^[0-9]+$ ]]; then
             echo "Invalid arkanaOS build number: $BUILD_NUM" >&2
             exit 1
           fi
-          if ! [[ "$RELEASE_PREFIX" =~ ^(nightly|r[1-9][0-9]*-(a[1-9][0-9]*|b[1-9][0-9]*|[1-9][0-9]*))$ ]]; then
+          if ! [[ "$RELEASE_PREFIX" =~ ^(nightly|weekly|r[1-9][0-9]*-(a[1-9][0-9]*|b[1-9][0-9]*|[1-9][0-9]*))$ ]]; then
             echo "Invalid arkanaOS release prefix: $RELEASE_PREFIX" >&2
             exit 1
           fi
-          if [[ "$RELEASE_PREFIX" == nightly ]]; then
-            EXPECTED_RELEASE_ID="nightly-${BUILD_NUM}"
-            EXPECTED_RELEASE_VERSION=nightly
-            RELEASE_CHANNEL=Nightly
-            RELEASE_STATUS="Developer build for testing and development only. Supported for 7 days."
+          if [[ "$RELEASE_PREFIX" == nightly || "$RELEASE_PREFIX" == weekly ]]; then
+            EXPECTED_RELEASE_ID="${RELEASE_PREFIX}-${BUILD_NUM}"
+            EXPECTED_RELEASE_VERSION="$RELEASE_PREFIX"
+            if [[ "$RELEASE_PREFIX" == weekly ]]; then
+              RELEASE_CHANNEL=Weekly
+              RELEASE_STATUS="Weekly developer build for testing and development only. Supported for 7 days."
+            else
+              RELEASE_CHANNEL=Nightly
+              RELEASE_STATUS="Developer build for testing and development only. Supported for 7 days."
+            fi
           elif [[ "$RELEASE_PREFIX" =~ ^r([1-9][0-9]*)-a([1-9][0-9]*)$ ]]; then
             EXPECTED_RELEASE_ID="v${BASH_REMATCH[1]}.0-alpha${BASH_REMATCH[2]}-build-${BUILD_NUM}"
             EXPECTED_RELEASE_VERSION="${BASH_REMATCH[1]}.0 (alpha ${BASH_REMATCH[2]})"
@@ -203,7 +248,7 @@ jobs:
             echo "Release metadata does not match its validated prefix and build number." >&2
             exit 1
           fi
-          if [[ "$RELEASE_PREFIX" == nightly || "$RELEASE_PREFIX" =~ -[ab][1-9][0-9]*$ ]]; then
+          if [[ "$RELEASE_PREFIX" == nightly || "$RELEASE_PREFIX" == weekly || "$RELEASE_PREFIX" =~ -[ab][1-9][0-9]*$ ]]; then
             EXPECTED_PRERELEASE=true
           else
             EXPECTED_PRERELEASE=false
@@ -239,87 +284,161 @@ jobs:
             echo "RELEASE_PRERELEASE=$RELEASE_PRERELEASE"
           } >> "$GITHUB_ENV"
 
-      - name: Build signed update package for weekly developer release
+      - name: Build signed update packages for scheduled developer release
         if: github.event_name == 'schedule'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           ARKUP_UPDATE_SIGNING_KEY_B64: ${{ secrets.ARKUP_UPDATE_SIGNING_KEY_B64 }}
           ARKUP_UPDATE_PUBLIC_KEY_B64: ${{ secrets.ARKUP_UPDATE_PUBLIC_KEY_B64 }}
+          UPDATE_BASES_JSON: ${{ inputs.update_bases_json }}
         run: |
           set -euo pipefail
           if [[ -z "$ARKUP_UPDATE_SIGNING_KEY_B64" || -z "$ARKUP_UPDATE_PUBLIC_KEY_B64" ]]; then
-            echo "Weekly update signing secrets are required; refusing to publish an unsigned or incomplete release." >&2
+            echo "Scheduled update signing secrets are required; refusing to publish an unsigned or incomplete release." >&2
             exit 1
           fi
-
-          BASE_RELEASE_TAG=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
-            jq -s -r --arg current "$RELEASE_ID" '
-              add
-              | [.[] | select(.draft == false) | select(.tag_name != $current)
-                | select(any(.assets[]?; .name | endswith(".iso")))]
-              | sort_by(.published_at) | last | .tag_name // empty')
-          if [[ -z "$BASE_RELEASE_TAG" ]]; then
-            echo "No previously published arkanaOS ISO release is available as the update base." >&2
+          if ! jq -e 'type == "array" and length > 0 and length <= 2' \
+            <<< "$UPDATE_BASES_JSON" >/dev/null; then
+            echo "Scheduled update bases are missing or invalid." >&2
             exit 1
           fi
-
-          BASE_ISO_DIR="$RUNNER_TEMP/arkana-base-iso"
-          BASE_ROOT="$RUNNER_TEMP/arkana-base-root"
-          mkdir -p "$BASE_ISO_DIR" "$BASE_ROOT"
-          gh release download "$BASE_RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
-            --pattern '*.iso' --dir "$BASE_ISO_DIR"
-          mapfile -d '' BASE_ISOS < <(find "$BASE_ISO_DIR" -maxdepth 1 -type f -name '*.iso' -print0)
-          if ((${#BASE_ISOS[@]} != 1)); then
-            echo "Expected exactly one ISO in base release $BASE_RELEASE_TAG; found ${#BASE_ISOS[@]}." >&2
-            exit 1
-          fi
-
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends xorriso squashfs-tools
-          BASE_SQUASHFS="$RUNNER_TEMP/arkana-base-rootfs.sfs"
-          xorriso -osirrox on -indev "${BASE_ISOS[0]}" \
-            -extract /boot/rootfs.sfs "$BASE_SQUASHFS"
-          sudo unsquashfs -no-progress -d "$BASE_ROOT" "$BASE_SQUASHFS"
-          if [[ ! -x "$BASE_ROOT/usr/bin/arkup" ]]; then
-            echo "The selected base ISO does not include the Arkup update client; refusing to publish an unusable .aup package." >&2
-            exit 1
-          fi
-          if [[ ! -f "$BASE_ROOT/etc/arkana-build-number" || ! -f output/iso-root/etc/arkana-build-number ]]; then
-            echo "The base release or new ISO is missing arkanaOS release metadata." >&2
-            exit 1
-          fi
-
-          # The build containers create root-owned trees. The bounded packer runs
-          # as the runner account and records modes, not filesystem ownership.
-          sudo chown -R "$(id -u):$(id -g)" "$BASE_ROOT" output/iso-root
-
+          UPDATE_TEMP=$(mktemp -d "$RUNNER_TEMP/arkana-update-packages.XXXXXX")
           KEY_DIR="$RUNNER_TEMP/arkana-update-key"
           mkdir -m 700 "$KEY_DIR"
-          trap 'rm -rf -- "$KEY_DIR"' EXIT
+          trap 'rm -rf -- "$UPDATE_TEMP" "$KEY_DIR"' EXIT
           umask 077
           printf '%s' "$ARKUP_UPDATE_SIGNING_KEY_B64" | base64 --decode > "$KEY_DIR/release.key"
           printf '%s' "$ARKUP_UPDATE_PUBLIC_KEY_B64" | base64 --decode > "$KEY_DIR/release.pub"
           unset ARKUP_UPDATE_SIGNING_KEY_B64 ARKUP_UPDATE_PUBLIC_KEY_B64
           test -s "$KEY_DIR/release.key" && test -s "$KEY_DIR/release.pub"
 
-          ./build-update.sh \
-            --base-root "$BASE_ROOT" \
-            --target-root "$PWD/output/iso-root" \
-            --signing-key "$KEY_DIR/release.key" \
-            --public-key "$KEY_DIR/release.pub" \
-            --output-dir "$PWD/output/updates" \
-            --description "Weekly arkanaOS developer update based on $BASE_RELEASE_TAG"
+          # The build containers create root-owned trees. The bounded packer runs
+          # as the runner account and records modes, not filesystem ownership.
+          sudo chown -R "$(id -u):$(id -g)" output/iso-root
+          BASE_COUNT=$(jq -er 'length' <<< "$UPDATE_BASES_JSON")
+          WORKFLOW_ID=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/00_run_all.yml" --jq .id)
+          for ((base_index = 0; base_index < BASE_COUNT; base_index++)); do
+            BASE_JSON=$(jq -ce ".[${base_index}]" <<< "$UPDATE_BASES_JSON")
+            UPDATE_BASE_RELEASE_TAG=$(jq -er '.release_tag' <<< "$BASE_JSON")
+            UPDATE_BASE_RUN_ID=$(jq -er '.run_id' <<< "$BASE_JSON")
+            UPDATE_BASE_ISO_ASSET_ID=$(jq -er '.iso_asset_id' <<< "$BASE_JSON")
+            UPDATE_BASE_ISO_SIZE=$(jq -er '.iso_asset_size' <<< "$BASE_JSON")
+            UPDATE_BASE_ISO_DIGEST=$(jq -er '.iso_digest' <<< "$BASE_JSON")
+            UPDATE_BASE_MARKER_ID=$(jq -er '.marker_asset_id' <<< "$BASE_JSON")
+            UPDATE_BASE_MARKER_SIZE=$(jq -er '.marker_asset_size' <<< "$BASE_JSON")
+            UPDATE_BASE_MARKER_DIGEST=$(jq -er '.marker_digest' <<< "$BASE_JSON")
+            UPDATE_BASE_BUILD_NUMBER=$(jq -er '.build_number' <<< "$BASE_JSON")
+            UPDATE_BASE_SOURCE_SHA=$(jq -er '.source_sha' <<< "$BASE_JSON")
+            if ! [[ "$UPDATE_BASE_RELEASE_TAG" =~ ^(nightly-[0-9]+|weekly-[0-9]+|v[1-9][0-9]*\.0-((alpha[1-9][0-9]*|beta[1-9][0-9]*)-build|build)-[0-9]+)$ && \
+                  "$UPDATE_BASE_RUN_ID" =~ ^[1-9][0-9]*$ && \
+                  "$UPDATE_BASE_ISO_ASSET_ID" =~ ^[1-9][0-9]*$ && \
+                  "$UPDATE_BASE_ISO_SIZE" =~ ^[1-9][0-9]*$ && \
+                  "$UPDATE_BASE_ISO_DIGEST" =~ ^sha256:[0-9a-f]{64}$ && \
+                  "$UPDATE_BASE_MARKER_ID" =~ ^[1-9][0-9]*$ && \
+                  "$UPDATE_BASE_MARKER_SIZE" =~ ^[1-9][0-9]*$ && \
+                  "$UPDATE_BASE_MARKER_DIGEST" =~ ^sha256:[0-9a-f]{64}$ && \
+                  "$UPDATE_BASE_BUILD_NUMBER" =~ ^[0-9]+$ && \
+                  "$UPDATE_BASE_SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "Update base provenance inputs are malformed." >&2
+              exit 1
+            fi
 
-          UPDATE_PACKAGE=$(find output/updates -maxdepth 1 -type f -name '*.aup' -print -quit)
-          if [[ -z "$UPDATE_PACKAGE" ]]; then
-            echo "The weekly update builder did not produce a .aup package." >&2
-            exit 1
-          fi
+            BASE_RELEASE_JSON="$UPDATE_TEMP/base-$base_index-release.json"
+            BASE_RUN_JSON="$UPDATE_TEMP/base-$base_index-run.json"
+            BASE_MARKER="$UPDATE_TEMP/base-$base_index-marker.txt"
+            BASE_ISO="$UPDATE_TEMP/base-$base_index.iso"
+            BASE_ROOT="$UPDATE_TEMP/base-$base_index-root"
+            BASE_SQUASHFS="$UPDATE_TEMP/base-$base_index-rootfs.sfs"
+            VERIFIED_BASE_JSON="$UPDATE_TEMP/base-$base_index-verified.json"
+            gh api "repos/$GITHUB_REPOSITORY/releases/tags/$UPDATE_BASE_RELEASE_TAG" > "$BASE_RELEASE_JSON"
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$UPDATE_BASE_RUN_ID" > "$BASE_RUN_JSON"
+            TAG_SHA=$(gh api "repos/$GITHUB_REPOSITORY/commits/$UPDATE_BASE_RELEASE_TAG" --jq .sha)
+            gh api -H 'Accept: application/octet-stream' \
+              "repos/$GITHUB_REPOSITORY/releases/assets/$UPDATE_BASE_MARKER_ID" > "$BASE_MARKER"
+            if [[ "$(wc -c < "$BASE_MARKER")" -ne "$UPDATE_BASE_MARKER_SIZE" ]] || \
+               [[ "sha256:$(sha256sum "$BASE_MARKER" | cut -d' ' -f1)" != "$UPDATE_BASE_MARKER_DIGEST" ]]; then
+              echo "The update base provenance marker changed after preflight." >&2
+              exit 1
+            fi
+            python3 scripts/verify-weekly-base-provenance.py \
+              --release-tag "$UPDATE_BASE_RELEASE_TAG" \
+              --tag-sha "$TAG_SHA" \
+              --marker "$BASE_MARKER" \
+              --run-json "$BASE_RUN_JSON" \
+              --release-json "$BASE_RELEASE_JSON" \
+              --repository "$GITHUB_REPOSITORY" \
+              --default-branch "$DEFAULT_BRANCH" \
+              --workflow-id "$WORKFLOW_ID" > "$VERIFIED_BASE_JSON"
+            jq -e --argjson expected "$BASE_JSON" --argjson actual "$(cat "$VERIFIED_BASE_JSON")" \
+              '$expected == $actual' >/dev/null || {
+                echo "The update base release metadata changed after preflight." >&2
+                exit 1
+              }
+            gh api -H 'Accept: application/octet-stream' \
+              "repos/$GITHUB_REPOSITORY/releases/assets/$UPDATE_BASE_ISO_ASSET_ID" > "$BASE_ISO"
+            if [[ ! -f "$BASE_ISO" || -L "$BASE_ISO" || \
+                  "$(wc -c < "$BASE_ISO")" -ne "$UPDATE_BASE_ISO_SIZE" ]] || \
+               ! printf '%s  %s\n' "${UPDATE_BASE_ISO_DIGEST#sha256:}" "$BASE_ISO" | sha256sum --check --status; then
+              echo "The persistent update-base ISO failed its release size or SHA-256 check." >&2
+              exit 1
+            fi
+
+            xorriso -osirrox on -indev "$BASE_ISO" \
+              -extract /boot/rootfs.sfs "$BASE_SQUASHFS"
+            unsquashfs -no-progress -processors 1 -d "$BASE_ROOT" "$BASE_SQUASHFS"
+            if [[ -L "$BASE_ROOT/etc" || -L "$BASE_ROOT/etc/arkana-build-number" || \
+                  ! -f "$BASE_ROOT/etc/arkana-build-number" || \
+                  "$(cat "$BASE_ROOT/etc/arkana-build-number")" != "$UPDATE_BASE_BUILD_NUMBER" ]]; then
+              echo "The update base ISO build number does not match its verified release metadata." >&2
+              exit 1
+            fi
+            if [[ -L "$BASE_ROOT/usr" || -L "$BASE_ROOT/usr/bin" || \
+                  -L "$BASE_ROOT/usr/bin/arkup" || ! -f "$BASE_ROOT/usr/bin/arkup" || \
+                  ! -x "$BASE_ROOT/usr/bin/arkup" ]]; then
+              echo "The selected base ISO does not include the arkup update client; refusing to publish an unusable .aup package." >&2
+              exit 1
+            fi
+            if [[ ! -f output/iso-root/etc/arkana-build-number ]]; then
+              echo "The new ISO is missing arkanaOS release metadata." >&2
+              exit 1
+            fi
+
+            ./build-update.sh \
+              --base-root "$BASE_ROOT" \
+              --target-root "$PWD/output/iso-root" \
+              --signing-key "$KEY_DIR/release.key" \
+              --public-key "$KEY_DIR/release.pub" \
+              --output-dir "$PWD/output/updates" \
+              --description "Scheduled arkanaOS developer update from build $UPDATE_BASE_BUILD_NUMBER"
+
+            UPDATE_PACKAGE="output/updates/arkanaos-${RELEASE_ID}-from-build-${UPDATE_BASE_BUILD_NUMBER}.aup"
+            if [[ ! -f "$UPDATE_PACKAGE" || ! -s "$UPDATE_PACKAGE" || -L "$UPDATE_PACKAGE" ]]; then
+              echo "The scheduled update builder did not produce the expected base-specific .aup package." >&2
+              exit 1
+            fi
+            (cd output/updates && sha256sum --check "$(basename "$UPDATE_PACKAGE").sha256")
+            echo "Scheduled update package built from $UPDATE_BASE_RELEASE_TAG: $UPDATE_PACKAGE"
+            rm -rf -- "$BASE_ROOT" "$BASE_SQUASHFS" "$BASE_ISO" "$BASE_RELEASE_JSON" "$BASE_RUN_JSON" "$BASE_MARKER" "$VERIFIED_BASE_JSON"
+          done
           cp "$KEY_DIR/release.pub" output/updates/arkanaOS-update-signing.pub
           chmod 0644 output/updates/arkanaOS-update-signing.pub
-          echo "Weekly update package built from $BASE_RELEASE_TAG: $UPDATE_PACKAGE"
 
-      - name: Upload Final arkanaOS ISO Artifact
+      - name: Upload Verified arkanaOS ISO Base Artifact
+        if: steps.mark-update-capability.outputs.system_update_capable == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.RELEASE_ARTIFACT_NAME }}
+          path: |
+            output/arkana.iso
+            output/arkanaOS-update-client-system-update.txt
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload arkanaOS ISO Artifact
+        if: steps.mark-update-capability.outputs.system_update_capable != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.RELEASE_ARTIFACT_NAME }}
@@ -341,13 +460,18 @@ jobs:
 
       - name: Select release assets
         id: release-assets
+        env:
+          SCHEDULED_UPDATE_RELEASE: ${{ github.event_name == 'schedule' }}
         run: |
           set -euo pipefail
           {
             echo "files<<EOF"
             echo "output/arkana.iso"
             echo "output/arkanaOS-update-client.txt"
-            if [[ "$GITHUB_EVENT_NAME" == schedule ]]; then
+            if [[ -f output/arkanaOS-update-client-system-update.txt ]]; then
+              echo "output/arkanaOS-update-client-system-update.txt"
+            fi
+            if [[ "$SCHEDULED_UPDATE_RELEASE" == true ]]; then
               find output/updates -maxdepth 1 -type f \
                 \( -name '*.aup' -o -name '*.aup.sha256' -o -name 'arkanaOS-update-signing.pub' \) \
                 -print | sort
@@ -356,11 +480,12 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         if: success()
         with:
           tag_name: ${{ env.RELEASE_ID }}
           name: ${{ env.RELEASE_NAME }}
+          target_commitish: ${{ steps.source.outputs.sha }}
           body_path: RELEASE_TEMPLATE.md
           files: ${{ steps.release-assets.outputs.files }}
           prerelease: ${{ env.RELEASE_PRERELEASE }}
