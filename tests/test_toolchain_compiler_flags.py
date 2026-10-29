@@ -21,6 +21,12 @@ class ToolchainCompilerFlagTests(unittest.TestCase):
         )
         self.assertNotIn("-D sysusers=false", systemd_target)
 
+    def test_clean_removes_versioned_source_download_stamps(self):
+        makefile = (REPO_ROOT / "Makefile").read_text(encoding="utf-8")
+        clean_target = makefile.split("clean:", 1)[1].split("# There are no test suites", 1)[0]
+
+        self.assertIn(".*-obtained*", clean_target)
+
     def test_kernel_stamp_tracks_the_recipe_that_runs_mrproper(self):
         recipe = (REPO_ROOT / "arkanas/07_iso.mk").read_text(encoding="utf-8")
         kernel_target = (
