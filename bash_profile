@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Start NsCDE from the first local virtual console.
 if [[ -r "$HOME/.bashrc" ]]; then
   . "$HOME/.bashrc"
