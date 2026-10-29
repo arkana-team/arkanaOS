@@ -383,18 +383,18 @@ glibc: download-glibc .glibc-done
 
 # Download systemd
 .PHONY: download-systemd
-download-systemd: .systemd-obtained
+download-systemd: .systemd-obtained-$(SYSTEMD_VER)
 
-.systemd-obtained:
+.systemd-obtained-$(SYSTEMD_VER):
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O systemd-$(SYSTEMD_VER).tar.gz $(SYSTEMD_URL) && tar xf systemd-$(SYSTEMD_VER).tar.gz
-	touch .systemd-obtained
+	touch $@
 
 # Compile systemd
 .PHONY: systemd
 systemd: timestamp download-systemd kernel-headers .systemd-done release-metadata
 
 # Rebuild systemd when its feature configuration in this recipe changes.
-.systemd-done: $(CURDIR)/arkanas/01_base.mk
+.systemd-done: .systemd-obtained-$(SYSTEMD_VER) $(CURDIR)/arkanas/01_base.mk
 	rm -rf $(SYSTEMD_PATH)/build
 	sed -i -e 's/(ECANCELLED|EREFUSED|EFSBADCRC|EFSCORRUPTED)/(ECANCELLED|EREFUSED|EFSBADCRC|EFSCORRUPTED|EFTYPE)/g' -e 's/(ECANCELLED|EREFUSED)/(ECANCELLED|EREFUSED|EFSBADCRC|EFSCORRUPTED|EFTYPE)/g' $(SYSTEMD_PATH)/src/basic/generate-errno-list.sh
 	sed -i 's/-Werror=override-init/-Wno-override-init/g' $(SYSTEMD_PATH)/meson.build
