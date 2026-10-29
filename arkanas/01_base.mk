@@ -383,24 +383,25 @@ glibc: download-glibc .glibc-done
 
 # Download systemd
 .PHONY: download-systemd
-download-systemd: .systemd-obtained
+download-systemd: .systemd-obtained-$(SYSTEMD_VER)
 
-.systemd-obtained:
+.systemd-obtained-$(SYSTEMD_VER):
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O systemd-$(SYSTEMD_VER).tar.gz $(SYSTEMD_URL) && tar xf systemd-$(SYSTEMD_VER).tar.gz
-	touch .systemd-obtained
+	touch $@
 
 # Compile systemd
 .PHONY: systemd
 systemd: timestamp download-systemd kernel-headers .systemd-done release-metadata
 
-.systemd-done:
+# Rebuild systemd when its feature configuration in this recipe changes.
+.systemd-done: .systemd-obtained-$(SYSTEMD_VER) $(CURDIR)/arkanas/01_base.mk
 	rm -rf $(SYSTEMD_PATH)/build
 	sed -i -e 's/(ECANCELLED|EREFUSED|EFSBADCRC|EFSCORRUPTED)/(ECANCELLED|EREFUSED|EFSBADCRC|EFSCORRUPTED|EFTYPE)/g' -e 's/(ECANCELLED|EREFUSED)/(ECANCELLED|EREFUSED|EFSBADCRC|EFSCORRUPTED|EFTYPE)/g' $(SYSTEMD_PATH)/src/basic/generate-errno-list.sh
 	sed -i 's/-Werror=override-init/-Wno-override-init/g' $(SYSTEMD_PATH)/meson.build
 	mkdir -p $(SYSTEMD_PATH)/build
 	cd $(SYSTEMD_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release -Dwerror=false -Dc_args="-Wno-override-init -Wno-error=override-init" \
 	-D default-dnssec=no -D firstboot=false -D install-tests=false -D ldconfig=false \
-	-D man=auto -D sysusers=false -D rpmmacrosdir=no -D homed=disabled \
+	-D man=auto -D rpmmacrosdir=no -D homed=disabled \
 	-D userdb=false -D mode=release -D pam=enabled -D pamconfdir=/etc/pam.d \
 	-D dev-kvm-mode=0660 -D nobody-group=nogroup -D sysupdate=disabled -D ukify=disabled -D dbus-interfaces-dir=no \
 	-D docdir=/usr/share/doc/systemd-$(SYSTEMD_VER) && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install

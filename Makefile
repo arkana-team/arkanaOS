@@ -128,7 +128,8 @@ check-libs:
 # Remove build files
 .PHONY: clean
 clean:
-	rm .*-done .*-obtained $(EXECUTABLES) $(LIBRARIES) $(MISSING_LIBS) || true
+	# Match both fixed-name and versioned source acquisition stamps.
+	rm .*-done .*-obtained* $(EXECUTABLES) $(LIBRARIES) $(MISSING_LIBS) || true
 	rm -rf $(SRC_PATH) $(STAGING_PATH) $(OUTPUT_PATH) $(ISO_STAGING_PATH) $(CPIO_STAGING_PATH)
 
 # There are no test suites in arkanaOS, but we can run QEMU to start the built system.

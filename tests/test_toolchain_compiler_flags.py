@@ -6,6 +6,37 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 class ToolchainCompilerFlagTests(unittest.TestCase):
+    def test_systemd_keeps_sysusers_and_tracks_its_build_recipe(self):
+        recipe = (REPO_ROOT / "arkanas/01_base.mk").read_text(encoding="utf-8")
+        systemd_target = (
+            recipe.split("systemd: timestamp download-systemd", 1)[1]
+            .split(".PHONY: release-metadata", 1)[0]
+        )
+
+        self.assertIn("download-systemd: .systemd-obtained-$(SYSTEMD_VER)", recipe)
+        self.assertIn(".systemd-obtained-$(SYSTEMD_VER):", recipe)
+        self.assertIn(
+            ".systemd-done: .systemd-obtained-$(SYSTEMD_VER) $(CURDIR)/arkanas/01_base.mk",
+            systemd_target,
+        )
+        self.assertNotIn("-D sysusers=false", systemd_target)
+
+    def test_clean_removes_versioned_source_download_stamps(self):
+        makefile = (REPO_ROOT / "Makefile").read_text(encoding="utf-8")
+        clean_target = makefile.split("clean:", 1)[1].split("# There are no test suites", 1)[0]
+
+        self.assertIn(".*-obtained*", clean_target)
+
+    def test_kernel_stamp_tracks_the_recipe_that_runs_mrproper(self):
+        recipe = (REPO_ROOT / "arkanas/07_iso.mk").read_text(encoding="utf-8")
+        kernel_target = (
+            recipe.split(".linux-$(LINUX_VER)-done:", 1)[1]
+            .split("# Pin host firmware", 1)[0]
+        )
+
+        self.assertIn("$(CURDIR)/arkanas/01_base.mk", kernel_target.splitlines()[0])
+        self.assertIn("$(MAKE) -C $(LINUX_PATH) mrproper", kernel_target)
+
     def test_ksh93_passes_a_single_compiler_name_to_its_package_builder(self):
         recipe = (REPO_ROOT / "arkanas/05_graphics.mk").read_text(
             encoding="utf-8"
