@@ -13,7 +13,12 @@ class ToolchainCompilerFlagTests(unittest.TestCase):
             .split(".PHONY: release-metadata", 1)[0]
         )
 
-        self.assertIn(".systemd-done: $(CURDIR)/arkanas/01_base.mk", systemd_target)
+        self.assertIn("download-systemd: .systemd-obtained-$(SYSTEMD_VER)", recipe)
+        self.assertIn(".systemd-obtained-$(SYSTEMD_VER):", recipe)
+        self.assertIn(
+            ".systemd-done: .systemd-obtained-$(SYSTEMD_VER) $(CURDIR)/arkanas/01_base.mk",
+            systemd_target,
+        )
         self.assertNotIn("-D sysusers=false", systemd_target)
 
     def test_kernel_stamp_tracks_the_recipe_that_runs_mrproper(self):
