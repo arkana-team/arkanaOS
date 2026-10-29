@@ -10,6 +10,7 @@ STAGING_PATH = $(shell realpath ./staging)
 CPIO_STAGING_PATH = $(shell realpath ./cpio-staging)
 ISO_STAGING_PATH = $(shell realpath ./iso-staging)
 OUTPUT_PATH = $(shell realpath ./output)
+include arkanas/libpng.mk
 
 # Xorg Server
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/x/xorg-server.html
@@ -188,15 +189,6 @@ HARFBUZZ_PATH = $(SRC_PATH)/harfbuzz-$(HARFBUZZ_VER)
 CAIRO_URL = https://www.cairographics.org/releases/cairo-1.18.2.tar.xz
 CAIRO_VER = 1.18.2
 CAIRO_PATH = $(SRC_PATH)/cairo-$(CAIRO_VER)
-
-# Libpng
-# Build this before Cairo so its Meson dependency resolves to the target library
-# instead of Cairo's bundled libpng fallback, which lacks PNG16_0 symbol versions.
-LIBPNG_URL = https://downloads.sourceforge.net/libpng/libpng-1.6.50.tar.xz
-LIBPNG_PATCH_URL = https://downloads.sourceforge.net/sourceforge/libpng-apng/libpng-1.6.47-apng.patch.gz
-LIBPNG_VER = 1.6.50
-LIBPNG_SHA256 = 4df396518620a7aa3651443e87d1b2862e4e88cad135a8b93423e01706232307
-LIBPNG_PATH = $(SRC_PATH)/libpng-$(LIBPNG_VER)
 
 # GDK-Pixbuf
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/x/gdk-pixbuf.html
@@ -795,27 +787,10 @@ harfbuzz: download-harfbuzz .harfbuzz-done
 	touch .harfbuzz-done
 
 # Compile cairo
-cairo: download-cairo libpng .cairo-done
-.cairo-done:
-	mkdir -p $(CAIRO_PATH)/build && cd $(CAIRO_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release --wrap-mode=nofallback -D tests=disabled -D png=enabled -D fontconfig=enabled -D freetype=enabled -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16 -lm" .. && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
-	touch .cairo-done
-
-# Download libpng
-download-libpng: .libpng-obtained
-.libpng-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libpng-$(LIBPNG_VER).tar.xz $(LIBPNG_URL) && \
-	echo '$(LIBPNG_SHA256)  libpng-$(LIBPNG_VER).tar.xz' | sha256sum -c - && tar xf libpng-$(LIBPNG_VER).tar.xz && \
-	cd $(LIBPNG_PATH) && curl -fsSL $(LIBPNG_PATCH_URL) | gzip -d | patch -p1
-	touch .libpng-obtained
-
-# Compile libpng with BFD so the PNG16_0 symbol version required by Cairo is emitted.
-libpng: download-libpng .libpng-done
-.libpng-done:
-	cd $(LIBPNG_PATH) && { $(MAKE) distclean >/dev/null 2>&1 || true; } && \
-	CFLAGS="-O2 -std=gnu17" LDFLAGS="-fuse-ld=bfd" ./configure --prefix=/usr --disable-static && \
-	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
-	mkdir -p $(STAGING_PATH)/usr/share/doc/libpng-$(LIBPNG_VER) && cp README libpng-manual.txt $(STAGING_PATH)/usr/share/doc/libpng-$(LIBPNG_VER)
-	touch .libpng-done
+cairo: download-cairo libpng .cairo-$(CAIRO_VER)-libpng-done
+.cairo-$(CAIRO_VER)-libpng-done:
+	rm -rf $(CAIRO_PATH)/build && mkdir -p $(CAIRO_PATH)/build && cd $(CAIRO_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release --wrap-mode=nofallback -D tests=disabled -D png=enabled -D fontconfig=enabled -D freetype=enabled -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16 -lm" .. && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
+	touch .cairo-$(CAIRO_VER)-libpng-done
 
 # Compile pango
 pango: download-pango libthai harfbuzz cairo .pango-done

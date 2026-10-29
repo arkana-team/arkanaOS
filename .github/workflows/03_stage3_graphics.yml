@@ -144,7 +144,8 @@ jobs:
             sudo find src -type d -exec chmod a+rx {} +
             sudo find src -type f \
               \( -path '*/build/meson-logs/*' -o -path '*/config.log' \
-              -o -path '*/build/CMakeOutput.log' -o -path '*/build/CMakeError.log' \) \
+              -o -path '*/build/CMakeOutput.log' -o -path '*/build/CMakeError.log' \
+              -o -path '*/build/CMakeFiles/CMakeConfigureLog.yaml' \) \
               -exec chmod a+r {} +
           fi
 
@@ -158,4 +159,5 @@ jobs:
             src/*/config.log
             src/*/build/CMakeOutput.log
             src/*/build/CMakeError.log
+            src/*/build/CMakeFiles/CMakeConfigureLog.yaml
           retention-days: 7

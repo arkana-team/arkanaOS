@@ -13,6 +13,7 @@ CPIO_STAGING_PATH = $(shell realpath -m ./cpio-staging)
 ISO_STAGING_PATH = $(shell realpath -m ./iso-staging)
 OUTPUT_PATH = $(shell realpath -m ./output)
 ISO_ROOT_PATH = $(OUTPUT_PATH)/iso-root
+include arkanas/libpng.mk
 override ARKANA_CANONICAL_ISO_ROOT := $(shell realpath -m .)/output/iso-root
 ifneq ($(abspath $(ISO_ROOT_PATH)), $(abspath $(ARKANA_CANONICAL_ISO_ROOT)))
 $(error refusing ISO_ROOT_PATH override; the ISO pruners require $(ARKANA_CANONICAL_ISO_ROOT))
@@ -150,13 +151,6 @@ GRAPHITE2_PATH = $(SRC_PATH)/graphite2-$(GRAPHITE2_VER)
 PIXMAN_URL = https://www.cairographics.org/releases/pixman-0.46.4.tar.gz
 PIXMAN_VER = 0.46.4
 PIXMAN_PATH = $(SRC_PATH)/pixman-$(PIXMAN_VER)
-
-# Libpng
-# URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/libpng.html
-LIBPNG_URL = https://downloads.sourceforge.net/libpng/libpng-1.6.50.tar.xz
-LIBPNG_PATCH_URL = https://downloads.sourceforge.net/sourceforge/libpng-apng/libpng-1.6.47-apng.patch.gz # use APNG
-LIBPNG_VER = 1.6.50
-LIBPNG_PATH = $(SRC_PATH)/libpng-$(LIBPNG_VER)
 
 # LZO
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/lzo.html
@@ -659,12 +653,12 @@ download-cairo: .cairo-obtained
 	touch .cairo-obtained
 
 # Compile cairo
-cairo: download-cairo .cairo-done
+cairo: download-cairo libpng .cairo-$(CAIRO_VER)-libpng-done
 
-.cairo-done:
-	mkdir -p $(CAIRO_PATH)/build && cd $(CAIRO_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release .. && ninja -j$(THREADS) && \
+.cairo-$(CAIRO_VER)-libpng-done:
+	rm -rf $(CAIRO_PATH)/build && mkdir -p $(CAIRO_PATH)/build && cd $(CAIRO_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release --wrap-mode=nofallback -D tests=disabled -D png=enabled -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16 -lm" .. && ninja -j$(THREADS) && \
 	DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
-	touch .cairo-done
+	touch .cairo-$(CAIRO_VER)-libpng-done
 
 # Download fontconfig
 download-fontconfig: .fontconfig-obtained
@@ -726,25 +720,6 @@ pixman: download-pixman .pixman-done
 	mkdir -p $(PIXMAN_PATH)/build && cd $(PIXMAN_PATH)/build && meson setup --prefix=/usr --native-file $(SRC_PATH)/cross_file.txt --buildtype=release .. && ninja -j$(THREADS) && \
 	DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .pixman-done
-
-# Download libpng
-download-libpng: .libpng-obtained
-
-.libpng-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libpng-$(LIBPNG_VER).tar.xz $(LIBPNG_URL) && tar xf libpng-$(LIBPNG_VER).tar.xz && \
-	cd $(LIBPNG_PATH) && curl -s -L $(LIBPNG_PATCH_URL) | gzip -d | patch -p1
-	touch .libpng-obtained
-
-# Compile libpng
-libpng: download-libpng .libpng-done
-
-.libpng-done:
-	# BFD is needed for libpng's PNG16_0 symbol versions, which Cairo requires.
-	cd $(LIBPNG_PATH) && { $(MAKE) distclean >/dev/null 2>&1 || true; } && \
-	CFLAGS="-O2 -std=gnu17" LDFLAGS="-fuse-ld=bfd" ./configure --prefix=/usr --disable-static && \
-	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
-	mkdir -p $(STAGING_PATH)/usr/share/doc/libpng-$(LIBPNG_VER) && cp README libpng-manual.txt $(STAGING_PATH)/usr/share/doc/libpng-$(LIBPNG_VER)
-	touch .libpng-done
 
 # Download squashfs-tools
 download-squashfs-tools: .squashfs-tools-obtained
