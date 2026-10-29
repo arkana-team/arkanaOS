@@ -746,7 +746,7 @@ download-linux-pam: .linux-pam-obtained
 .PHONY: linux-pam
 linux-pam: download-linux-pam .linux-pam-done .linux-pam-systemd-login-done
 
-.linux-pam-done:
+.linux-pam-done: $(CURDIR)/arkanas/01_base.mk $(CURDIR)/passwd $(CURDIR)/shadow $(CURDIR)/group
 	rm -rf $(STAGING_PATH)/etc/security || true
 	mkdir -p $(STAGING_PATH)/etc/pam.d
 	rm -rf $(LINUX_PAM_PATH)/build

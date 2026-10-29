@@ -40,6 +40,14 @@ class SystemAccountDatabaseTests(unittest.TestCase):
         self.assertIn("/pam_selinux\\.so/d", recipe)
         self.assertIn("/pam_console\\.so/d", recipe)
 
+    def test_pam_build_stamp_tracks_its_recipe_and_account_sources(self):
+        recipe = (ROOT / "arkanas/01_base.mk").read_text(encoding="utf-8")
+        self.assertIn(
+            ".linux-pam-done: $(CURDIR)/arkanas/01_base.mk "
+            "$(CURDIR)/passwd $(CURDIR)/shadow $(CURDIR)/group",
+            recipe,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
