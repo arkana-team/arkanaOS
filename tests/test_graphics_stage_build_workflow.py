@@ -23,6 +23,18 @@ class GraphicsStageBuildWorkflowTests(unittest.TestCase):
             recipe,
         )
 
+    def test_fvwm3_builds_staged_xkbcommon_before_meson_setup(self) -> None:
+        recipe = (ROOT / "arkanas/05_graphics.mk").read_text(encoding="utf-8")
+        self.assertIn(
+            ".fvwm3-done: $(CURDIR)/arkanas/05_graphics.mk .fvwm3-obtained "
+            ".libevent-done .libxkbcommon-done .xorg-libs-done",
+            recipe,
+        )
+        self.assertIn(
+            ".libxkbcommon-done:\n\t$(MAKE) -f arkanas/06_graphics_ext.mk libxkbcommon",
+            recipe,
+        )
+
     def test_workflow_is_limited_to_graphics_pull_request_changes(self) -> None:
         workflow = (ROOT / ".github/workflows/graphics-stage-build.yml").read_text(
             encoding="utf-8"

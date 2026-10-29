@@ -997,7 +997,11 @@ download-fvwm3: .fvwm3-obtained
 	touch .fvwm3-obtained
 
 fvwm3: .fvwm3-done
-.fvwm3-done: $(CURDIR)/arkanas/05_graphics.mk .fvwm3-obtained .libevent-done .xorg-libs-done
+# FVWM3's Meson build requires xkbcommon, whose recipe is shared with stage 6.
+.libxkbcommon-done:
+	$(MAKE) -f arkanas/06_graphics_ext.mk libxkbcommon
+
+.fvwm3-done: $(CURDIR)/arkanas/05_graphics.mk .fvwm3-obtained .libevent-done .libxkbcommon-done .xorg-libs-done
 	cd $(FVWM3_PATH) && rm -rf meson-build && PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_LIBDIR="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_SYSROOT_DIR="$(STAGING_PATH)" meson setup --native-file $(SRC_PATH)/cross_file.txt meson-build --prefix=/usr --sysconfdir=/etc --buildtype=release -Dmandoc=false -Dhtmldoc=false -Dnls=disabled -Dgolang=disabled -Dpython=/usr/bin/python3 && ninja -j$(THREADS) -C meson-build && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) -C meson-build install
 	touch .fvwm3-done
 
