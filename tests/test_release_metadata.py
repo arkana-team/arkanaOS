@@ -134,6 +134,7 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
     def run_release_step(
         self, root: Path, *, prefix: str, release_id: str, version: str,
         prerelease: str, event_name: str = "workflow_dispatch",
+        update_bases_json: str | None = None,
     ) -> subprocess.CompletedProcess[str]:
         """Run release processing with isolated metadata and template files."""
         metadata = root / "staging/etc"
@@ -152,6 +153,8 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
         environment = os.environ.copy()
         environment["GITHUB_ENV"] = str(github_env)
         environment["GITHUB_EVENT_NAME"] = event_name
+        if update_bases_json is not None:
+            environment["UPDATE_BASES_JSON"] = update_bases_json
         return subprocess.run(
             [
                 "bash",
@@ -200,34 +203,53 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
                 prefix="arkana-iso-release-"
             ) as temporary:
                 root = Path(temporary)
+                event_name = (
+                    "schedule" if prefix == "weekly" else "workflow_dispatch"
+                )
                 result = self.run_release_step(
                     root,
                     prefix=prefix,
                     release_id=release_id,
                     version=f"{version}\n",
                     prerelease=prerelease,
-                    event_name=(
-                        "schedule" if prefix == "weekly" else "workflow_dispatch"
-                    ),
+                    event_name=event_name,
                 )
                 self.assertEqual(result.returncode, 0, result.stderr)
                 expected_name = f"arkanaOS {version} build 233"
+                if event_name == "schedule" and prefix == "weekly":
+                    update_assets = (
+                        "This is the initial scheduled ISO bootstrap. It includes the verification public key "
+                        "and seeds the signed .aup update path; update packages begin with the next scheduled release."
+                    )
+                    update_guidance = (
+                        "No .aup package is attached because there is no earlier update-capable release to target. "
+                        "After the next scheduled release includes its update package, trust the verification key "
+                        "once on the installed system:\n\n```sh\nsudo arkup trust ./arkanaOS-update-signing.pub\n```"
+                    )
+                else:
+                    update_assets = "This manually triggered release includes the bootable ISO only."
+                    update_guidance = "No signed .aup update package is attached to a manually triggered release."
                 expected_template = (
                     RELEASE_TEMPLATE.read_text(encoding="utf-8")
                     .replace("@@RELEASE_CHANNEL@@", channel)
                     .replace("@@RELEASE_NAME@@", expected_name)
                     .replace("@@RELEASE_STATUS@@", status)
+                    .replace("@@RELEASE_UPDATE_ASSETS@@", update_assets)
+                    .replace("@@RELEASE_UPDATE_GUIDANCE@@", update_guidance)
                 )
                 self.assertEqual(
                     (root / "RELEASE_TEMPLATE.md").read_text(encoding="utf-8"),
                     expected_template,
                 )
-                self.assertIn(
-                    "sudo arkup trust ./arkanaOS-update-signing.pub", expected_template
-                )
-                self.assertIn(
-                    "sudo arkup apply ./path/to/update.aup", expected_template
-                )
+                if event_name == "schedule":
+                    self.assertIn(
+                        "sudo arkup trust ./arkanaOS-update-signing.pub",
+                        expected_template,
+                    )
+                    self.assertNotIn("sudo arkup apply", expected_template)
+                else:
+                    self.assertNotIn("sudo arkup trust", expected_template)
+                    self.assertNotIn("sudo arkup apply", expected_template)
                 self.assertIn(
                     f"RELEASE_ID={release_id}\n",
                     (root / "github-env").read_text(encoding="utf-8"),
@@ -236,6 +258,27 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
                     f"RELEASE_NAME={expected_name}\n",
                     (root / "github-env").read_text(encoding="utf-8"),
                 )
+
+    def test_scheduled_release_with_a_base_documents_aup_assets(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="arkana-iso-release-") as temporary:
+            root = Path(temporary)
+            result = self.run_release_step(
+                root,
+                prefix="nightly",
+                release_id="nightly-233",
+                version="nightly\n",
+                prerelease="true",
+                event_name="schedule",
+                update_bases_json='["nightly-232"]',
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            rendered = (root / "RELEASE_TEMPLATE.md").read_text(encoding="utf-8")
+            self.assertIn("signed arkup .aup update package", rendered)
+            self.assertIn("Each update package filename includes from-build-N", rendered)
+            self.assertIn("Sunday's nightly build", rendered)
+            self.assertIn("sudo arkup trust ./arkanaOS-update-signing.pub", rendered)
+            self.assertIn("sudo arkup apply ./path/to/update.aup", rendered)
+            self.assertNotIn("@@RELEASE_", rendered)
 
     def test_weekly_release_label_is_rejected_for_manual_dispatch(self) -> None:
         with tempfile.TemporaryDirectory(prefix="arkana-iso-release-") as temporary:
@@ -476,6 +519,22 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("no system-update-capable update release or ISO", result.stderr)
 
+    def test_empty_bootstrap_is_allowed_only_when_explicitly_requested(self) -> None:
+        legacy_release = self.release(
+            "nightly-877",
+            "2026-10-16T11:16:36Z",
+            "arkana.iso",
+        )
+        default_result = self.select([legacy_release])
+        self.assertNotEqual(default_result.returncode, 0)
+        self.assertEqual(default_result.stdout, "")
+
+        bootstrap_result = self.select(
+            [legacy_release], "--allow-empty-bootstrap", channel="nightly"
+        )
+        self.assertEqual(bootstrap_result.returncode, 0, bootstrap_result.stderr)
+        self.assertEqual(self.selected_tags(bootstrap_result), [])
+
 
 class ScheduledReleaseWorkflowTests(unittest.TestCase):
     def test_pipeline_schedules_nightly_and_weekly_releases_once_per_day(self) -> None:
@@ -555,14 +614,13 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
     def test_release_notes_document_nightly_and_weekly_assets(self) -> None:
         """Keep scheduled assets clear while reusing the existing release template."""
         template = RELEASE_TEMPLATE.read_text(encoding="utf-8")
-        self.assertIn(
-            "Scheduled nightly releases and the Monday weekly developer release include the bootable ISO",
-            template,
-        )
-        self.assertIn("Monday weekly developer release", template)
-        self.assertIn("signed arkup `.aup` update package", template)
-        self.assertIn("from-build-N", template)
-        self.assertIn("Sunday's nightly build", template)
+        workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
+        self.assertIn("@@RELEASE_UPDATE_ASSETS@@", template)
+        self.assertIn("@@RELEASE_UPDATE_GUIDANCE@@", template)
+        self.assertIn("initial scheduled ISO bootstrap", workflow)
+        self.assertIn("signed arkup .aup update package", workflow)
+        self.assertIn("from-build-N", workflow)
+        self.assertIn("Sunday", workflow)
         self.assertIn("# GitHub Generated release notes", template)
 
     def test_seed_and_signing_keypair_changes_trigger_their_tests(self) -> None:
