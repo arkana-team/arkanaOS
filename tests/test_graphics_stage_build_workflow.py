@@ -31,7 +31,7 @@ class GraphicsStageBuildWorkflowTests(unittest.TestCase):
             recipe,
         )
         self.assertIn(
-            ".libxkbcommon-done:\n\t$(MAKE) -f arkanas/06_graphics_ext.mk libxkbcommon",
+            ".libxkbcommon-done:\n\t$(MAKE) -f arkanas/06_graphics_ext.mk wayland wayland-protocols libxkbcommon",
             recipe,
         )
 
