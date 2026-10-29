@@ -291,7 +291,10 @@ class PackBuildTests(unittest.TestCase):
 
             self.assertIsNotNone(package)
             assert package
-            self.assertEqual(package.name, "arkanaos-v1.0-alpha1-build-11.aup")
+            self.assertEqual(
+                package.name,
+                "arkanaos-v1.0-alpha1-build-11-from-build-10.aup",
+            )
             self.assertEqual(package.stat().st_mode & 0o777, 0o644)
             self.assertEqual(len(calls), 2)
             pack = calls[0]

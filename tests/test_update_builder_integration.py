@@ -181,6 +181,82 @@ class UpdateBuilderIntegrationTests(unittest.TestCase):
                 self.assertFalse(os.path.lexists(install / f"{relative}.arkup-new"))
                 self.assertTrue((target / relative).is_file())
 
+    def test_weekly_fanout_builds_and_applies_each_exact_base_package(self) -> None:
+        assert ARKUP is not None
+        with tempfile.TemporaryDirectory(prefix="arkana-weekly-fanout-") as temporary:
+            root = Path(temporary)
+            keys = root / "keys"
+            output = root / "updates"
+            target = root / "target"
+            bases = {build: root / f"base-{build}" for build in (9, 10)}
+            installs = {build: root / f"installed-{build}" for build in (9, 10)}
+
+            for build, base in bases.items():
+                create_release_tree(base, build)
+                (base / "etc/workstation.conf").write_text(
+                    f"base={build}\n", encoding="utf-8"
+                )
+            create_release_tree(target, 11)
+            (target / "etc/workstation.conf").write_text("base=11\n", encoding="utf-8")
+            self.run_command([ARKUP, "keygen", "--output-dir", str(keys)])
+            signing_key = next(keys.glob("*.key"))
+            public_key = next(keys.glob("*.pub"))
+
+            for build, base in bases.items():
+                initial_package = root / f"base-{build}.aup"
+                initial_command = [
+                    ARKUP, "pack", "--source", str(base), "--name", "arkanaos-system",
+                    "--version", f"arkanaOS 1.0 (alpha 1) build {build}",
+                    "--sequence", str(build), "--arch", "x86_64",
+                    "--description", f"weekly fanout base build {build}",
+                    "--signing-key", str(signing_key), "--output", str(initial_package),
+                ]
+                for path in SYSTEM_METADATA:
+                    initial_command.extend(("--system-file", path))
+                self.run_command(initial_command)
+                installs[build].mkdir()
+                self.run_command([ARKUP, "trust", str(public_key), "--root", str(installs[build])])
+                self.run_command([
+                    ARKUP, "apply", str(initial_package), "--root", str(installs[build]),
+                    "--arch", "x86_64",
+                ])
+                self.run_command([
+                    sys.executable, str(BUILDER), "--base-root", str(base),
+                    "--target-root", str(target), "--output-dir", str(output),
+                    "--signing-key", str(signing_key), "--public-key", str(public_key),
+                    "--arkup", ARKUP,
+                ])
+
+            packages = {
+                build: output / f"arkanaos-v1.0-alpha1-build-11-from-build-{build}.aup"
+                for build in bases
+            }
+            for build, package in packages.items():
+                self.assertTrue(package.is_file(), package)
+                self.assertTrue(Path(f"{package}.sha256").is_file())
+                wrong_base = next(candidate for candidate in packages if candidate != build)
+                rejected = subprocess.run(
+                    [ARKUP, "apply", str(packages[wrong_base]), "--root", str(installs[build]), "--arch", "x86_64"],
+                    check=False, capture_output=True, text=True,
+                )
+                self.assertNotEqual(rejected.returncode, 0, rejected.stdout + rejected.stderr)
+                self.assertEqual(
+                    (installs[build] / "etc/arkana-build-number").read_text().strip(),
+                    str(build),
+                )
+                self.run_command([
+                    ARKUP, "apply", str(package), "--root", str(installs[build]),
+                    "--arch", "x86_64",
+                ])
+                self.assertEqual(
+                    (installs[build] / "etc/arkana-build-number").read_text().strip(),
+                    "11",
+                )
+                self.assertEqual(
+                    (installs[build] / "etc/workstation.conf").read_text(),
+                    "base=11\n",
+                )
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -301,6 +301,10 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
             check=False,
         )
 
+    @staticmethod
+    def selected_tags(result: subprocess.CompletedProcess[str]) -> list[str]:
+        return json.loads(result.stdout)
+
     def test_latest_scheduled_update_release_wins_over_older_weekly(self) -> None:
         releases = [
             self.release(
@@ -334,9 +338,9 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
         ]
         result = self.select(releases)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout.strip(), "nightly-233")
+        self.assertEqual(self.selected_tags(result), ["nightly-233"])
 
-    def test_weekly_release_uses_previous_weekly_instead_of_sunday_nightly(self) -> None:
+    def test_weekly_release_keeps_previous_weekly_and_sunday_nightly_paths(self) -> None:
         releases = [
             self.release(
                 "weekly-230",
@@ -355,7 +359,7 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
         ]
         result = self.select(releases, channel="weekly")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout.strip(), "weekly-230")
+        self.assertEqual(self.selected_tags(result), ["weekly-230", "nightly-233"])
 
     def test_nightly_uses_newer_weekly_as_base_after_monday(self) -> None:
         releases = [
@@ -376,7 +380,7 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
         ]
         result = self.select(releases, channel="nightly")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout.strip(), "weekly-234")
+        self.assertEqual(self.selected_tags(result), ["weekly-234"])
 
     def test_alpha_and_beta_release_tags_are_eligible_as_update_bases(self) -> None:
         for tag, published_at in (
@@ -395,7 +399,7 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
                     ]
                 )
                 self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertEqual(result.stdout.strip(), tag)
+                self.assertEqual(self.selected_tags(result), [tag])
 
     def test_weekly_without_arkup_marker_is_skipped(self) -> None:
         releases = [
@@ -410,7 +414,7 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
         ]
         result = self.select(releases)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout.strip(), "nightly-230")
+        self.assertEqual(self.selected_tags(result), ["nightly-230"])
 
     def test_base_sequence_only_marker_cannot_qualify_as_a_system_update_client(self) -> None:
         releases = [
@@ -428,13 +432,13 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
 
     def test_first_weekly_release_bootstraps_from_latest_arkup_capable_iso(self) -> None:
         releases = [
-            self.release("nightly-220", "2026-10-18T03:00:00Z", "old.iso", "arkanaOS-update-client-system-update.txt"),
-            self.release("nightly-233", "2026-10-25T03:00:00Z", "nightly.iso", "arkanaOS-update-client-system-update.txt"),
-            self.release("nightly-234", "2026-10-26T03:00:00Z", "legacy.iso"),
+            self.release("nightly-220", "2026-10-18T03:00:00Z", "arkana.iso", "arkanaOS-update-client-system-update.txt"),
+            self.release("nightly-233", "2026-10-25T03:00:00Z", "arkana.iso", "arkanaOS-update-client-system-update.txt"),
+            self.release("nightly-234", "2026-10-26T03:00:00Z", "arkana.iso"),
         ]
         result = self.select(releases, channel="weekly")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout.strip(), "nightly-233")
+        self.assertEqual(self.selected_tags(result), ["nightly-233"])
 
     def test_build_excludes_current_tag_and_uses_previous_scheduled_update(self) -> None:
         releases = [
@@ -443,7 +447,7 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
         ]
         result = self.select(releases, "--exclude-tag", "nightly-232")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout.strip(), "nightly-231")
+        self.assertEqual(self.selected_tags(result), ["nightly-231"])
 
     def test_requires_aup_and_iso_assets_for_weekly_base(self) -> None:
         releases = [
@@ -499,15 +503,16 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
         run_all = RUN_ALL_WORKFLOW.read_text(encoding="utf-8")
         iso = ISO_WORKFLOW.read_text(encoding="utf-8")
         self.assertEqual(run_all.count(scheduled_condition), 3)
-        self.assertEqual(iso.count(scheduled_condition), 3)
+        self.assertEqual(iso.count(scheduled_condition), 2)
         self.assertIn(
             "SCHEDULED_UPDATE_RELEASE: ${{ github.event_name == 'schedule' }}",
             iso,
         )
         self.assertIn('if [[ "$SCHEDULED_UPDATE_RELEASE" == true ]]; then', iso)
         self.assertIn("python3 scripts/select-weekly-update-base.py", run_all)
-        self.assertIn("artifact-ids: ${{ inputs.update_base_artifact_id }}", iso)
-        self.assertNotIn("gh release download", iso)
+        self.assertIn("update_bases_json", run_all + iso)
+        self.assertIn("releases/assets/$UPDATE_BASE_ISO_ASSET_ID", iso)
+        self.assertNotIn("actions/download-artifact@v8", iso)
         self.assertIn("target_commitish: ${{ steps.source.outputs.sha }}", iso)
         self.assertIn("uses: softprops/action-gh-release@v3", iso)
         self.assertNotIn("uses: softprops/action-gh-release@v2", iso)
@@ -556,10 +561,8 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
         )
         self.assertIn("Monday weekly developer release", template)
         self.assertIn("signed arkup `.aup` update package", template)
-        self.assertIn(
-            "apply each intervening `.aup` in release order",
-            template,
-        )
+        self.assertIn("from-build-N", template)
+        self.assertIn("Sunday's nightly build", template)
         self.assertIn("# GitHub Generated release notes", template)
 
     def test_seed_and_signing_keypair_changes_trigger_their_tests(self) -> None:

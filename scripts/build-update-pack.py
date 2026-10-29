@@ -405,7 +405,9 @@ def build_update(
         print("No system changes found; no .aup package was created.")
         return None
 
-    filename = f"arkanaos-{target_release.release_id}.aup"
+    filename = (
+        f"arkanaos-{target_release.release_id}-from-build-{base_release.build}.aup"
+    )
     output = output_dir / filename
     sidecar = output_dir / f"{filename}.sha256"
     if os.path.lexists(output) or os.path.lexists(sidecar):

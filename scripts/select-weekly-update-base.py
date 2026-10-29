@@ -1,4 +1,4 @@
-"""Choose a channel-compatible update base, with an ISO bootstrap fallback."""
+"""Choose all channel-compatible update bases, with an ISO bootstrap fallback."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ import sys
 from typing import Any
 
 UPDATE_CLIENT_ASSET = "arkanaOS-update-client-system-update.txt"
+ISO_RELEASE_ASSET = "arkana.iso"
 SUPPORTED_RELEASE_TAG = re.compile(
     r"(?:nightly-[0-9]+|weekly-[0-9]+|v[1-9][0-9]*\.0-(?:(?:alpha[1-9][0-9]*|beta[1-9][0-9]*)-build|build)-[0-9]+)\Z"
 )
@@ -37,7 +38,7 @@ def is_published(release: dict[str, Any], excluded_tags: set[str]) -> bool:
     )
 
 
-def select_base(releases: list[Any], excluded_tags: set[str], channel: str) -> str:
+def select_bases(releases: list[Any], excluded_tags: set[str], channel: str) -> list[str]:
     published = [
         release
         for release in releases
@@ -47,14 +48,10 @@ def select_base(releases: list[Any], excluded_tags: set[str], channel: str) -> s
         release
         for release in published
         if any(name.endswith(".aup") for name in release_assets(release))
-        and any(name.endswith(".iso") for name in release_assets(release))
+        and ISO_RELEASE_ASSET in release_assets(release)
         and UPDATE_CLIENT_ASSET in release_assets(release)
     ]
-    # Weekly packages must be based on the previous weekly release. A Sunday
-    # nightly may be newer, but users upgrading from the previous Monday do
-    # not have that nightly's changes. Nightly packages follow the latest
-    # scheduled release so Tuesday can start from Monday's weekly build.
-    preferred_updates = update_releases
+    latest_update = max(update_releases, key=lambda release: release["published_at"]) if update_releases else None
     if channel == "weekly":
         weekly_updates = [
             release
@@ -62,20 +59,24 @@ def select_base(releases: list[Any], excluded_tags: set[str], channel: str) -> s
             if release["tag_name"].startswith("weekly-")
         ]
         if weekly_updates:
-            preferred_updates = weekly_updates
-    if preferred_updates:
-        return max(preferred_updates, key=lambda release: release["published_at"])[
-            "tag_name"
-        ]
+            # Monday needs both paths: the previous weekly build for users who
+            # stayed on Mondays, and the latest scheduled build for users who
+            # installed Sunday's nightly. Release assets persist independently
+            # of Actions artifact retention.
+            previous_weekly = max(weekly_updates, key=lambda release: release["published_at"])
+            assert latest_update is not None
+            return list(dict.fromkeys((previous_weekly["tag_name"], latest_update["tag_name"])))
+    if latest_update is not None:
+        return [latest_update["tag_name"]]
 
     bootstrap = [
         release
         for release in published
         if UPDATE_CLIENT_ASSET in release_assets(release)
-        and any(name.endswith(".iso") for name in release_assets(release))
+        and ISO_RELEASE_ASSET in release_assets(release)
     ]
     if bootstrap:
-        return max(bootstrap, key=lambda release: release["published_at"])["tag_name"]
+        return [max(bootstrap, key=lambda release: release["published_at"])["tag_name"]]
 
     raise ValueError("no system-update-capable update release or ISO is available")
 
@@ -99,7 +100,7 @@ def main() -> int:
         payload = json.load(sys.stdin)
         if not isinstance(payload, list):
             raise TypeError("release API input must be a JSON array")
-        print(select_base(payload, set(args.exclude_tag), args.channel))
+        print(json.dumps(select_bases(payload, set(args.exclude_tag), args.channel)))
     except (json.JSONDecodeError, TypeError, ValueError) as error:
         print(f"select-weekly-update-base: {error}", file=sys.stderr)
         return 1

@@ -28,12 +28,7 @@ jobs:
     name: Validate scheduled update release prerequisites
     runs-on: ubuntu-latest
     outputs:
-      update_base_release_tag: ${{ steps.verify-update-base.outputs.release_tag }}
-      update_base_run_id: ${{ steps.verify-update-base.outputs.run_id }}
-      update_base_artifact_id: ${{ steps.verify-update-base.outputs.artifact_id }}
-      update_base_artifact_name: ${{ steps.verify-update-base.outputs.artifact_name }}
-      update_base_build_number: ${{ steps.verify-update-base.outputs.build_number }}
-      update_base_source_sha: ${{ steps.verify-update-base.outputs.source_sha }}
+      update_bases_json: ${{ steps.verify-update-base.outputs.update_bases_json }}
     steps:
       - name: Reject manual weekly release labels
         if: github.event_name == 'workflow_dispatch'
@@ -83,7 +78,7 @@ jobs:
           python3 scripts/verify-update-signing-keypair.py \
             "$KEY_DIR/release.key" "$KEY_DIR/release.pub"
 
-      - name: Require a published system-update-compatible ISO as the update base
+      - name: Verify persistent release ISOs as update bases
         id: verify-update-base
         if: github.event_name == 'schedule'
         env:
@@ -92,62 +87,75 @@ jobs:
           UPDATE_BASE_CHANNEL: ${{ github.event.schedule == '0 3 * * 1' && 'weekly' || 'nightly' }}
         run: |
           set -euo pipefail
-          BASE_RELEASE_TAG=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
+          BASE_RELEASE_TAGS_JSON=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
             jq -s 'add' |
             python3 scripts/select-weekly-update-base.py --channel "$UPDATE_BASE_CHANNEL")
-          if [[ -z "$BASE_RELEASE_TAG" ]]; then
-            echo "No published system-update-capable release with a supported arkanaOS tag is available as the update base. Publish a compatible ISO from Run All before scheduled .aup releases." >&2
+          if ! jq -e 'type == "array" and length > 0 and length <= 2 and all(.[]; type == "string")' \
+            <<< "$BASE_RELEASE_TAGS_JSON" >/dev/null; then
+            echo "No published release ISO with a supported arkanaOS tag is available as the update base. Publish a compatible ISO from Run All before scheduled .aup releases." >&2
             exit 1
           fi
 
           VERIFY_DIR=$(mktemp -d "$RUNNER_TEMP/arkana-update-base.XXXXXX")
           trap 'rm -rf -- "$VERIFY_DIR"' EXIT
-          RELEASE_JSON="$VERIFY_DIR/release.json"
-          MARKER_FILE="$VERIFY_DIR/system-update-marker.txt"
-          RUN_JSON="$VERIFY_DIR/run.json"
-          ARTIFACTS_JSON="$VERIFY_DIR/artifacts.json"
-          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$BASE_RELEASE_TAG" > "$RELEASE_JSON"
-
-          MARKER_ASSET=$(jq -cer '
-            [.assets[]? | select(.name == "arkanaOS-update-client-system-update.txt")]
-            | if length == 1 and .[0].size > 0 and .[0].size <= 512
-              then .[0] else error("expected one small system-update marker asset") end
-          ' "$RELEASE_JSON")
-          MARKER_ASSET_ID=$(jq -er '.id | select(type == "number" and . > 0)' <<< "$MARKER_ASSET")
-          MARKER_ASSET_SIZE=$(jq -er '.size | select(type == "number" and . > 0 and . <= 512)' <<< "$MARKER_ASSET")
-          gh api -H 'Accept: application/octet-stream' \
-            "repos/$GITHUB_REPOSITORY/releases/assets/$MARKER_ASSET_ID" > "$MARKER_FILE"
-          if [[ "$(wc -c < "$MARKER_FILE")" -ne "$MARKER_ASSET_SIZE" ]]; then
-            echo "The selected release marker changed while it was being downloaded." >&2
-            exit 1
-          fi
-
-          SOURCE_RUN_ID=$(awk -F= '$1 == "source-run-id" { print substr($0, index($0, "=") + 1) }' "$MARKER_FILE")
-          if ! [[ "$SOURCE_RUN_ID" =~ ^[1-9][0-9]*$ ]]; then
-            echo "The selected release marker has no valid source run ID." >&2
-            exit 1
-          fi
           WORKFLOW_ID=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/00_run_all.yml" --jq .id)
-          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" > "$RUN_JSON"
-          gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID/artifacts?per_page=100" |
-            jq -s '{artifacts: [ .[] | .artifacts[]? ]}' > "$ARTIFACTS_JSON"
-          TAG_SHA=$(gh api "repos/$GITHUB_REPOSITORY/commits/$BASE_RELEASE_TAG" --jq .sha)
+          VERIFIED_BASES='[]'
+          while IFS= read -r BASE_RELEASE_TAG; do
+            if ! [[ "$BASE_RELEASE_TAG" =~ ^(nightly-[0-9]+|weekly-[0-9]+|v[1-9][0-9]*\.0-((alpha[1-9][0-9]*|beta[1-9][0-9]*)-build|build)-[0-9]+)$ ]]; then
+              echo "The update-base selector returned an unsupported release tag." >&2
+              exit 1
+            fi
+            RELEASE_JSON="$VERIFY_DIR/$BASE_RELEASE_TAG-release.json"
+            MARKER_FILE="$VERIFY_DIR/$BASE_RELEASE_TAG-marker.txt"
+            RUN_JSON="$VERIFY_DIR/$BASE_RELEASE_TAG-run.json"
+            VERIFIED_JSON="$VERIFY_DIR/$BASE_RELEASE_TAG-verified.json"
+            gh api "repos/$GITHUB_REPOSITORY/releases/tags/$BASE_RELEASE_TAG" > "$RELEASE_JSON"
+            MARKER_ASSET_ID=$(jq -er '
+              [.assets[]? | select(.name == "arkanaOS-update-client-system-update.txt")]
+              | if length == 1 and .[0].size > 0 and .[0].size <= 512 and .[0].id > 0
+                then .[0].id else error("expected one small system-update marker asset") end
+            ' "$RELEASE_JSON")
+            MARKER_ASSET_SIZE=$(jq -er '
+              [.assets[]? | select(.name == "arkanaOS-update-client-system-update.txt")]
+              | if length == 1 then .[0].size else error("expected one marker") end
+            ' "$RELEASE_JSON")
+            MARKER_ASSET_DIGEST=$(jq -er '
+              [.assets[]? | select(.name == "arkanaOS-update-client-system-update.txt")]
+              | if length == 1 and (.[0].digest | type == "string" and test("^sha256:[0-9a-f]{64}$"))
+                then .[0].digest else error("expected a SHA-256 marker digest") end
+            ' "$RELEASE_JSON")
+            gh api -H 'Accept: application/octet-stream' \
+              "repos/$GITHUB_REPOSITORY/releases/assets/$MARKER_ASSET_ID" > "$MARKER_FILE"
+            if [[ "$(wc -c < "$MARKER_FILE")" -ne "$MARKER_ASSET_SIZE" ]] || \
+               [[ "sha256:$(sha256sum "$MARKER_FILE" | cut -d' ' -f1)" != "$MARKER_ASSET_DIGEST" ]]; then
+              echo "The selected release marker changed while it was being downloaded." >&2
+              exit 1
+            fi
+            SOURCE_RUN_ID=$(awk -F= '$1 == "source-run-id" { print substr($0, index($0, "=") + 1) }' "$MARKER_FILE")
+            if ! [[ "$SOURCE_RUN_ID" =~ ^[1-9][0-9]*$ ]]; then
+              echo "The selected release marker has no valid source run ID." >&2
+              exit 1
+            fi
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" > "$RUN_JSON"
+            TAG_SHA=$(gh api "repos/$GITHUB_REPOSITORY/commits/$BASE_RELEASE_TAG" --jq .sha)
 
-          python3 scripts/verify-weekly-base-provenance.py \
-            --release-tag "$BASE_RELEASE_TAG" \
-            --tag-sha "$TAG_SHA" \
-            --marker "$MARKER_FILE" \
-            --run-json "$RUN_JSON" \
-            --artifacts-json "$ARTIFACTS_JSON" \
-            --repository "$GITHUB_REPOSITORY" \
-            --default-branch "$DEFAULT_BRANCH" \
-            --workflow-id "$WORKFLOW_ID" > "$VERIFY_DIR/verified-base.json"
+            python3 scripts/verify-weekly-base-provenance.py \
+              --release-tag "$BASE_RELEASE_TAG" \
+              --tag-sha "$TAG_SHA" \
+              --marker "$MARKER_FILE" \
+              --run-json "$RUN_JSON" \
+              --release-json "$RELEASE_JSON" \
+              --repository "$GITHUB_REPOSITORY" \
+              --default-branch "$DEFAULT_BRANCH" \
+              --workflow-id "$WORKFLOW_ID" > "$VERIFIED_JSON"
+            VERIFIED_BASES=$(jq -c --argjson base "$(cat "$VERIFIED_JSON")" '. + [$base]' <<< "$VERIFIED_BASES")
+          done < <(jq -r '.[]' <<< "$BASE_RELEASE_TAGS_JSON")
 
-          for output_name in run_id artifact_id artifact_name build_number source_sha; do
-            output_value=$(jq -er ".$output_name" "$VERIFY_DIR/verified-base.json")
-            printf '%s=%s\n' "$output_name" "$output_value" >> "$GITHUB_OUTPUT"
-          done
-          printf 'release_tag=%s\n' "$BASE_RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          if [[ "$(jq 'length' <<< "$VERIFIED_BASES")" -ne "$(jq 'length' <<< "$BASE_RELEASE_TAGS_JSON")" ]]; then
+            echo "Not all selected update bases passed provenance validation." >&2
+            exit 1
+          fi
+          printf 'update_bases_json=%s\n' "$VERIFIED_BASES" >> "$GITHUB_OUTPUT"
 
   stage1:
     uses: ./.github/workflows/01_stage1_base.yml
@@ -170,10 +178,5 @@ jobs:
     needs: [stage3, validate-scheduled-update-prerequisites]
     uses: ./.github/workflows/04_stage4_iso.yml
     with:
-      update_base_release_tag: ${{ needs.validate-scheduled-update-prerequisites.outputs.update_base_release_tag }}
-      update_base_run_id: ${{ needs.validate-scheduled-update-prerequisites.outputs.update_base_run_id }}
-      update_base_artifact_id: ${{ needs.validate-scheduled-update-prerequisites.outputs.update_base_artifact_id }}
-      update_base_artifact_name: ${{ needs.validate-scheduled-update-prerequisites.outputs.update_base_artifact_name }}
-      update_base_build_number: ${{ needs.validate-scheduled-update-prerequisites.outputs.update_base_build_number }}
-      update_base_source_sha: ${{ needs.validate-scheduled-update-prerequisites.outputs.update_base_source_sha }}
+      update_bases_json: ${{ needs.validate-scheduled-update-prerequisites.outputs.update_bases_json }}
     secrets: inherit

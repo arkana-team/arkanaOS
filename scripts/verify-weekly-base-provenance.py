@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify an update base is a successful, retained Actions artifact."""
+"""Verify a persistent release ISO and its scheduled-build provenance."""
 
 from __future__ import annotations
 
@@ -21,10 +21,12 @@ RELEASE_TAG = re.compile(
     r"(?P<release_build>[0-9]+))\Z"
 )
 GIT_SHA = re.compile(r"[0-9a-f]{40}\Z")
+ASSET_DIGEST = re.compile(r"sha256:([0-9a-f]{64})\Z")
+MAX_ISO_SIZE = 4 * 1024 * 1024 * 1024
 
 
 class ProvenanceError(ValueError):
-    """The release does not identify a trusted, retained workflow artifact."""
+    """The release does not identify a trusted, persistent ISO asset."""
 
 
 def parse_marker(text: str) -> dict[str, str]:
@@ -57,13 +59,31 @@ def parse_marker(text: str) -> dict[str, str]:
     return values
 
 
-def release_artifact_name(release_tag: str) -> tuple[str, str]:
+def release_build_number(release_tag: str) -> str:
     match = RELEASE_TAG.fullmatch(release_tag)
     if match is None:
         raise ProvenanceError("release tag does not use a supported arkanaOS format")
-    build_number = match.group("scheduled_build") or match.group("release_build")
-    version = release_tag.removeprefix("v")
-    return f"arkanaOS-{version}-iso", build_number
+    return match.group("scheduled_build") or match.group("release_build")
+
+
+def _asset(release: dict[str, Any], name: str, max_size: int) -> dict[str, Any]:
+    assets = release.get("assets")
+    if not isinstance(assets, list):
+        raise ProvenanceError("release asset metadata is invalid")
+    matching = [asset for asset in assets if isinstance(asset, dict) and asset.get("name") == name]
+    if len(matching) != 1:
+        raise ProvenanceError(f"release must have exactly one {name} asset")
+    asset = matching[0]
+    if (
+        not isinstance(asset.get("id"), int)
+        or asset["id"] <= 0
+        or not isinstance(asset.get("size"), int)
+        or not 0 < asset["size"] <= max_size
+        or not isinstance(asset.get("digest"), str)
+        or ASSET_DIGEST.fullmatch(asset["digest"]) is None
+    ):
+        raise ProvenanceError(f"release {name} asset has invalid size, id, or SHA-256 digest")
+    return asset
 
 
 def verify_base_provenance(
@@ -72,17 +92,26 @@ def verify_base_provenance(
     tag_sha: str,
     marker_text: str,
     run: dict[str, Any],
-    artifacts_payload: Any,
+    release_payload: Any,
     repository: str,
     default_branch: str,
     workflow_id: str,
 ) -> dict[str, str]:
-    artifact_name, expected_build = release_artifact_name(release_tag)
+    expected_build = release_build_number(release_tag)
     marker = parse_marker(marker_text)
     if marker["build-number"] != expected_build:
         raise ProvenanceError(
             "system-update marker build number does not match the release tag"
         )
+    if not isinstance(release_payload, dict):
+        raise ProvenanceError("release response is invalid")
+    if (
+        release_payload.get("tag_name") != release_tag
+        or release_payload.get("draft") is not False
+        or not isinstance(release_payload.get("published_at"), str)
+        or not release_payload["published_at"]
+    ):
+        raise ProvenanceError("release is not the published, non-draft tag being verified")
     if not isinstance(run, dict):
         raise ProvenanceError("source run response is invalid")
     if (
@@ -112,30 +141,20 @@ def verify_base_provenance(
             "source run is not a successful default-branch Run All build"
         )
 
-    if isinstance(artifacts_payload, dict):
-        artifacts = artifacts_payload.get("artifacts")
-    else:
-        artifacts = artifacts_payload
-    if not isinstance(artifacts, list):
-        raise ProvenanceError("source run artifact response is invalid")
-    matching = [
-        artifact
-        for artifact in artifacts
-        if isinstance(artifact, dict)
-        and artifact.get("name") == artifact_name
-        and artifact.get("expired") is False
-        and isinstance(artifact.get("id"), int)
-        and artifact["id"] > 0
-        and isinstance(artifact.get("size_in_bytes"), int)
-        and artifact["size_in_bytes"] > 0
-    ]
-    if len(matching) != 1:
-        raise ProvenanceError("source run must have exactly one retained ISO artifact")
+    iso = _asset(release_payload, "arkana.iso", MAX_ISO_SIZE)
+    marker_asset = _asset(
+        release_payload, "arkanaOS-update-client-system-update.txt", 512
+    )
 
     return {
         "run_id": run_id,
-        "artifact_name": artifact_name,
-        "artifact_id": str(matching[0]["id"]),
+        "release_tag": release_tag,
+        "iso_asset_id": str(iso["id"]),
+        "iso_asset_size": str(iso["size"]),
+        "iso_digest": iso["digest"],
+        "marker_asset_id": str(marker_asset["id"]),
+        "marker_asset_size": str(marker_asset["size"]),
+        "marker_digest": marker_asset["digest"],
         "build_number": expected_build,
         "source_sha": marker["source-sha"],
     }
@@ -147,7 +166,7 @@ def main() -> int:
     parser.add_argument("--tag-sha", required=True)
     parser.add_argument("--marker", required=True, type=Path)
     parser.add_argument("--run-json", required=True, type=Path)
-    parser.add_argument("--artifacts-json", required=True, type=Path)
+    parser.add_argument("--release-json", required=True, type=Path)
     parser.add_argument("--repository", required=True)
     parser.add_argument("--default-branch", required=True)
     parser.add_argument("--workflow-id", required=True)
@@ -159,8 +178,8 @@ def main() -> int:
             tag_sha=args.tag_sha,
             marker_text=args.marker.read_text(encoding="utf-8"),
             run=json.loads(args.run_json.read_text(encoding="utf-8")),
-            artifacts_payload=json.loads(
-                args.artifacts_json.read_text(encoding="utf-8")
+            release_payload=json.loads(
+                args.release_json.read_text(encoding="utf-8")
             ),
             repository=args.repository,
             default_branch=args.default_branch,
