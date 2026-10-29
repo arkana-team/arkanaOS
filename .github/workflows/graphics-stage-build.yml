@@ -1,0 +1,194 @@
+name: Cairo and graphics stage build
+
+on:
+  pull_request:
+    paths:
+      - "arkanas/05_graphics.mk"
+      - "arkanas/06_graphics_ext.mk"
+      - "arkanas/libpng.mk"
+      - ".github/workflows/graphics-stage-build.yml"
+      - "tests/test_graphics_stage_build_workflow.py"
+
+concurrency:
+  group: graphics-stage-build-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  build:
+    name: Build graphics against verified stage 2
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    steps:
+      - name: Check out the pull request and base history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Select a trusted stage 2 artifact
+        id: source
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          if ! [[ "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Pull request base SHA is malformed." >&2
+            exit 1
+          fi
+          pr_changed_paths=$(git diff --name-only "$PR_BASE_SHA" "$GITHUB_SHA")
+          if grep -Eq '^(Dockerfile|Makefile|build\.sh|linux\.config|staging-guard\.mk|arkanas/(01_base|02_ext|03_arkpkg|04_toolchain|staging-guard)\.mk)$' <<< "$pr_changed_paths"; then
+            echo "This graphics-stage check cannot reuse a base artifact when the pull request changes stage 1 or 2 inputs." >&2
+            exit 1
+          fi
+
+          WORKFLOW_ID=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/00_run_all.yml" --jq .id)
+          RUNS=$(gh api --paginate \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/$WORKFLOW_ID/runs?branch=$DEFAULT_BRANCH&event=workflow_dispatch&per_page=100" \
+            --jq '.workflow_runs[] | [.id, .head_sha] | @tsv')
+          if [[ -z "$RUNS" ]]; then
+            echo "No Run All builds are available to supply a stage 2 artifact." >&2
+            exit 1
+          fi
+
+          while IFS=$'\t' read -r RUN_ID SOURCE_SHA; do
+            if ! [[ "$RUN_ID" =~ ^[1-9][0-9]*$ && "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+              continue
+            fi
+            if ! git merge-base --is-ancestor "$SOURCE_SHA" "$PR_BASE_SHA"; then
+              continue
+            fi
+            changed_paths=$(git diff --name-only "$SOURCE_SHA" "$PR_BASE_SHA")
+            if [[ -n "$changed_paths" && "$changed_paths" != ".buildnum" ]]; then
+              continue
+            fi
+
+            RUN_JSON=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID")
+            if ! jq -e --arg run_id "$RUN_ID" --arg workflow_id "$WORKFLOW_ID" \
+              --arg repository "$GITHUB_REPOSITORY" --arg branch "$DEFAULT_BRANCH" \
+              --arg source_sha "$SOURCE_SHA" '
+              (.id | tostring) == $run_id and
+              (.workflow_id | tostring) == $workflow_id and
+              .repository.full_name == $repository and
+              .head_repository.full_name == $repository and
+              .event == "workflow_dispatch" and
+              .head_branch == $branch and
+              .head_sha == $source_sha
+            ' <<< "$RUN_JSON" >/dev/null; then
+              continue
+            fi
+
+            JOBS_JSON=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs?per_page=100")
+            if ! jq -e '
+              ([.jobs[] | select(.name == "stage1 / 1. Build Base System" and .conclusion == "success")] | length) == 1 and
+              ([.jobs[] | select(.name == "stage2 / 2. Build Extensions & Toolchain" and .conclusion == "success")] | length) == 1
+            ' <<< "$JOBS_JSON" >/dev/null; then
+              continue
+            fi
+
+            ARTIFACTS_JSON=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/artifacts?per_page=100")
+            ARTIFACT_ID=$(jq -er '
+              [.artifacts[] | select(.name == "arkana-stage2" and .expired == false and .size_in_bytes > 0)] |
+              if length == 1 then .[0].id else empty end
+            ' <<< "$ARTIFACTS_JSON" 2>/dev/null) || continue
+
+            {
+              echo "run_id=$RUN_ID"
+              echo "sha=$SOURCE_SHA"
+              echo "artifact_id=$ARTIFACT_ID"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          done <<< "$RUNS"
+
+          echo "No default-branch Run All run with successful stage 1/2 and a base-compatible stage 2 artifact was found." >&2
+          exit 1
+
+      - name: Download the verified stage 2 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: arkana-stage2
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.source.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: ${{ runner.temp }}/stage2-download
+
+      - name: Unpack stage 2 into isolated build roots
+        run: |
+          set -euo pipefail
+          EXTRACT_DIR=$(mktemp -d "$RUNNER_TEMP/stage2.XXXXXX")
+          trap 'sudo rm -rf -- "$EXTRACT_DIR"' EXIT
+          sudo tar --no-same-owner -xf "$RUNNER_TEMP/stage2-download/arkana-stage2.tar" \
+            -C "$EXTRACT_DIR" -- staging src
+          for member in staging src; do
+            if [[ ! -d "$EXTRACT_DIR/$member" || -L "$EXTRACT_DIR/$member" || -e "$member" || -L "$member" ]]; then
+              echo "Invalid or conflicting stage 2 directory: $member" >&2
+              exit 1
+            fi
+          done
+          sudo mv "$EXTRACT_DIR/staging" "$EXTRACT_DIR/src" .
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /opt/hostedtoolcache
+          sudo docker image prune --all --force || true
+
+      - name: Restore graphics-stage compiler cache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ${{ runner.os }}-ccache-stage3
+          restore-keys: ${{ runner.os }}-ccache-
+          max-size: 10G
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build the arkanaOS builder image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          tags: arkana-builder:graphics-test
+          cache-from: type=gha
+
+      - name: Compile graphics stack with bounded resources
+        run: |
+          mkdir -p output
+          docker run --rm --cpus=2 --memory=3g --memory-swap=3g \
+            -v "$(pwd)/src:/build/arkana/src" \
+            -v "$(pwd)/staging:/build/arkana/staging" \
+            -v "$(pwd)/output:/build/arkana/output" \
+            -e THREADS=2 -e NINJAJOBS=2 \
+            arkana-builder:graphics-test bash -c \
+            "sudo --preserve-env=THREADS,NINJAJOBS make -f arkanas/05_graphics.mk THREADS=2 && sudo --preserve-env=THREADS,NINJAJOBS make -f arkanas/06_graphics_ext.mk THREADS=2"
+
+      - name: Make build logs readable after failure
+        if: failure()
+        run: |
+          if [ -d src ]; then
+            sudo find src -type d -exec chmod a+rx {} +
+            sudo find src -type f \
+              \( -path '*/build/meson-logs/*' -o -path '*/config.log' \
+              -o -path '*/build/CMakeOutput.log' -o -path '*/build/CMakeError.log' \
+              -o -path '*/build/CMakeFiles/CMakeConfigureLog.yaml' \) \
+              -exec chmod a+r {} +
+          fi
+
+      - name: Upload graphics failure logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: graphics-stage-build-logs
+          path: |
+            src/*/build/meson-logs/
+            src/*/config.log
+            src/*/build/CMakeOutput.log
+            src/*/build/CMakeError.log
+            src/*/build/CMakeFiles/CMakeConfigureLog.yaml
+          if-no-files-found: ignore
+          retention-days: 7
