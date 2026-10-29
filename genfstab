@@ -460,19 +460,20 @@ done < <(findmnt -Recvruno SOURCE,TARGET,FSTYPE,OPTIONS,FSROOT "$root")
 
   while read -r device type _ _ prio; do
     device=$(unmangle "$device")
+
+    # skip files marked deleted by the kernel
+    [[ $device = *' (deleted)' ]] && continue
+
     options=defaults
     if (( prio >= 0 )); then
       options+=,pri=$prio
     fi
 
-    # skip files marked deleted by the kernel
-    [[ $device = *'\040(deleted)' ]] && continue
-
     # skip devices not part of the prefix
     [[ $device = "$prefixfilter"* ]] || continue
 
     if [[ $type = file ]]; then
-      printf '%-20s' "${device#"${root%/}"}"
+      printf '%-20s' "$(mangle "${device#"${root%/}"}")"
     elif [[ $device = /dev/dm-+([0-9]) ]]; then
       # device mapper doesn't allow characters we need to worry
       # about being mangled, and it does the escaping of dashes

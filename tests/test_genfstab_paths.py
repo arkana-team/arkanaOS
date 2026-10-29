@@ -52,7 +52,8 @@ class GenfstabRootPathTests(unittest.TestCase):
             escaped_swap = str(root).replace(" ", "\\040")
             swap_table.write_text(
                 "Filename Type Size Used Priority\n"
-                f"{escaped_swap}/swap.img file 1048576 0 -2\n",
+                f"{escaped_swap}/swap\\040file.img file 1048576 0 -2\n"
+                f"{escaped_swap}/deleted\\040(deleted) file 1048576 0 -2\n",
                 encoding="utf-8",
             )
             source = GENFSTAB.read_text(encoding="utf-8")
@@ -87,7 +88,11 @@ class GenfstabRootPathTests(unittest.TestCase):
             ["/dev/sda", "/mnt/source", "none", "rw,bind", "0", "0"],
             rows,
         )
-        self.assertIn(["/swap.img", "none", "swap", "defaults", "0", "0"], rows)
+        self.assertIn(
+            [r"/swap\040file.img", "none", "swap", "defaults", "0", "0"],
+            rows,
+        )
+        self.assertFalse(any("deleted" in row[0] for row in rows))
 
 
 if __name__ == "__main__":
