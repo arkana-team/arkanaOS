@@ -550,10 +550,10 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
         ]
         self.assertEqual(
             cron_entries,
-            ['- cron: "0 3 * * 0,2-6"', '- cron: "0 3 * * 1"'],
+            ['- cron: "17 3 * * 0,2-6"', '- cron: "17 3 * * 1"'],
         )
         self.assertIn(
-            "release_prefix: ${{ inputs.release_prefix || (github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1' && 'weekly' || 'nightly') }}",
+            "release_prefix: ${{ inputs.release_prefix || (github.event_name == 'schedule' && github.event.schedule == '17 3 * * 1' && 'weekly' || 'nightly') }}",
             workflow,
         )
     def test_all_scheduled_runs_build_and_publish_updates(self) -> None:

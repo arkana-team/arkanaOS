@@ -10,9 +10,9 @@ on:
         type: string
   schedule:
     # Publish a nightly ISO and signed update Sunday and Tuesday through Saturday.
-    - cron: "0 3 * * 0,2-6"
+    - cron: "17 3 * * 0,2-6"
     # Monday is the weekly developer release; it also includes the ISO and .aup.
-    - cron: "0 3 * * 1"
+    - cron: "17 3 * * 1"
 
 concurrency:
   group: run-all-${{ github.ref }}
@@ -84,7 +84,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          UPDATE_BASE_CHANNEL: ${{ github.event.schedule == '0 3 * * 1' && 'weekly' || 'nightly' }}
+          UPDATE_BASE_CHANNEL: ${{ github.event.schedule == '17 3 * * 1' && 'weekly' || 'nightly' }}
         run: |
           set -euo pipefail
           BASE_RELEASE_TAGS_JSON=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
@@ -164,7 +164,7 @@ jobs:
     uses: ./.github/workflows/01_stage1_base.yml
     needs: validate-scheduled-update-prerequisites
     with:
-      release_prefix: ${{ inputs.release_prefix || (github.event_name == 'schedule' && github.event.schedule == '0 3 * * 1' && 'weekly' || 'nightly') }}
+      release_prefix: ${{ inputs.release_prefix || (github.event_name == 'schedule' && github.event.schedule == '17 3 * * 1' && 'weekly' || 'nightly') }}
     secrets: inherit
 
   stage2:
