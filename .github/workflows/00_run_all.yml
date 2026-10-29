@@ -89,11 +89,14 @@ jobs:
           set -euo pipefail
           BASE_RELEASE_TAGS_JSON=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
             jq -s 'add' |
-            python3 scripts/select-weekly-update-base.py --channel "$UPDATE_BASE_CHANNEL")
-          if ! jq -e 'type == "array" and length > 0 and length <= 2 and all(.[]; type == "string")' \
+            python3 scripts/select-weekly-update-base.py --channel "$UPDATE_BASE_CHANNEL" --allow-empty-bootstrap)
+          if ! jq -e 'type == "array" and length <= 2 and all(.[]; type == "string")' \
             <<< "$BASE_RELEASE_TAGS_JSON" >/dev/null; then
-            echo "No published release ISO with a supported arkanaOS tag is available as the update base. Publish a compatible ISO from Run All before scheduled .aup releases." >&2
+            echo "The scheduled update-base selector returned invalid data." >&2
             exit 1
+          fi
+          if [[ "$(jq 'length' <<< "$BASE_RELEASE_TAGS_JSON")" -eq 0 ]]; then
+            echo "No compatible update-capable release exists yet; this scheduled run will publish a signed ISO base, and .aup packages will start with the next scheduled release." >&2
           fi
 
           VERIFY_DIR=$(mktemp -d "$RUNNER_TEMP/arkana-update-base.XXXXXX")

@@ -197,6 +197,8 @@ jobs:
           fi
 
       - name: Generate Release Notes & Tags from Template
+        env:
+          UPDATE_BASES_JSON: ${{ inputs.update_bases_json }}
         run: |
           BUILD_NUM=$(cat staging/etc/arkana-build-number)
           RELEASE_PREFIX=$(cat staging/etc/arkana-release-prefix)
@@ -258,7 +260,19 @@ jobs:
             exit 1
           fi
           RELEASE_NAME="arkanaOS ${RELEASE_VERSION} build ${BUILD_NUM}"
+          UPDATE_BASE_COUNT=$(jq -er 'if type == "array" then length else error("update bases must be a JSON array") end' <<< "${UPDATE_BASES_JSON:-[]}")
+          if [[ "$GITHUB_EVENT_NAME" == schedule && "$UPDATE_BASE_COUNT" -eq 0 ]]; then
+            RELEASE_UPDATE_ASSETS="This is the initial scheduled ISO bootstrap. It includes the verification public key and seeds the signed .aup update path; update packages begin with the next scheduled release."
+            RELEASE_UPDATE_GUIDANCE=$'No .aup package is attached because there is no earlier update-capable release to target. After the next scheduled release includes its update package, trust the verification key once on the installed system:\n\n```sh\nsudo arkup trust ./arkanaOS-update-signing.pub\n```'
+          elif [[ "$GITHUB_EVENT_NAME" == schedule ]]; then
+            RELEASE_UPDATE_ASSETS="This scheduled release includes the bootable ISO and signed arkup .aup update package or packages, checksums, and the verification public key."
+            RELEASE_UPDATE_GUIDANCE=$'Each update package filename includes from-build-N; use the package whose base build matches the build installed on your system. After applying it, choose the next package using your new build number. Nightly packages are based on the latest scheduled release. The Monday weekly release includes a package from the previous weekly build and, when those builds differ, a second package from Sunday\'s nightly build. This keeps both update paths available to weekly and nightly installations. Update-base ISOs are downloaded from persistent GitHub Release assets and checked against GitHub\'s SHA-256 digest and the source workflow provenance.\n\nBefore applying an update, download the verification key from the official arkanaOS release and trust it once on the installed system:\n\n```sh\nsudo arkup trust ./arkanaOS-update-signing.pub\nsudo arkup apply ./path/to/update.aup\n```'
+          else
+            RELEASE_UPDATE_ASSETS="This manually triggered release includes the bootable ISO only."
+            RELEASE_UPDATE_GUIDANCE="No signed .aup update package is attached to a manually triggered release."
+          fi
           export RELEASE_NAME RELEASE_CHANNEL RELEASE_STATUS
+          export RELEASE_UPDATE_ASSETS RELEASE_UPDATE_GUIDANCE
           python3 - <<'PY'
           import os
           from pathlib import Path
@@ -269,6 +283,8 @@ jobs:
               "@@RELEASE_CHANNEL@@": os.environ["RELEASE_CHANNEL"],
               "@@RELEASE_NAME@@": os.environ["RELEASE_NAME"],
               "@@RELEASE_STATUS@@": os.environ["RELEASE_STATUS"],
+              "@@RELEASE_UPDATE_ASSETS@@": os.environ["RELEASE_UPDATE_ASSETS"],
+              "@@RELEASE_UPDATE_GUIDANCE@@": os.environ["RELEASE_UPDATE_GUIDANCE"],
           }
           missing = [token for token in replacements if token not in template]
           if missing:
@@ -285,6 +301,7 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Build signed update packages for scheduled developer release
+        id: build-updates
         if: github.event_name == 'schedule'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -298,7 +315,7 @@ jobs:
             echo "Scheduled update signing secrets are required; refusing to publish an unsigned or incomplete release." >&2
             exit 1
           fi
-          if ! jq -e 'type == "array" and length > 0 and length <= 2' \
+          if ! jq -e 'type == "array" and length <= 2' \
             <<< "$UPDATE_BASES_JSON" >/dev/null; then
             echo "Scheduled update bases are missing or invalid." >&2
             exit 1
@@ -423,8 +440,10 @@ jobs:
             echo "Scheduled update package built from $UPDATE_BASE_RELEASE_TAG: $UPDATE_PACKAGE"
             rm -rf -- "$BASE_ROOT" "$BASE_SQUASHFS" "$BASE_ISO" "$BASE_RELEASE_JSON" "$BASE_RUN_JSON" "$BASE_MARKER" "$VERIFIED_BASE_JSON"
           done
+          mkdir -p output/updates
           cp "$KEY_DIR/release.pub" output/updates/arkanaOS-update-signing.pub
           chmod 0644 output/updates/arkanaOS-update-signing.pub
+          echo "update_count=$BASE_COUNT" >> "$GITHUB_OUTPUT"
 
       - name: Upload Verified arkanaOS ISO Base Artifact
         if: steps.mark-update-capability.outputs.system_update_capable == 'true'
@@ -447,7 +466,7 @@ jobs:
           retention-days: 14
 
       - name: Upload Signed arkanaOS Update Artifact
-        if: github.event_name == 'schedule'
+        if: github.event_name == 'schedule' && steps.build-updates.outputs.update_count != '0'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.RELEASE_ARTIFACT_NAME }}-update
@@ -462,6 +481,7 @@ jobs:
         id: release-assets
         env:
           SCHEDULED_UPDATE_RELEASE: ${{ github.event_name == 'schedule' }}
+          UPDATE_COUNT: ${{ steps.build-updates.outputs.update_count || '0' }}
         run: |
           set -euo pipefail
           {
@@ -472,9 +492,14 @@ jobs:
               echo "output/arkanaOS-update-client-system-update.txt"
             fi
             if [[ "$SCHEDULED_UPDATE_RELEASE" == true ]]; then
-              find output/updates -maxdepth 1 -type f \
-                \( -name '*.aup' -o -name '*.aup.sha256' -o -name 'arkanaOS-update-signing.pub' \) \
-                -print | sort
+              if [[ -f output/updates/arkanaOS-update-signing.pub ]]; then
+                echo "output/updates/arkanaOS-update-signing.pub"
+              fi
+              if [[ "$UPDATE_COUNT" -gt 0 ]]; then
+                find output/updates -maxdepth 1 -type f \
+                  \( -name '*.aup' -o -name '*.aup.sha256' \) \
+                  -print | sort
+              fi
             fi
             echo EOF
           } >> "$GITHUB_OUTPUT"

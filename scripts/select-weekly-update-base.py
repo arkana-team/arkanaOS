@@ -38,7 +38,12 @@ def is_published(release: dict[str, Any], excluded_tags: set[str]) -> bool:
     )
 
 
-def select_bases(releases: list[Any], excluded_tags: set[str], channel: str) -> list[str]:
+def select_bases(
+    releases: list[Any],
+    excluded_tags: set[str],
+    channel: str,
+    allow_empty_bootstrap: bool = False,
+) -> list[str]:
     published = [
         release
         for release in releases
@@ -78,6 +83,8 @@ def select_bases(releases: list[Any], excluded_tags: set[str], channel: str) -> 
     if bootstrap:
         return [max(bootstrap, key=lambda release: release["published_at"])["tag_name"]]
 
+    if allow_empty_bootstrap:
+        return []
     raise ValueError("no system-update-capable update release or ISO is available")
 
 
@@ -95,12 +102,26 @@ def main() -> int:
         required=True,
         help="scheduled release channel that will consume the selected base",
     )
+    parser.add_argument(
+        "--allow-empty-bootstrap",
+        action="store_true",
+        help="allow the first scheduled ISO to seed an update-capable release base",
+    )
     args = parser.parse_args()
     try:
         payload = json.load(sys.stdin)
         if not isinstance(payload, list):
             raise TypeError("release API input must be a JSON array")
-        print(json.dumps(select_bases(payload, set(args.exclude_tag), args.channel)))
+        print(
+            json.dumps(
+                select_bases(
+                    payload,
+                    set(args.exclude_tag),
+                    args.channel,
+                    allow_empty_bootstrap=args.allow_empty_bootstrap,
+                )
+            )
+        )
     except (json.JSONDecodeError, TypeError, ValueError) as error:
         print(f"select-weekly-update-base: {error}", file=sys.stderr)
         return 1

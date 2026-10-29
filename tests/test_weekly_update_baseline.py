@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import base64
 import os
 import runpy
 import subprocess
+import tempfile
+import textwrap
 import unittest
 from pathlib import Path
 
@@ -37,6 +40,8 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
             'python3 scripts/select-weekly-update-base.py --channel "$UPDATE_BASE_CHANNEL"',
             preflight,
         )
+        self.assertIn("--allow-empty-bootstrap", preflight)
+        self.assertIn("will publish a signed ISO base", preflight)
         self.assertIn('update_bases_json=%s\\n', preflight)
         self.assertNotIn("actions/runs/$SOURCE_RUN_ID/artifacts", preflight)
         self.assertIn("needs: validate-scheduled-update-prerequisites", workflow)
@@ -72,6 +77,9 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
         self.assertIn("system-update=1", marker_step)
         self.assertIn('"$SOURCE_RUN_ID" == "$GITHUB_RUN_ID"', marker_step)
         self.assertIn('inputs.update_bases_json', workflow)
+        self.assertIn('type == "array" and length <= 2', update_step)
+        self.assertIn('mkdir -p output/updates', update_step)
+        self.assertIn('echo "update_count=$BASE_COUNT"', update_step)
         self.assertIn("releases/assets/$UPDATE_BASE_ISO_ASSET_ID", update_step)
         self.assertIn("releases/assets/$UPDATE_BASE_MARKER_ID", update_step)
         self.assertIn("sha256sum --check --status", update_step)
@@ -122,7 +130,7 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
                 )
                 self.assertNotEqual(result.returncode, 0, tag)
 
-    def test_all_scheduled_releases_upload_update_artifacts(self) -> None:
+    def test_scheduled_bootstrap_skips_empty_update_artifact_then_publishes_updates(self) -> None:
         workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
         upload_step = workflow.split(
             "      - name: Upload Signed arkanaOS Update Artifact", 1
@@ -130,13 +138,128 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
         release_assets = workflow.split(
             "      - name: Select release assets", 1
         )[1].split("      - name:", 1)[0]
-        scheduled_release = "github.event_name == 'schedule'"
-        self.assertIn(f"if: {scheduled_release}", upload_step)
         self.assertIn(
-            f"SCHEDULED_UPDATE_RELEASE: ${{{{ {scheduled_release} }}}}",
+            "if: github.event_name == 'schedule' && steps.build-updates.outputs.update_count != '0'",
+            upload_step,
+        )
+        self.assertIn(
+            "SCHEDULED_UPDATE_RELEASE: ${{ github.event_name == 'schedule' }}",
             release_assets,
         )
         self.assertIn('if [[ "$SCHEDULED_UPDATE_RELEASE" == true ]]', release_assets)
+        self.assertIn('if [[ "$UPDATE_COUNT" -gt 0 ]]; then', release_assets)
+        self.assertIn("output/updates/arkanaOS-update-signing.pub", release_assets)
+        self.assertIn(
+            "@@RELEASE_UPDATE_ASSETS@@",
+            (REPOSITORY / "RELEASE_TEMPLATE.md").read_text(encoding="utf-8"),
+        )
+        self.assertIn("initial scheduled ISO bootstrap", workflow)
+
+    def test_bootstrap_update_step_publishes_key_without_downloading_a_base(self) -> None:
+        workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
+        step = workflow.split(
+            "      - name: Build signed update packages for scheduled developer release\n",
+            1,
+        )[1].split("      - name:", 1)[0]
+        script = textwrap.dedent(step.split("        run: |\n", 1)[1])
+
+        with tempfile.TemporaryDirectory(prefix="arkana-update-bootstrap-") as temporary:
+            root = Path(temporary)
+            binary_dir = root / "bin"
+            runner_temp = root / "runner-temp"
+            binary_dir.mkdir()
+            runner_temp.mkdir()
+            (binary_dir / "sudo").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            (binary_dir / "gh").write_text(
+                "#!/bin/sh\nprintf '12345\\n'\n", encoding="utf-8"
+            )
+            for command in (binary_dir / "sudo", binary_dir / "gh"):
+                command.chmod(0o755)
+            signing_key = bytes(range(32))
+            public_key = bytes(reversed(range(32)))
+            github_output = root / "github-output"
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    "PATH": f"{binary_dir}:{environment['PATH']}",
+                    "RUNNER_TEMP": str(runner_temp),
+                    "GITHUB_OUTPUT": str(github_output),
+                    "GITHUB_REPOSITORY": "arkana-team/arkanaOS",
+                    "GH_TOKEN": "test-token",
+                    "ARKUP_UPDATE_SIGNING_KEY_B64": base64.b64encode(signing_key).decode(),
+                    "ARKUP_UPDATE_PUBLIC_KEY_B64": base64.b64encode(public_key).decode(),
+                    "UPDATE_BASES_JSON": "[]",
+                }
+            )
+            result = subprocess.run(
+                ["bash", "--noprofile", "--norc", "-e", "-o", "pipefail", "-c", script],
+                cwd=root,
+                env=environment,
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(
+                (root / "output/updates/arkanaOS-update-signing.pub").read_bytes(),
+                public_key,
+            )
+            self.assertIn("update_count=0\n", github_output.read_text())
+            self.assertEqual(list((root / "output/updates").glob("*.aup")), [])
+            self.assertFalse((runner_temp / "arkana-update-key").exists())
+
+    def test_release_asset_selection_handles_bootstrap_and_update_releases(self) -> None:
+        workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
+        step = workflow.split("      - name: Select release assets\n", 1)[1].split(
+            "      - name:", 1
+        )[0]
+        script = textwrap.dedent(step.split("        run: |\n", 1)[1])
+
+        for update_count in (0, 1):
+            with self.subTest(update_count=update_count), tempfile.TemporaryDirectory(
+                prefix="arkana-release-assets-"
+            ) as temporary:
+                root = Path(temporary)
+                updates = root / "output/updates"
+                updates.mkdir(parents=True)
+                for name in (
+                    "arkana.iso",
+                    "arkanaOS-update-client.txt",
+                    MARKER,
+                ):
+                    (root / "output" / name).touch()
+                (updates / "arkanaOS-update-signing.pub").touch()
+                if update_count:
+                    (updates / "arkanaos-nightly-234-from-build-233.aup").touch()
+                    (updates / "arkanaos-nightly-234-from-build-233.aup.sha256").touch()
+                github_output = root / "github-output"
+                environment = os.environ.copy()
+                environment.update(
+                    {
+                        "GITHUB_OUTPUT": str(github_output),
+                        "SCHEDULED_UPDATE_RELEASE": "true",
+                        "UPDATE_COUNT": str(update_count),
+                    }
+                )
+                result = subprocess.run(
+                    ["bash", "--noprofile", "--norc", "-e", "-o", "pipefail", "-c", script],
+                    cwd=root,
+                    env=environment,
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                    check=False,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                lines = github_output.read_text().splitlines()
+                selected = set(lines[lines.index("files<<EOF") + 1 : lines.index("EOF")])
+                self.assertIn("output/arkana.iso", selected)
+                self.assertIn(f"output/{MARKER}", selected)
+                self.assertIn("output/updates/arkanaOS-update-signing.pub", selected)
+                package_assets = {name for name in selected if name.endswith((".aup", ".aup.sha256"))}
+                self.assertEqual(len(package_assets), 2 * update_count)
 
 
 if __name__ == "__main__":
