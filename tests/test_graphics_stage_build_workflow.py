@@ -1,8 +1,7 @@
 """Keep the Cairo/libpng graphics build check provenance-bound and resource-limited."""
 
-from pathlib import Path
 import unittest
-
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
