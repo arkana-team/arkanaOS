@@ -421,7 +421,8 @@ download-linux: .linux-$(LINUX_VER)-obtained
 # Compile Linux kernel
 linux: download-linux .linux-$(LINUX_VER)-done
 
-.linux-$(LINUX_VER)-done: $(CURDIR)/linux.config $(CURDIR)/arkanas/07_iso.mk
+# The kernel-header recipe runs mrproper and removes generated kernel state.
+.linux-$(LINUX_VER)-done: $(CURDIR)/linux.config $(CURDIR)/arkanas/07_iso.mk $(CURDIR)/arkanas/01_base.mk
 	# Linus, you've fucked with the SBAT file config and my builder broke!
 	$(MAKE) -C $(LINUX_PATH) mrproper && cp $(CURDIR)/linux.config $(LINUX_PATH)/.config && cd $(LINUX_PATH) && $(MAKE) olddefconfig && \
 	$(MAKE) -j$(THREADS) KBUILD_BUILD_HOST="arkana" KBUILD_BUILD_USER="arkana" all && cp arch/x86/boot/bzImage $(STAGING_PATH)/boot/vmlinuz && \
