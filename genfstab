@@ -100,7 +100,7 @@ valid_number_of_base() {
 }
 
 mangle() {
-  local i= chr= out=
+  local i='' chr='' out=''
   local {a..f}= {A..F}=
 
   for (( i = 0; i < ${#1}; i++ )); do
@@ -118,7 +118,7 @@ mangle() {
 }
 
 unmangle() {
-  local i= chr= out= len=$(( ${#1} - 4 ))
+  local i='' chr='' out='' len=$(( ${#1} - 4 ))
   local {a..f}= {A..F}=
 
   for (( i = 0; i < len; i++ )); do
@@ -192,8 +192,6 @@ optstring_append_option() {
 }
 
 optstring_prepend_option() {
-  local options_=$1
-
   if ! optstring_has_option "$1" "$2"; then
     declare -g "$1=$2,${!1}"
   fi
@@ -222,7 +220,7 @@ optstring_has_option() {
 }
 
 dm_name_for_devnode() {
-  read dm_name <"/sys/class/block/${1#/dev/}/dm/name"
+  read -r dm_name <"/sys/class/block/${1#/dev/}/dm/name"
   if [[ $dm_name ]]; then
     printf '/dev/mapper/%s' "$dm_name"
   else
@@ -242,7 +240,7 @@ fstype_has_fsck() {
 
 
 write_source() {
-  local src=$1 spec= label= uuid= comment=()
+  local src=$1 spec='' label='' uuid='' comment=()
 
   label=$(lsblk -rno LABEL "$1" 2>/dev/null)
   uuid=$(lsblk -rno UUID "$1" 2>/dev/null)
@@ -270,7 +268,7 @@ write_source() {
       ;;
   esac
 
-  [[ $comment ]] && printf '# %s\n' "${comment[*]}"
+  (( ${#comment[@]} )) && printf '# %s\n' "${comment[*]}"
 
   if [[ $spec ]]; then
     printf '%-20s' "$bytag=$(mangle "$spec")"
@@ -314,6 +312,7 @@ optstring_apply_quirks() {
       ;;
     vfat)
       # Before Linux v3.8, "cp" is prepended to the value of the codepage.
+      # shellcheck disable=SC2154
       if optstring_get_option "$varname" codepage && [[ $codepage = cp* ]]; then
         optstring_remove_option "$varname" codepage
         optstring_append_option "$varname" "codepage=${codepage#cp}"
@@ -398,7 +397,7 @@ while read -r src target fstype opts fsroot; do
 
   src=$(unmangle "$src")
   target=$(unmangle "$target")
-  target=${target#$root}
+  target=${target#"$root"}
 
   if (( !foundroot )) && findmnt "$src" "$root" >/dev/null; then
     # this is root. we can't possibly have more than one...
@@ -413,7 +412,7 @@ while read -r src target fstype opts fsroot; do
   if [[ $fsroot != / && $fstype != btrfs ]]; then
     # it's a bind mount
     src=$(findmnt -funcevo TARGET "$src")$fsroot
-    src="/${src#$root/}"
+    src="/${src#"$root"/}"
     if [[ $src -ef $target ]]; then
       # hrmm, this is weird. we're probably looking at a file or directory
       # that was bound into a chroot from the host machine. Ignore it,
@@ -452,7 +451,7 @@ done < <(findmnt -Recvruno SOURCE,TARGET,FSTYPE,OPTIONS,FSROOT "$root")
 # handle swaps devices
 {
   # ignore header
-  read
+  read -r
 
   while read -r device type _ _ prio; do
     options=defaults
@@ -467,7 +466,7 @@ done < <(findmnt -Recvruno SOURCE,TARGET,FSTYPE,OPTIONS,FSROOT "$root")
     [[ $device = "$prefixfilter"* ]] || continue
 
     if [[ $type = file ]]; then
-      printf '%-20s' "${device#${root%/}}"
+      printf '%-20s' "${device#"${root%/}"}"
     elif [[ $device = /dev/dm-+([0-9]) ]]; then
       # device mapper doesn't allow characters we need to worry
       # about being mangled, and it does the escaping of dashes

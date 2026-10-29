@@ -24,6 +24,7 @@ output
 !tests/test_workflow_concurrency.py
 !tests/test_update_builder_pin.py
 !tests/test_arkup_system_install.py
+!tests/test_genfstab_paths.py
 __pycache__/
 *.py[cod]
 *.aup
