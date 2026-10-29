@@ -71,16 +71,24 @@ private input trees and signing keys owned by the invoking account.
 GitHub Actions publishes a scheduled release every day at 03:00 UTC. Sunday
 and Tuesday through Saturday are nightly builds; Monday is the weekly developer
 release. Each scheduled release uses the same staged ISO pipeline and release
-note template, and attaches both the ISO and a signed `.aup` delta, checksum,
-and public verification key. The update is based on the latest compatible
-published release; users on older builds may need to install intervening
-updates first. Installations must trust the published key before applying
-updates.
+note template, and attaches the ISO and signed `.aup` delta package(s), their
+checksums, and the public verification key. Every update filename includes its
+required `from-build-N` base. Nightlies use the latest scheduled release as the
+base. Monday publishes a package from the previous weekly build and, when
+different, another from Sunday's nightly build. Users choose the package that
+matches their installed build, then use the next package matching the new build
+number. Installations must trust the published key before applying updates.
+
+The base ISO is downloaded from its persistent GitHub Release asset. The
+workflow validates the asset's GitHub SHA-256 digest, release marker, tag
+commit, and successful default-branch Run All provenance before extracting the
+filesystem. This avoids reliance on expiring Actions artifact storage.
 
 Before the first scheduled update release, run `Run All Pipeline Stages` once
 with `workflow_dispatch` on the default branch. That bootstrap release includes
-the ISO and provenance marker needed to validate the base artifact; it does not
-include an update package. Scheduled releases then publish both assets.
+the ISO and provenance marker needed to validate the persistent base release
+asset; it does not include an update package. Scheduled releases then publish
+both the ISO and update package assets.
 
 Before scheduled runs, configure organization or repository Actions secrets
 `ARKUP_UPDATE_SIGNING_KEY_B64` and `ARKUP_UPDATE_PUBLIC_KEY_B64` with the

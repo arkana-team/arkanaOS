@@ -80,7 +80,7 @@ jobs:
       - name: Check weekly update base compatibility
         run: python3 -m unittest discover -s tests -p 'test_weekly_update_baseline.py' -v
 
-      - name: Check weekly base artifact provenance
+      - name: Check weekly release ISO provenance
         run: python3 -m unittest discover -s tests -p 'test_weekly_base_provenance.py' -v
 
       - name: Test update signing keypair validation
