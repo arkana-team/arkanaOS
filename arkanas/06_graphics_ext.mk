@@ -66,7 +66,6 @@ LIBDEFLATE_PATH = $(SRC_PATH)/libdeflate-$(LIBDEFLATE_VER)
 
 # Jbig-kit
 JBIG_KIT_URL = https://www.cl.cam.ac.uk/~mgk25/jbigkit/download/jbigkit-2.1.tar.gz
-JBIG_KIT_PATCH_URL = https://gitlab.archlinux.org/archlinux/packaging/packages/jbigkit/-/raw/main/jbigkit-2.1-shared_lib.patch
 JBIG_KIT_VER = 2.1
 JBIG_KIT_PATH = $(SRC_PATH)/jbigkit-$(JBIG_KIT_VER)
 
@@ -219,10 +218,16 @@ download-libjbig: .libjbig-obtained
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O jbigkit-$(JBIG_KIT_VER).tar.gz $(JBIG_KIT_URL) && tar xf jbigkit-$(JBIG_KIT_VER).tar.gz
 	touch .libjbig-obtained
 
-# Hey Mr. Cambridge guy, care to update your build system? It's so UNIX.
+# Upstream jbigkit 2.1 only builds static libraries; build the shared ABI used by libtiff.
 libjbig: download-libjbig .libjbig-done
 .libjbig-done:
-	cd $(JBIG_KIT_PATH) && (curl -s -f $(JBIG_KIT_PATCH_URL) | patch -N -p1 || true) && find . -name Makefile -exec sed -i 's/^CFLAGS\s*=/CFLAGS += -g -O2 -std=gnu17 /' {} + && $(MAKE) -j$(THREADS) && cp -a libjbig/libjbig.so.2.1 $(STAGING_PATH)/usr/lib && \
+	cd $(JBIG_KIT_PATH) && find . -name Makefile -exec sed -i 's/^CFLAGS\s*=/CFLAGS += -g -O2 -std=gnu17 /' {} + && $(MAKE) -j$(THREADS)
+	cd $(JBIG_KIT_PATH)/libjbig && \
+	$(CC) -O2 -std=gnu17 -fPIC -c jbig.c -o jbig.pic.o && \
+	$(CC) -O2 -std=gnu17 -fPIC -c jbig_ar.c -o jbig_ar.pic.o && \
+	$(CC) -O2 -std=gnu17 -fPIC -c jbig85.c -o jbig85.pic.o && \
+	$(CC) -shared -Wl,-soname,libjbig.so.2.1 -o libjbig.so.2.1 jbig.pic.o jbig_ar.pic.o jbig85.pic.o && \
+	install -d $(STAGING_PATH)/usr/lib && install -m 0755 libjbig.so.2.1 $(STAGING_PATH)/usr/lib/libjbig.so.2.1 && \
 	ln -sf libjbig.so.2.1 $(STAGING_PATH)/usr/lib/libjbig.so
 	touch .libjbig-done
 
