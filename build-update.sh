@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+
 usage() {
   cat <<'EOF'
 Usage: ./build-update.sh --base-root DIR --target-root DIR \
@@ -90,8 +92,8 @@ docker build \
   --cpu-period=100000 \
   --cpu-quota="$((CPUS * 100000))" \
   --build-arg "ARKUP_GIT_REF=$ARKUP_GIT_REF" \
-  -f Dockerfile.update-builder \
-  -t arkana-update-builder .
+  -f "$SCRIPT_DIR/Dockerfile.update-builder" \
+  -t arkana-update-builder "$SCRIPT_DIR"
 
 # The commas are part of this single --tmpfs argument.
 # shellcheck disable=SC2054
