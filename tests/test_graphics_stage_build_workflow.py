@@ -1,0 +1,79 @@
+"""Keep the Cairo/libpng graphics build check provenance-bound and resource-limited."""
+
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+class GraphicsStageBuildWorkflowTests(unittest.TestCase):
+    def test_graphics_recipe_defaults_to_building_all_targets(self) -> None:
+        recipe = (ROOT / "arkanas/05_graphics.mk").read_text(encoding="utf-8")
+        self.assertIn(".DEFAULT_GOAL := all", recipe)
+
+    def test_xcb_protocol_definitions_are_staged_before_libxcb(self) -> None:
+        recipe = (ROOT / "arkanas/05_graphics.mk").read_text(encoding="utf-8")
+        self.assertIn("XCB_PROTO_VER = 1.17.0", recipe)
+        self.assertIn("xcb-proto: download-xcb-proto .xcb-proto-done", recipe)
+        self.assertIn(
+            "PYTHON=python3 ./configure --prefix=/usr", recipe
+        )
+        self.assertIn(
+            "xorg-libs: download-xorg-libs xcb-proto fontconfig .xorg-libs-done",
+            recipe,
+        )
+
+    def test_fvwm3_builds_staged_xkbcommon_before_meson_setup(self) -> None:
+        recipe = (ROOT / "arkanas/05_graphics.mk").read_text(encoding="utf-8")
+        self.assertIn(
+            ".fvwm3-done: $(CURDIR)/arkanas/05_graphics.mk .fvwm3-obtained "
+            ".libevent-done .libxkbcommon-done .xorg-libs-done",
+            recipe,
+        )
+        self.assertIn(
+            ".libxkbcommon-done:\n\t$(MAKE) -f arkanas/06_graphics_ext.mk wayland wayland-protocols libxkbcommon",
+            recipe,
+        )
+
+    def test_workflow_is_limited_to_graphics_pull_request_changes(self) -> None:
+        workflow = (ROOT / ".github/workflows/graphics-stage-build.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("pull_request:", workflow)
+        self.assertIn('"arkanas/05_graphics.mk"', workflow)
+        self.assertIn('"arkanas/libpng.mk"', workflow)
+        self.assertIn('git diff --name-only "$PR_BASE_SHA" "$GITHUB_SHA"', workflow)
+        self.assertIn("This graphics-stage check cannot reuse a base artifact", workflow)
+        self.assertIn("permissions:\n  actions: read\n  contents: read", workflow)
+
+    def test_stage_two_artifact_must_come_from_a_trusted_compatible_run(self) -> None:
+        workflow = (ROOT / ".github/workflows/graphics-stage-build.yml").read_text(
+            encoding="utf-8"
+        )
+        for required in (
+            '"$DEFAULT_BRANCH"',
+            '"$PR_BASE_SHA"',
+            '"$SOURCE_SHA" "$PR_BASE_SHA"',
+            '"$GITHUB_REPOSITORY"',
+            '"stage1 / 1. Build Base System"',
+            '"stage2 / 2. Build Extensions & Toolchain"',
+            '"arkana-stage2"',
+            'repository: ${{ github.repository }}',
+        ):
+            self.assertIn(required, workflow)
+
+    def test_graphics_build_uses_two_jobs_and_three_gib(self) -> None:
+        workflow = (ROOT / ".github/workflows/graphics-stage-build.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("--cpus=2 --memory=3g --memory-swap=3g", workflow)
+        self.assertIn("THREADS=2", workflow)
+        self.assertIn("NINJAJOBS=2", workflow)
+        self.assertIn("make -f arkanas/05_graphics.mk all THREADS=2", workflow)
+        self.assertIn("make -f arkanas/06_graphics_ext.mk all THREADS=2", workflow)
+        self.assertIn("ccache-stage3", workflow)
+        self.assertIn("graphics-stage-build-logs", workflow)
+
+
+if __name__ == "__main__":
+    unittest.main()

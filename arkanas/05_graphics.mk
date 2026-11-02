@@ -1,4 +1,5 @@
 # Enable multi-threaded Bash operation
+.DEFAULT_GOAL := all
 SHELL = bash
 THREADS ?= $(shell nproc)
 .NOTPARALLEL:
@@ -10,6 +11,7 @@ STAGING_PATH = $(shell realpath ./staging)
 CPIO_STAGING_PATH = $(shell realpath ./cpio-staging)
 ISO_STAGING_PATH = $(shell realpath ./iso-staging)
 OUTPUT_PATH = $(shell realpath ./output)
+include arkanas/libpng.mk
 
 # Xorg Server
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/x/xorg-server.html
@@ -207,6 +209,11 @@ X11_LIB_VERS = 1.8.12 1.0.12 0.1.3 1.1.5 1.3.6 2.0.7 1.3.3 1.17.0 1.1.8 1.1.6 0.
 X11_PARSED_LIBS := $(foreach i, $(shell seq 1 $(words $(X11_LIBS))), \
   $(word $(i), $(X11_LIBS))/$(word $(i), $(X11_LIB_VERS)))
 
+# XCB protocol descriptions; libxcb uses these to generate extension APIs.
+XCB_PROTO_URL = https://xorg.freedesktop.org/archive/individual/proto/xcb-proto-1.17.0.tar.xz
+XCB_PROTO_VER = 1.17.0
+XCB_PROTO_PATH = $(SRC_PATH)/xcb-proto-$(XCB_PROTO_VER)
+
 X11_APPS = xauth xkbcomp xsetroot xrandr
 X11_APP_VERS = 1.1.4 1.4.7 1.1.3 1.5.2
 
@@ -227,7 +234,7 @@ X11_PARSED_FONTS := $(foreach i, $(shell seq 1 $(words $(X11_FONTS))), \
   $(word $(i), $(X11_FONTS))/$(word $(i), $(X11_FONT_VERS)))
 
 # Targets
-all: xorgproto xtrans pixman freetype font-util fontconfig xbitmaps xorg-libs libdrm mesa xorg-server libbsd libmd lm-sensors llvm libedit spirv-tools xinit xorg-apps xorg-nscde-apps xorg-fonts xorg-xkeyboard-config xf86-input-evdev openbox fribidi xterm luit libevdev mtdev libgudev libwacom libinput feh imlib2 libdatrie libthai harfbuzz cairo pango libdav1d libjpeg-turbo gdk-pixbuf librsvg libevent ksh93 pyxdg pyyaml imagemagick fvwm3 nscde
+all: xorgproto xtrans pixman freetype font-util fontconfig xbitmaps xorg-libs libdrm mesa xorg-server libbsd libmd lm-sensors llvm libedit spirv-tools xinit xorg-apps xorg-nscde-apps xorg-fonts xorg-xkeyboard-config xf86-input-evdev openbox fribidi xterm luit libevdev mtdev libgudev libwacom libinput feh imlib2 libdatrie libthai harfbuzz libpng cairo pango libdav1d libjpeg-turbo gdk-pixbuf librsvg libevent ksh93 pyxdg pyyaml imagemagick fvwm3 nscde
 
 XORGPROTO_URL = https://xorg.freedesktop.org/releases/individual/proto/xorgproto-2024.1.tar.xz
 XORGPROTO_VER = 2024.1
@@ -367,6 +374,16 @@ xorg-server: download-xorg-server libepoxy mesa .xorg-server-done
 	touch .xorg-server-done
 
 # Download Xorg libraries
+download-xcb-proto: .xcb-proto-obtained
+.xcb-proto-obtained:
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O xcb-proto-$(XCB_PROTO_VER).tar.xz $(XCB_PROTO_URL) && tar xf xcb-proto-$(XCB_PROTO_VER).tar.xz
+	touch .xcb-proto-obtained
+
+xcb-proto: download-xcb-proto .xcb-proto-done
+.xcb-proto-done:
+	cd $(XCB_PROTO_PATH) && PYTHON=python3 ./configure --prefix=/usr && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
+	touch .xcb-proto-done
+
 download-xorg-libs: .xorg-libs-obtained
 .xorg-libs-obtained:
 	for pair in $(X11_PARSED_LIBS); do \
@@ -378,7 +395,7 @@ download-xorg-libs: .xorg-libs-obtained
 	touch .xorg-libs-obtained
 
 # Compile Xorg libraries
-xorg-libs: download-xorg-libs fontconfig .xorg-libs-done
+xorg-libs: download-xorg-libs xcb-proto fontconfig .xorg-libs-done
 .xorg-libs-done:
 	for pair in $(X11_PARSED_LIBS); do \
 	  lib=$${pair%%/*}; \
@@ -786,10 +803,10 @@ harfbuzz: download-harfbuzz .harfbuzz-done
 	touch .harfbuzz-done
 
 # Compile cairo
-cairo: download-cairo .cairo-done
-.cairo-done:
-	mkdir -p $(CAIRO_PATH)/build && cd $(CAIRO_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release -D tests=disabled -D png=enabled -D fontconfig=enabled -D freetype=enabled -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16 -lm" .. && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
-	touch .cairo-done
+cairo: download-cairo libpng .cairo-$(CAIRO_VER)-libpng-done
+.cairo-$(CAIRO_VER)-libpng-done:
+	rm -rf $(CAIRO_PATH)/build && mkdir -p $(CAIRO_PATH)/build && cd $(CAIRO_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt --prefix=/usr --buildtype=release --wrap-mode=nofallback -D tests=disabled -D png=enabled -D fontconfig=enabled -D freetype=enabled -Dc_link_args="-Wl,-rpath-link=$(STAGING_PATH)/usr/lib -lpng16 -lm" .. && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
+	touch .cairo-$(CAIRO_VER)-libpng-done
 
 # Compile pango
 pango: download-pango libthai harfbuzz cairo .pango-done
@@ -980,7 +997,11 @@ download-fvwm3: .fvwm3-obtained
 	touch .fvwm3-obtained
 
 fvwm3: .fvwm3-done
-.fvwm3-done: $(CURDIR)/arkanas/05_graphics.mk .fvwm3-obtained .libevent-done .xorg-libs-done
+# FVWM3's Meson build requires xkbcommon, whose recipe is shared with stage 6.
+.libxkbcommon-done:
+	$(MAKE) -f arkanas/06_graphics_ext.mk wayland wayland-protocols libxkbcommon
+
+.fvwm3-done: $(CURDIR)/arkanas/05_graphics.mk .fvwm3-obtained .libevent-done .libxkbcommon-done .xorg-libs-done
 	cd $(FVWM3_PATH) && rm -rf meson-build && PKG_CONFIG_PATH="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_LIBDIR="$(STAGING_PATH)/usr/lib/pkgconfig:$(STAGING_PATH)/usr/share/pkgconfig" PKG_CONFIG_SYSROOT_DIR="$(STAGING_PATH)" meson setup --native-file $(SRC_PATH)/cross_file.txt meson-build --prefix=/usr --sysconfdir=/etc --buildtype=release -Dmandoc=false -Dhtmldoc=false -Dnls=disabled -Dgolang=disabled -Dpython=/usr/bin/python3 && ninja -j$(THREADS) -C meson-build && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) -C meson-build install
 	touch .fvwm3-done
 

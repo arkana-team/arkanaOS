@@ -434,7 +434,7 @@ class GraphicsAndIsoSourceSafetyTests(unittest.TestCase):
         self.makefile = makefile
         for directory in ("arkanas", "src", "staging/root", "output", "bin"):
             (self.root / directory).mkdir(parents=True)
-        for name in (makefile, "staging-guard.mk"):
+        for name in (makefile, "libpng.mk", "staging-guard.mk"):
             shutil.copyfile(REPO_ROOT / "arkanas" / name, self.root / "arkanas" / name)
         (self.root / "xinitrc").touch()
         self.release = self.root / "release.tar.gz"
