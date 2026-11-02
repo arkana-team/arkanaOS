@@ -32,15 +32,23 @@ jobs:
           SOURCE_RUN_ID: ${{ inputs.source_run_id }}
         run: |
           set -euo pipefail
-          if [[ "$GITHUB_EVENT_NAME" != workflow_dispatch || "$GITHUB_REF" != "refs/heads/$DEFAULT_BRANCH" ]]; then
-            echo "Intermediate builds require a manual run on the default branch." >&2
+          if [[ "$GITHUB_REF" != "refs/heads/$DEFAULT_BRANCH" ]]; then
+            echo "Intermediate builds require a run on the default branch." >&2
             exit 1
           fi
           if [[ "$GITHUB_WORKFLOW_REF" == "$GITHUB_REPOSITORY/.github/workflows/00_run_all.yml@$GITHUB_REF" ]]; then
+            if [[ "$GITHUB_EVENT_NAME" != workflow_dispatch && "$GITHUB_EVENT_NAME" != schedule ]]; then
+              echo "Run All intermediate builds support manual and scheduled events only." >&2
+              exit 1
+            fi
             # Run All orders stage3 after stage2; download only from this run.
             SOURCE_RUN_ID=$GITHUB_RUN_ID
             SOURCE_SHA=$GITHUB_SHA
           elif [[ "$GITHUB_WORKFLOW_REF" == "$GITHUB_REPOSITORY/.github/workflows/03_stage3_graphics.yml@$GITHUB_REF" ]]; then
+            if [[ "$GITHUB_EVENT_NAME" != workflow_dispatch ]]; then
+              echo "Standalone stage3 builds require a manual run." >&2
+              exit 1
+            fi
             if ! [[ "$SOURCE_RUN_ID" =~ ^[1-9][0-9]*$ ]]; then
               echo "Provide a successful Run All run ID." >&2
               exit 1
