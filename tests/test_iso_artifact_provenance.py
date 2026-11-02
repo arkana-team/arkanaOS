@@ -110,6 +110,17 @@ class ArtifactProvenanceChecks:
         self.assertEqual(self.output.read_text(), f"run_id=789\nsha={'b' * 40}\n")
         self.assertFalse(self.api_log.exists())
 
+    def test_scheduled_pipeline_uses_only_its_own_artifact_and_revision(self):
+        self.env["GITHUB_WORKFLOW_REF"] = self.env["GITHUB_WORKFLOW_REF"].replace(
+            self.workflow_name, "00_run_all.yml"
+        )
+        self.env["GITHUB_EVENT_NAME"] = "schedule"
+        self.env["SOURCE_RUN_ID"] = ""
+        result = self.execute(f"Verify Stage {self.stage} Source")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.output.read_text(), f"run_id=789\nsha={'b' * 40}\n")
+        self.assertFalse(self.api_log.exists())
+
     def test_rejects_untrusted_producer_metadata(self):
         invalid = {
             "id": [457, None],
@@ -134,7 +145,13 @@ class ArtifactProvenanceChecks:
 
     def test_rejects_untrusted_consumers_and_invalid_run_ids_before_api(self):
         invalid = {
-            "GITHUB_EVENT_NAME": ["pull_request", "pull_request_target", "workflow_run"],
+            "GITHUB_EVENT_NAME": [
+                "pull_request",
+                "pull_request_target",
+                "workflow_run",
+                "push",
+                "schedule",
+            ],
             "GITHUB_REF": ["refs/heads/feature", "refs/tags/main"],
             "GITHUB_WORKFLOW_REF": [
                 "arkana-team/arkanaOS/.github/workflows/spoof.yml@refs/heads/main",
