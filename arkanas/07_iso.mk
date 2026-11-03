@@ -542,7 +542,9 @@ download-freetype: .freetype-obtained
 # Compile freetype
 freetype: download-freetype .freetype-done
 
-.freetype-done:
+# FreeType may detect Brotli on the build host. Stage its runtime library
+# before GRUB runs the staged grub-mkfont binary inside the target root.
+.freetype-done: .brotli-done
 	cd $(FREETYPE_PATH) && sed -ri "s:.*(AUX_MODULES.*valid):\1:" modules.cfg && \
 	sed -r "s:.*(#.*SUBPIXEL_RENDERING) .*:\1:" -i include/freetype/config/ftoption.h && \
 	./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --enable-freetype-config --disable-static && $(MAKE) -j$(THREADS) && \
@@ -624,7 +626,7 @@ download-brotli: .brotli-obtained
 # Compile brotli
 brotli: download-brotli .brotli-done
 
-.brotli-done:
+.brotli-done: .brotli-obtained
 	mkdir -p $(BROTLI_PATH)/build && cd $(BROTLI_PATH)/build && cmake -D CMAKE_INSTALL_PREFIX=/usr -D CMAKE_BUILD_TYPE=Release .. && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .brotli-done
