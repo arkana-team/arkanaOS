@@ -40,6 +40,19 @@ class IsoRuntimeDependencyTests(unittest.TestCase):
             makefile,
         )
 
+    def test_graphite2_is_staged_before_harfbuzz_configuration(self) -> None:
+        makefile = ISO_RECIPE.read_text(encoding="utf-8")
+
+        self.assertIn(
+            ".graphite2-done",
+            prerequisites_for(".harfbuzz-done", makefile),
+        )
+        self.assertIn(
+            ".graphite2-obtained",
+            prerequisites_for(".graphite2-done", makefile),
+        )
+        self.assertIn("-D graphite2=enabled", makefile)
+
 
 if __name__ == "__main__":
     unittest.main()

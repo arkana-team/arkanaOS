@@ -561,7 +561,7 @@ download-harfbuzz: .harfbuzz-obtained
 # Compile harfbuzz
 harfbuzz: download-harfbuzz .harfbuzz-done
 
-.harfbuzz-done:
+.harfbuzz-done: .harfbuzz-obtained .graphite2-done
 	mkdir -p $(HARFBUZZ_PATH)/build	&& cd $(HARFBUZZ_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release \
 	-D graphite2=enabled && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch .harfbuzz-done
@@ -702,7 +702,7 @@ download-graphite2: .graphite2-obtained
 # Compile graphite2
 graphite2: download-graphite2 .graphite2-done
 
-.graphite2-done:
+.graphite2-done: .graphite2-obtained
     # Outdated build system, cool.
 	mkdir -p $(GRAPHITE2_PATH)/build && cd $(GRAPHITE2_PATH)/build && sed -i '/Font.h/i #include <cstdint>' ../tests/featuremap/featuremaptest.cpp && \
 	cmake -D CMAKE_POLICY_VERSION_MINIMUM=3.5 -D CMAKE_INSTALL_PREFIX=/usr -D CMAKE_C_FLAGS="-O2 -std=gnu17" -D CMAKE_CXX_FLAGS="-O2 -std=gnu++17" .. && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
