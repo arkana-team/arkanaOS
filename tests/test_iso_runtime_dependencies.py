@@ -24,12 +24,12 @@ class IsoRuntimeDependencyTests(unittest.TestCase):
         makefile = ISO_RECIPE.read_text(encoding="utf-8")
 
         self.assertIn(
-            ".brotli-done",
+            "$(BROTLI_DONE_STAMP)",
             prerequisites_for(".freetype-done", makefile),
         )
         self.assertIn(
-            ".brotli-obtained",
-            prerequisites_for(".brotli-done", makefile),
+            "$(BROTLI_OBTAINED_STAMP)",
+            prerequisites_for("$(BROTLI_DONE_STAMP)", makefile),
         )
         self.assertIn(
             ".freetype-done",
@@ -44,12 +44,48 @@ class IsoRuntimeDependencyTests(unittest.TestCase):
         makefile = ISO_RECIPE.read_text(encoding="utf-8")
 
         self.assertIn(
-            ".graphite2-done",
-            prerequisites_for(".harfbuzz-done", makefile),
+            "$(GRAPHITE2_DONE_STAMP)",
+            prerequisites_for("$(HARFBUZZ_DONE_STAMP)", makefile),
         )
         self.assertIn(
-            ".graphite2-obtained",
-            prerequisites_for(".graphite2-done", makefile),
+            "$(GRAPHITE2_OBTAINED_STAMP)",
+            prerequisites_for("$(GRAPHITE2_DONE_STAMP)", makefile),
+        )
+        self.assertIn(
+            "$(HARFBUZZ_OBTAINED_STAMP)",
+            prerequisites_for("$(HARFBUZZ_DONE_STAMP)", makefile),
+        )
+        self.assertIn(
+            "HARFBUZZ_OBTAINED_STAMP = .harfbuzz-$(HARFBUZZ_VER)-obtained",
+            makefile,
+        )
+        self.assertIn(
+            "HARFBUZZ_DONE_STAMP = .harfbuzz-$(HARFBUZZ_VER)-done",
+            makefile,
+        )
+        self.assertIn(
+            "BROTLI_OBTAINED_STAMP = .brotli-$(BROTLI_VER)-obtained",
+            makefile,
+        )
+        self.assertIn(
+            "BROTLI_DONE_STAMP = .brotli-$(BROTLI_VER)-done",
+            makefile,
+        )
+        self.assertIn(
+            "GRAPHITE2_OBTAINED_STAMP = .graphite2-$(GRAPHITE2_VER)-obtained",
+            makefile,
+        )
+        self.assertIn(
+            "GRAPHITE2_DONE_STAMP = .graphite2-$(GRAPHITE2_VER)-done",
+            makefile,
+        )
+        self.assertIn(
+            "harfbuzz: download-harfbuzz $(HARFBUZZ_DONE_STAMP)",
+            makefile,
+        )
+        self.assertIn(
+            "download-harfbuzz: $(HARFBUZZ_OBTAINED_STAMP)",
+            makefile,
         )
         self.assertIn("-D graphite2=enabled", makefile)
 

@@ -91,6 +91,8 @@ FREETYPE_PATH = $(SRC_PATH)/freetype-$(FREETYPE_VER)
 HARFBUZZ_URL = https://github.com/harfbuzz/harfbuzz/releases/download/11.4.1/harfbuzz-11.4.1.tar.xz
 HARFBUZZ_VER = 11.4.1
 HARFBUZZ_PATH = $(SRC_PATH)/harfbuzz-$(HARFBUZZ_VER)
+HARFBUZZ_OBTAINED_STAMP = .harfbuzz-$(HARFBUZZ_VER)-obtained
+HARFBUZZ_DONE_STAMP = .harfbuzz-$(HARFBUZZ_VER)-done
 
 # Glib
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/glib2.html
@@ -115,6 +117,8 @@ ELFUTILS_PATH = $(SRC_PATH)/elfutils-$(ELFUTILS_VER)
 BROTLI_URL = https://github.com/google/brotli/archive/v1.1.0/brotli-1.1.0.tar.gz
 BROTLI_VER = 1.1.0
 BROTLI_PATH = $(SRC_PATH)/brotli-$(BROTLI_VER)
+BROTLI_OBTAINED_STAMP = .brotli-$(BROTLI_VER)-obtained
+BROTLI_DONE_STAMP = .brotli-$(BROTLI_VER)-done
 
 # PCRE2
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/pcre2.html
@@ -145,6 +149,8 @@ EXPAT_PATH = $(SRC_PATH)/expat-$(EXPAT_VER)
 GRAPHITE2_URL = https://github.com/silnrsi/graphite/releases/download/1.3.14/graphite2-1.3.14.tgz
 GRAPHITE2_VER = 1.3.14
 GRAPHITE2_PATH = $(SRC_PATH)/graphite2-$(GRAPHITE2_VER)
+GRAPHITE2_OBTAINED_STAMP = .graphite2-$(GRAPHITE2_VER)-obtained
+GRAPHITE2_DONE_STAMP = .graphite2-$(GRAPHITE2_VER)-done
 
 # Pixman
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/pixman.html
@@ -544,7 +550,7 @@ freetype: download-freetype .freetype-done
 
 # FreeType may detect Brotli on the build host. Stage its runtime library
 # before GRUB runs the staged grub-mkfont binary inside the target root.
-.freetype-done: .brotli-done
+.freetype-done: $(BROTLI_DONE_STAMP)
 	cd $(FREETYPE_PATH) && sed -ri "s:.*(AUX_MODULES.*valid):\1:" modules.cfg && \
 	sed -r "s:.*(#.*SUBPIXEL_RENDERING) .*:\1:" -i include/freetype/config/ftoption.h && \
 	./configure CFLAGS="-O2 -std=gnu17" --prefix=/usr --enable-freetype-config --disable-static && $(MAKE) -j$(THREADS) && \
@@ -552,19 +558,19 @@ freetype: download-freetype .freetype-done
 	touch .freetype-done
 
 # Download harfbuzz
-download-harfbuzz: .harfbuzz-obtained
+download-harfbuzz: $(HARFBUZZ_OBTAINED_STAMP)
 
-.harfbuzz-obtained:
+$(HARFBUZZ_OBTAINED_STAMP):
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O harfbuzz-$(HARFBUZZ_VER).tar.xz $(HARFBUZZ_URL) && tar xf harfbuzz-$(HARFBUZZ_VER).tar.xz
-	touch .harfbuzz-obtained
+	touch $@
 
 # Compile harfbuzz
-harfbuzz: download-harfbuzz .harfbuzz-done
+harfbuzz: download-harfbuzz $(HARFBUZZ_DONE_STAMP)
 
-.harfbuzz-done: .harfbuzz-obtained .graphite2-done
+$(HARFBUZZ_DONE_STAMP): $(HARFBUZZ_OBTAINED_STAMP) $(GRAPHITE2_DONE_STAMP)
 	mkdir -p $(HARFBUZZ_PATH)/build	&& cd $(HARFBUZZ_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release \
 	-D graphite2=enabled && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
-	touch .harfbuzz-done
+	touch $@
 
 # Download glib
 download-glib: .glib-obtained
@@ -617,19 +623,19 @@ elfutils: download-elfutils .elfutils-done
 	touch .elfutils-done
 
 # Download brotli
-download-brotli: .brotli-obtained
+download-brotli: $(BROTLI_OBTAINED_STAMP)
 
-.brotli-obtained:
+$(BROTLI_OBTAINED_STAMP):
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O brotli-$(BROTLI_VER).tar.gz $(BROTLI_URL) && tar xf brotli-$(BROTLI_VER).tar.gz
-	touch .brotli-obtained
+	touch $@
 
 # Compile brotli
-brotli: download-brotli .brotli-done
+brotli: download-brotli $(BROTLI_DONE_STAMP)
 
-.brotli-done: .brotli-obtained
+$(BROTLI_DONE_STAMP): $(BROTLI_OBTAINED_STAMP)
 	mkdir -p $(BROTLI_PATH)/build && cd $(BROTLI_PATH)/build && cmake -D CMAKE_INSTALL_PREFIX=/usr -D CMAKE_BUILD_TYPE=Release .. && \
 	$(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
-	touch .brotli-done
+	touch $@
 
 # Download PCRE2
 download-pcre2: .pcre2-obtained
@@ -693,20 +699,20 @@ expat: download-expat .expat-done
 	touch .expat-done
 
 # Download graphite2
-download-graphite2: .graphite2-obtained
+download-graphite2: $(GRAPHITE2_OBTAINED_STAMP)
 
-.graphite2-obtained:
+$(GRAPHITE2_OBTAINED_STAMP):
 	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O graphite2-$(GRAPHITE2_VER).tgz $(GRAPHITE2_URL) && tar xf graphite2-$(GRAPHITE2_VER).tgz
-	touch .graphite2-obtained
+	touch $@
 
 # Compile graphite2
-graphite2: download-graphite2 .graphite2-done
+graphite2: download-graphite2 $(GRAPHITE2_DONE_STAMP)
 
-.graphite2-done: .graphite2-obtained
+$(GRAPHITE2_DONE_STAMP): $(GRAPHITE2_OBTAINED_STAMP)
     # Outdated build system, cool.
 	mkdir -p $(GRAPHITE2_PATH)/build && cd $(GRAPHITE2_PATH)/build && sed -i '/Font.h/i #include <cstdint>' ../tests/featuremap/featuremaptest.cpp && \
 	cmake -D CMAKE_POLICY_VERSION_MINIMUM=3.5 -D CMAKE_INSTALL_PREFIX=/usr -D CMAKE_C_FLAGS="-O2 -std=gnu17" -D CMAKE_CXX_FLAGS="-O2 -std=gnu++17" .. && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
-	touch .graphite2-done
+	touch $@
 
 # Download pixman
 download-pixman: .pixman-obtained
