@@ -17,6 +17,16 @@ ISO_MAKEFILE = REPO_ROOT / "arkanas/07_iso.mk"
 
 
 class IsoRootBindingTests(unittest.TestCase):
+    def test_harfbuzz_disables_unavailable_introspection_bindings(self):
+        recipe = ISO_MAKEFILE.read_text(encoding="utf-8")
+        harfbuzz_recipe = recipe.split("# Compile harfbuzz", 1)[1].split(
+            "# Download glib", 1
+        )[0]
+
+        self.assertIn("-D graphite2=enabled", harfbuzz_recipe)
+        self.assertIn("-D introspection=disabled", harfbuzz_recipe)
+        self.assertIn("-D tests=disabled", harfbuzz_recipe)
+
     def test_iso_root_tmp_is_cleaned_and_restored_before_squashfs(self):
         recipe = ISO_MAKEFILE.read_text(encoding="utf-8")
         guard = recipe.index(

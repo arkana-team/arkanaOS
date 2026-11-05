@@ -569,7 +569,7 @@ harfbuzz: download-harfbuzz $(HARFBUZZ_DONE_STAMP)
 
 $(HARFBUZZ_DONE_STAMP): $(HARFBUZZ_OBTAINED_STAMP) $(GRAPHITE2_DONE_STAMP)
 	mkdir -p $(HARFBUZZ_PATH)/build	&& cd $(HARFBUZZ_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release \
-	-D graphite2=enabled && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
+	-D graphite2=enabled -D introspection=disabled -D tests=disabled && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch $@
 
 # Download glib
