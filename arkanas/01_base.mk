@@ -1013,7 +1013,8 @@ download-zstd: .zstd-obtained
 zstd: download-zstd .zstd-done
 
 .zstd-done:
-	cd $(ZSTD_PATH) && $(MAKE) -j$(THREADS) prefix=/usr && $(MAKE) prefix=$(STAGING_PATH)/usr install
+	cd $(ZSTD_PATH) && sed -i 's/(contentChecksum_t)checksumFlag/(LZ4F_contentChecksum_t)checksumFlag/' programs/fileio.c && \
+	$(MAKE) -j$(THREADS) prefix=/usr && $(MAKE) prefix=$(STAGING_PATH)/usr install
 	touch .zstd-done
 
 # Download bzip2
