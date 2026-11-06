@@ -14,6 +14,25 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DETECTOR = REPO_ROOT / "scripts/detect-container.sh"
 BUILD_SCRIPT = REPO_ROOT / "build.sh"
 ISO_MAKEFILE = REPO_ROOT / "arkanas/07_iso.mk"
+BASE_MAKEFILE = REPO_ROOT / "arkanas/01_base.mk"
+
+
+class ZstdBuildCompatibilityTests(unittest.TestCase):
+    def test_zstd_recipe_updates_lz4_checksum_type_before_build(self):
+        recipe = BASE_MAKEFILE.read_text(encoding="utf-8")
+        zstd_recipe = recipe.split("# Compile zstd", 1)[1].split(
+            "# Download bzip2", 1
+        )[0]
+
+        compatibility_fix = (
+            "sed -i 's/(contentChecksum_t)checksumFlag/"
+            "(LZ4F_contentChecksum_t)checksumFlag/' programs/fileio.c"
+        )
+        self.assertIn(compatibility_fix, zstd_recipe)
+        self.assertLess(
+            zstd_recipe.index(compatibility_fix),
+            zstd_recipe.index("$(MAKE) -j$(THREADS)"),
+        )
 
 
 class IsoRootBindingTests(unittest.TestCase):
