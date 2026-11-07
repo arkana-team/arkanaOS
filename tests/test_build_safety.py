@@ -58,8 +58,15 @@ class IsoRootBindingTests(unittest.TestCase):
         )
 
         self.assertIn(pragma_fix, harfbuzz_recipe)
-        self.assertIn('-Dc_args="-Wno-error=redundant-decls -Wno-error"', harfbuzz_recipe)
-        self.assertIn('-Dcpp_args="-Wno-error=redundant-decls -Wno-error"', harfbuzz_recipe)
+        staged_include = "-I$(STAGING_PATH)/usr/include"
+        self.assertIn(
+            f'-Dc_args="{staged_include} -Wno-error=redundant-decls -Wno-error"',
+            harfbuzz_recipe,
+        )
+        self.assertIn(
+            f'-Dcpp_args="{staged_include} -Wno-error=redundant-decls -Wno-error"',
+            harfbuzz_recipe,
+        )
         meson_setup = harfbuzz_recipe.index("meson setup")
         self.assertLess(harfbuzz_recipe.index(pragma_fix), meson_setup)
 
