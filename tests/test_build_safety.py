@@ -46,6 +46,23 @@ class IsoRootBindingTests(unittest.TestCase):
         self.assertIn("-D introspection=disabled", harfbuzz_recipe)
         self.assertIn("-D tests=disabled", harfbuzz_recipe)
 
+    def test_harfbuzz_downgrades_redundant_target_header_warnings(self):
+        recipe = ISO_MAKEFILE.read_text(encoding="utf-8")
+        harfbuzz_recipe = recipe.split("# Compile harfbuzz", 1)[1].split(
+            "# Download glib", 1
+        )[0]
+        pragma_fix = (
+            "sed -i '/#pragma GCC diagnostic error   "
+            '\"-Wredundant-decls\"'
+            "/d' src/hb.hh"
+        )
+
+        self.assertIn(pragma_fix, harfbuzz_recipe)
+        self.assertIn('-Dc_args="-Wno-error=redundant-decls -Wno-error"', harfbuzz_recipe)
+        self.assertIn('-Dcpp_args="-Wno-error=redundant-decls -Wno-error"', harfbuzz_recipe)
+        meson_setup = harfbuzz_recipe.index("meson setup")
+        self.assertLess(harfbuzz_recipe.index(pragma_fix), meson_setup)
+
     def test_iso_root_tmp_is_cleaned_and_restored_before_squashfs(self):
         recipe = ISO_MAKEFILE.read_text(encoding="utf-8")
         guard = recipe.index(
