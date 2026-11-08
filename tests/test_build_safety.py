@@ -35,6 +35,27 @@ class ZstdBuildCompatibilityTests(unittest.TestCase):
         )
 
 
+class ZlibDownloadReliabilityTests(unittest.TestCase):
+    def test_zlib_download_retries_http_errors_and_checks_before_extracting(self):
+        recipe = BASE_MAKEFILE.read_text(encoding="utf-8")
+        zlib_download = recipe.split("# Download zlib", 1)[1].split(
+            "# Compile zlib", 1
+        )[0]
+
+        self.assertIn(
+            "curl -fsSL --retry 3 --retry-all-errors --retry-delay 2 "
+            "--connect-timeout 20",
+            zlib_download,
+        )
+        archive_check = "tar -tzf zlib-$(ZLIB_VER).tar.gz >/dev/null"
+        extraction = "tar xf zlib-$(ZLIB_VER).tar.gz"
+        self.assertIn(archive_check, zlib_download)
+        self.assertIn(extraction, zlib_download)
+        self.assertLess(
+            zlib_download.index(archive_check), zlib_download.index(extraction)
+        )
+
+
 class IsoRootBindingTests(unittest.TestCase):
     def test_harfbuzz_disables_unavailable_introspection_bindings(self):
         recipe = ISO_MAKEFILE.read_text(encoding="utf-8")
