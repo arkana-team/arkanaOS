@@ -568,8 +568,14 @@ $(HARFBUZZ_OBTAINED_STAMP):
 harfbuzz: download-harfbuzz $(HARFBUZZ_DONE_STAMP)
 
 $(HARFBUZZ_DONE_STAMP): $(HARFBUZZ_OBTAINED_STAMP) $(GRAPHITE2_DONE_STAMP)
-	mkdir -p $(HARFBUZZ_PATH)/build	&& cd $(HARFBUZZ_PATH)/build && meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release \
-	-D graphite2=enabled -D introspection=disabled -D tests=disabled && ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
+	cd $(HARFBUZZ_PATH) && \
+	sed -i '/#pragma GCC diagnostic error   "-Wredundant-decls"/d' src/hb.hh && \
+	mkdir -p build && cd build && \
+	meson setup --native-file $(SRC_PATH)/cross_file.txt .. --prefix=/usr --buildtype=release \
+	-D graphite2=enabled -D introspection=disabled -D tests=disabled \
+	-Dc_args="-I$(STAGING_PATH)/usr/include -Wno-error=redundant-decls -Wno-error" \
+	-Dcpp_args="-I$(STAGING_PATH)/usr/include -Wno-error=redundant-decls -Wno-error" && \
+	ninja -j$(THREADS) && DESTDIR=$(STAGING_PATH) ninja -j$(THREADS) install
 	touch $@
 
 # Download glib
