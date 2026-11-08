@@ -37,6 +37,7 @@ class ZstdBuildCompatibilityTests(unittest.TestCase):
 
 class ZlibDownloadReliabilityTests(unittest.TestCase):
     def _run_download(self, curl_script, tar_script):
+        """Run the zlib download target with isolated curl and tar stubs."""
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             source = root / "src"
