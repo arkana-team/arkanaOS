@@ -1116,7 +1116,13 @@ iso: grub
 	GRUB_RESCUE_SOURCE=$$(mktemp -d $(STAGING_PATH)/tmp/arkana-grub-iso-source.XXXXXX); \
 	GRUB_RESCUE_OUTPUT=$$(mktemp -d $(STAGING_PATH)/tmp/arkana-grub-iso-output.XXXXXX); \
 	trap 'rm -rf "$$GRUB_RESCUE_SOURCE" "$$GRUB_RESCUE_OUTPUT"' EXIT; \
-	cp -a --reflink=auto "$(ISO_STAGING_PATH)/." "$$GRUB_RESCUE_SOURCE"/; \
+	ISO_STAGING_DEVICE=$$(stat -c '%d' "$(ISO_STAGING_PATH)"); \
+	GRUB_RESCUE_DEVICE=$$(stat -c '%d' "$$GRUB_RESCUE_SOURCE"); \
+	if [ "$$ISO_STAGING_DEVICE" = "$$GRUB_RESCUE_DEVICE" ]; then \
+	  cp -al "$(ISO_STAGING_PATH)/." "$$GRUB_RESCUE_SOURCE"/; \
+	else \
+	  cp -a --reflink=auto "$(ISO_STAGING_PATH)/." "$$GRUB_RESCUE_SOURCE"/; \
+	fi; \
 	chroot $(STAGING_PATH) /usr/bin/grub-mkrescue \
 	  -o "/tmp/$$(basename "$$GRUB_RESCUE_OUTPUT")/arkana.iso" \
 	  "/tmp/$$(basename "$$GRUB_RESCUE_SOURCE")" -- -volid "ARKANA"; \
