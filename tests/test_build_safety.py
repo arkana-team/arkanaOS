@@ -187,6 +187,52 @@ class IsoRootBindingTests(unittest.TestCase):
         self.assertLess(recreate, size_calculation)
         self.assertLess(size_calculation, squashfs)
 
+    def test_grub_rescue_source_copy_supports_separate_filesystems(self):
+        recipe = ISO_MAKEFILE.read_text(encoding="utf-8")
+        copy_line = next(
+            line.strip()
+            for line in recipe.splitlines()
+            if line.strip().startswith("cp -a --reflink=auto ")
+        ).removesuffix("\\").rstrip()
+        self.assertIn('"$(ISO_STAGING_PATH)/."', copy_line)
+        self.assertIn('"$$GRUB_RESCUE_SOURCE"/', copy_line)
+
+        shared_memory = Path("/dev/shm")
+        if not shared_memory.is_dir():
+            self.skipTest("/dev/shm is unavailable for a cross-filesystem check")
+
+        with (
+            tempfile.TemporaryDirectory() as source_dir,
+            tempfile.TemporaryDirectory(dir=shared_memory) as destination_dir,
+        ):
+            source = Path(source_dir)
+            destination = Path(destination_dir) / "grub-source"
+            source_file = source / "boot" / "rootfs.sfs"
+            source_file.parent.mkdir()
+            source_file.write_bytes(b"fixture payload")
+            (source / "boot" / "kernel-link").symlink_to("rootfs.sfs")
+
+            if source.stat().st_dev == Path(destination_dir).stat().st_dev:
+                self.skipTest("temporary directories share a filesystem")
+
+            command = copy_line.replace(
+                "$(ISO_STAGING_PATH)", str(source)
+            ).replace("$$", "$")
+            environment = os.environ.copy()
+            environment["GRUB_RESCUE_SOURCE"] = str(destination)
+            result = subprocess.run(
+                ["bash", "-e", "-c", command],
+                capture_output=True,
+                text=True,
+                env=environment,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            copied_file = destination / "boot" / "rootfs.sfs"
+            self.assertEqual(copied_file.read_bytes(), b"fixture payload")
+            self.assertTrue((destination / "boot" / "kernel-link").is_symlink())
+
     def test_make_rejects_custom_iso_root_during_parse(self):
         with tempfile.TemporaryDirectory() as temporary:
             custom_root = Path(temporary) / "custom-iso-root"
