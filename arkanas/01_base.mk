@@ -844,7 +844,11 @@ libcap-ng: download-libcap-ng .libcap-ng-done
 download-zlib: .zlib-obtained
 
 .zlib-obtained:
-	cd $(SRC_PATH) && curl -s -L -o zlib-$(ZLIB_VER).tar.gz $(ZLIB_URL) && tar xf zlib-$(ZLIB_VER).tar.gz
+	cd $(SRC_PATH) && \
+	curl -fsSL --retry 3 --retry-all-errors --retry-delay 2 --connect-timeout 20 \
+		-o zlib-$(ZLIB_VER).tar.gz $(ZLIB_URL) && \
+	tar -tzf zlib-$(ZLIB_VER).tar.gz >/dev/null && \
+	tar xf zlib-$(ZLIB_VER).tar.gz
 	touch .zlib-obtained
 
 # Compile zlib

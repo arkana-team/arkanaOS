@@ -35,6 +35,106 @@ class ZstdBuildCompatibilityTests(unittest.TestCase):
         )
 
 
+class ZlibDownloadReliabilityTests(unittest.TestCase):
+    def _run_download(self, curl_script, tar_script):
+        """Run the zlib download target with isolated curl and tar stubs."""
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "src"
+            build = root / "build"
+            bin_dir = root / "bin"
+            source.mkdir()
+            build.mkdir()
+            bin_dir.mkdir()
+            make_arkanas = build / "arkanas"
+            make_arkanas.mkdir()
+            shutil.copy2(
+                BASE_MAKEFILE.parent / "staging-guard.mk",
+                make_arkanas / "staging-guard.mk",
+            )
+
+            for name, script in (("curl", curl_script), ("tar", tar_script)):
+                executable = bin_dir / name
+                executable.write_text(script, encoding="utf-8")
+                executable.chmod(0o755)
+
+            calls = root / "tar-calls"
+            environment = os.environ.copy()
+            environment["PATH"] = f"{bin_dir}{os.pathsep}{environment['PATH']}"
+            environment["TAR_CALLS"] = str(calls)
+            result = subprocess.run(
+                [
+                    "make",
+                    "--no-print-directory",
+                    "-C",
+                    str(build),
+                    "-f",
+                    str(BASE_MAKEFILE),
+                    "download-zlib",
+                    f"SRC_PATH={source}",
+                    "ZLIB_URL=https://example.invalid/zlib.tar.gz",
+                ],
+                check=False,
+                capture_output=True,
+                env=environment,
+                text=True,
+            )
+            tar_calls = calls.read_text(encoding="utf-8").splitlines() if calls.exists() else []
+            return result, tar_calls, (build / ".zlib-obtained").exists()
+
+    def test_zlib_download_retries_http_errors_and_checks_before_extracting(self):
+        recipe = BASE_MAKEFILE.read_text(encoding="utf-8")
+        zlib_download = recipe.split("# Download zlib", 1)[1].split(
+            "# Compile zlib", 1
+        )[0]
+
+        self.assertIn(
+            "curl -fsSL --retry 3 --retry-all-errors --retry-delay 2 "
+            "--connect-timeout 20",
+            zlib_download,
+        )
+        archive_check = "tar -tzf zlib-$(ZLIB_VER).tar.gz >/dev/null"
+        extraction = "tar xf zlib-$(ZLIB_VER).tar.gz"
+        self.assertIn(archive_check, zlib_download)
+        self.assertIn(extraction, zlib_download)
+        self.assertLess(
+            zlib_download.index(archive_check), zlib_download.index(extraction)
+        )
+
+    def test_curl_failure_prevents_tar_and_stamp(self):
+        result, tar_calls, stamped = self._run_download(
+            "#!/bin/sh\nexit 22\n",
+            '#!/bin/sh\nprintf "%s\\n" "$*" >> "$TAR_CALLS"\nexit 0\n',
+        )
+
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(tar_calls, [])
+        self.assertFalse(stamped)
+
+    def test_invalid_tar_listing_prevents_extraction_and_stamp(self):
+        result, tar_calls, stamped = self._run_download(
+            "#!/bin/sh\n"
+            'while [ "$#" -gt 0 ]; do\n'
+            '  if [ "$1" = "-o" ]; then\n'
+            "    shift\n"
+            '    printf "invalid archive\\n" > "$1"\n'
+            "    exit 0\n"
+            "  fi\n"
+            "  shift\n"
+            "done\n"
+            "exit 2\n",
+            '#!/bin/sh\nprintf "%s\\n" "$*" >> "$TAR_CALLS"\n'
+            '[ "$1" = "-tzf" ] && exit 2\n'
+            "exit 0\n",
+        )
+
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(len(tar_calls), 1)
+        self.assertTrue(tar_calls[0].startswith("-tzf "))
+        self.assertNotIn("xf ", tar_calls[0])
+        self.assertFalse(stamped)
+
+
 class IsoRootBindingTests(unittest.TestCase):
     def test_harfbuzz_disables_unavailable_introspection_bindings(self):
         recipe = ISO_MAKEFILE.read_text(encoding="utf-8")
