@@ -536,6 +536,106 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
         self.assertEqual(self.selected_tags(bootstrap_result), [])
 
 
+class ArkUpCapabilityWorkflowTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        """Load the ISO workflow's ArkUp capability check for direct testing."""
+        workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
+        step = workflow.split(
+            "      - name: Mark ISO as arkup system-update-capable\n", 1
+        )[1].split("\n      - name:", 1)[0]
+        cls.script = textwrap.dedent(step.split("        run: |\n", 1)[1])
+
+    def test_capability_check_uses_chroot_group_syntax(self) -> None:
+        """Pass id's whitespace-separated groups as chroot's comma list."""
+        with tempfile.TemporaryDirectory(prefix="arkana-arkup-capability-") as temporary:
+            root = Path(temporary)
+            iso_arkup = root / "output/iso-root/usr/bin/arkup"
+            iso_arkup.parent.mkdir(parents=True)
+            iso_arkup.touch()
+            iso_arkup.chmod(0o755)
+            runner_temp = root / "runner-temp"
+            runner_temp.mkdir()
+            mock_bin = root / "bin"
+            mock_bin.mkdir()
+            (mock_bin / "id").write_text(
+                "#!/bin/sh\n"
+                "case \"$1\" in\n"
+                "  -G) printf '1001 998\\n' ;;\n"
+                "  -u|-g) printf '1001\\n' ;;\n"
+                "  *) exit 2 ;;\n"
+                "esac\n",
+                encoding="utf-8",
+            )
+            (mock_bin / "sudo").write_text(
+                "#!/bin/sh\nexec \"$@\"\n", encoding="utf-8"
+            )
+            chroot_args = root / "chroot-args"
+            (mock_bin / "chroot").write_text(
+                "#!/bin/sh\n"
+                "printf '%s\\n' \"$@\" > \"$CHROOT_ARGS_FILE\"\n"
+                "if [ \"$1\" != '--groups=1001,998' ]; then\n"
+                "  printf 'invalid group list: %s\\n' \"$1\" >&2\n"
+                "  exit 125\n"
+                "fi\n"
+                "printf '%s\\n' '--base-sequence <BASE_SEQUENCE>' '--system-update'\n",
+                encoding="utf-8",
+            )
+            for command in mock_bin.iterdir():
+                command.chmod(0o755)
+
+            github_output = root / "github-output"
+            environment = os.environ.copy()
+            environment.update(
+                {
+                    "PATH": f"{mock_bin}{os.pathsep}{environment['PATH']}",
+                    "CHROOT_ARGS_FILE": str(chroot_args),
+                    "DEFAULT_BRANCH": "main",
+                    "SOURCE_RUN_ID": "222",
+                    "SOURCE_SHA": "a" * 40,
+                    "GITHUB_RUN_ID": "111",
+                    "GITHUB_SHA": "b" * 40,
+                    "GITHUB_REF": "refs/heads/main",
+                    "GITHUB_WORKFLOW_REF": (
+                        "arkana-team/arkanaOS/.github/workflows/00_run_all.yml@"
+                        "refs/heads/main"
+                    ),
+                    "GITHUB_REPOSITORY": "arkana-team/arkanaOS",
+                    "GITHUB_OUTPUT": str(github_output),
+                    "RUNNER_TEMP": str(runner_temp),
+                }
+            )
+            result = subprocess.run(
+                [
+                    "bash",
+                    "--noprofile",
+                    "--norc",
+                    "-e",
+                    "-o",
+                    "pipefail",
+                    "-c",
+                    self.script,
+                ],
+                cwd=root,
+                env=environment,
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=False,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(
+                chroot_args.read_text(encoding="utf-8").splitlines()[0],
+                "--groups=1001,998",
+            )
+            self.assertIn(
+                "system_update_capable=false\n",
+                github_output.read_text(encoding="utf-8"),
+            )
+            self.assertTrue((root / "output/arkanaOS-update-client.txt").is_file())
+
+
 class ScheduledReleaseWorkflowTests(unittest.TestCase):
     def test_pipeline_schedules_nightly_and_weekly_releases_once_per_day(self) -> None:
         """Run the nightly pipeline Sunday and Tuesday-Saturday, weekly Monday."""
