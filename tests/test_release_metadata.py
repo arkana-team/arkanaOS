@@ -578,7 +578,7 @@ class ArkUpCapabilityWorkflowTests(unittest.TestCase):
                 "  printf 'invalid group list: %s\\n' \"$1\" >&2\n"
                 "  exit 125\n"
                 "fi\n"
-                "printf '%s\\n' '--base-sequence <BASE_SEQUENCE>' '--system-update'\n",
+                "printf '%s\\n' \"$ARKUP_HELP_OUTPUT\"\n",
                 encoding="utf-8",
             )
             for command in mock_bin.iterdir():
@@ -605,35 +605,57 @@ class ArkUpCapabilityWorkflowTests(unittest.TestCase):
                     "RUNNER_TEMP": str(runner_temp),
                 }
             )
-            result = subprocess.run(
-                [
-                    "bash",
-                    "--noprofile",
-                    "--norc",
-                    "-e",
-                    "-o",
-                    "pipefail",
-                    "-c",
-                    self.script,
-                ],
-                cwd=root,
-                env=environment,
-                capture_output=True,
-                text=True,
-                timeout=10,
-                check=False,
+            marker = root / "output/arkanaOS-update-client.txt"
+            cases = (
+                (
+                    "--base-sequence <BASE_SEQUENCE>\n--system-update",
+                    0,
+                    True,
+                    None,
+                ),
+                ("--system-update", 1, False, "--base-sequence"),
+                ("--base-sequence <BASE_SEQUENCE>", 1, False, "--system-update"),
             )
+            for help_output, expected_status, expected_marker, missing_option in cases:
+                with self.subTest(missing_option=missing_option):
+                    github_output.unlink(missing_ok=True)
+                    chroot_args.unlink(missing_ok=True)
+                    marker.unlink(missing_ok=True)
+                    environment["ARKUP_HELP_OUTPUT"] = help_output
+                    result = subprocess.run(
+                        [
+                            "bash",
+                            "--noprofile",
+                            "--norc",
+                            "-e",
+                            "-o",
+                            "pipefail",
+                            "-c",
+                            self.script,
+                        ],
+                        cwd=root,
+                        env=environment,
+                        capture_output=True,
+                        text=True,
+                        timeout=10,
+                        check=False,
+                    )
 
-            self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual(
-                chroot_args.read_text(encoding="utf-8").splitlines()[0],
-                "--groups=1001,998",
-            )
-            self.assertIn(
-                "system_update_capable=false\n",
-                github_output.read_text(encoding="utf-8"),
-            )
-            self.assertTrue((root / "output/arkanaOS-update-client.txt").is_file())
+                    self.assertEqual(result.returncode, expected_status, result.stderr)
+                    self.assertEqual(marker.is_file(), expected_marker)
+                    self.assertEqual(
+                        chroot_args.read_text(encoding="utf-8").splitlines()[0],
+                        "--groups=1001,998",
+                    )
+                    if missing_option:
+                        self.assertIn(
+                            f"missing required option: {missing_option}", result.stderr
+                        )
+                    else:
+                        self.assertIn(
+                            "system_update_capable=false\n",
+                            github_output.read_text(encoding="utf-8"),
+                        )
 
 
 class ScheduledReleaseWorkflowTests(unittest.TestCase):
