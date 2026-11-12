@@ -485,7 +485,7 @@ timestamp:
 download-coreutils: .coreutils-obtained
 
 .coreutils-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O coreutils-$(COREUTILS_VER).tar.gz $(COREUTILS_URL) && tar xf coreutils-$(COREUTILS_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh coreutils-$(COREUTILS_VER).tar.gz $(COREUTILS_URL) && tar xf coreutils-$(COREUTILS_VER).tar.gz
 	touch .coreutils-obtained
 
 # Compile coreutils
@@ -523,7 +523,7 @@ util-linux: download-util-linux .util-linux-done
 download-bash: .bash-obtained
 
 .bash-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O bash-$(BASH_VER).tar.gz $(BASH_URL) && tar xf bash-$(BASH_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh bash-$(BASH_VER).tar.gz $(BASH_URL) && tar xf bash-$(BASH_VER).tar.gz
 	touch .bash-obtained
 
 # Compile bash
@@ -590,7 +590,7 @@ e2fsprogs: download-e2fsprogs .e2fsprogs-done
 download-gcc: .gcc-obtained
 
 .gcc-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O gcc-$(GCC_VER).tar.gz $(GCC_URL) && tar xf gcc-$(GCC_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh gcc-$(GCC_VER).tar.gz $(GCC_URL) && tar xf gcc-$(GCC_VER).tar.gz
 	touch .gcc-obtained
 
 # Compile GCC (libs only)
@@ -617,7 +617,7 @@ gcc: download-gcc .gcc-done
 download-ncurses: .ncurses-obtained
 
 .ncurses-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O ncurses-$(NCURSES_VER).tar.gz $(NCURSES_URL) && tar xf ncurses-$(NCURSES_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh ncurses-$(NCURSES_VER).tar.gz $(NCURSES_URL) && tar xf ncurses-$(NCURSES_VER).tar.gz
 	touch .ncurses-obtained
 
 # Compile ncurses
@@ -687,7 +687,7 @@ libseccomp: download-libseccomp .libseccomp-done
 download-gmp: .gmp-obtained
 
 .gmp-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O gmp-$(GMP_VER).tar.gz $(GMP_URL) && tar xf gmp-$(GMP_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh gmp-$(GMP_VER).tar.gz $(GMP_URL) && tar xf gmp-$(GMP_VER).tar.gz
 	touch .gmp-obtained
 
 # Compile GMP
@@ -921,7 +921,7 @@ libgpg-error: download-libgpg-error .libgpg-error-done
 download-readline: .readline-obtained
 
 .readline-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O readline-$(READLINE_VER).tar.gz $(READLINE_URL) && tar xf readline-$(READLINE_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh readline-$(READLINE_VER).tar.gz $(READLINE_URL) && tar xf readline-$(READLINE_VER).tar.gz
 	touch .readline-obtained
 
 # Compile readline
@@ -1080,7 +1080,7 @@ lz4: download-lz4 .lz4-done
 download-gzip: .gzip-obtained
 
 .gzip-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O gzip-$(GZIP_VER).tar.gz $(GZIP_URL) && tar xf gzip-$(GZIP_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh gzip-$(GZIP_VER).tar.gz $(GZIP_URL) && tar xf gzip-$(GZIP_VER).tar.gz
 	touch .gzip-obtained
 
 # Compile gzip

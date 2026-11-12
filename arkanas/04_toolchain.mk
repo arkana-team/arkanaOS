@@ -174,7 +174,7 @@ gcc-compilers: .gcc-compilers-done
 # Download binutils
 download-binutils: .binutils-obtained
 .binutils-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O binutils-$(BINUTILS_VER).tar.gz $(BINUTILS_URL) && tar xf binutils-$(BINUTILS_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh binutils-$(BINUTILS_VER).tar.gz $(BINUTILS_URL) && tar xf binutils-$(BINUTILS_VER).tar.gz
 	touch .binutils-obtained
 
 # Compile binutils
@@ -218,7 +218,7 @@ ninja: download-ninja .ninja-done
 # Download make
 download-make: .make-obtained
 .make-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O make-$(MAKE_VER).tar.gz $(MAKE_URL) && tar xf make-$(MAKE_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh make-$(MAKE_VER).tar.gz $(MAKE_URL) && tar xf make-$(MAKE_VER).tar.gz
 	touch .make-obtained
 
 # Does this shadow any internal names?
@@ -232,7 +232,7 @@ make: download-make .make-done
 # Download automake
 download-autoconf: .autoconf-obtained
 .autoconf-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O autoconf-$(AUTOCONF_VER).tar.gz $(AUTOCONF_URL) && tar xf autoconf-$(AUTOCONF_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh autoconf-$(AUTOCONF_VER).tar.gz $(AUTOCONF_URL) && tar xf autoconf-$(AUTOCONF_VER).tar.gz
 	touch .autoconf-obtained
 
 # Compile automake
@@ -282,7 +282,7 @@ libarchive: download-libarchive .libarchive-done
 # Download guile
 download-guile: .guile-obtained
 .guile-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O guile-$(GUILE_VER).tar.gz $(GUILE_URL) && tar xf guile-$(GUILE_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh guile-$(GUILE_VER).tar.gz $(GUILE_URL) && tar xf guile-$(GUILE_VER).tar.gz
 	touch .guile-obtained
 
 # Compile guile (this takes a LONG time!)
@@ -322,7 +322,7 @@ libxml2: download-libxml2 .libxml2-done
 # Download libtool
 download-libtool: .libtool-obtained
 .libtool-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libtool-$(LIBTOOL_VER).tar.gz $(LIBTOOL_URL) && tar xf libtool-$(LIBTOOL_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh libtool-$(LIBTOOL_VER).tar.gz $(LIBTOOL_URL) && tar xf libtool-$(LIBTOOL_VER).tar.gz
 	touch .libtool-obtained
 
 # Compile libtool
@@ -381,7 +381,7 @@ perl: download-perl .perl-done
 # Download automake
 download-automake: .automake-obtained
 .automake-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O automake-$(AUTOMAKE_VER).tar.gz $(AUTOMAKE_URL) && tar xf automake-$(AUTOMAKE_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh automake-$(AUTOMAKE_VER).tar.gz $(AUTOMAKE_URL) && tar xf automake-$(AUTOMAKE_VER).tar.gz
 	touch .automake-obtained
 
 # Compile automake

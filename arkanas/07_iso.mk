@@ -283,7 +283,7 @@ gtk3: download-gtk3 alsa-lib at-spi2-core libXdamage .gtk3-done
 download-cpio: .cpio-obtained
 
 .cpio-obtained:
-	cd $(SRC_PATH) && ( wget --tries=5 --timeout=30 -O cpio-$(CPIO_VER).tar.gz $(CPIO_URL) || wget --tries=5 --timeout=30 -O cpio-$(CPIO_VER).tar.gz $(CPIO_FALLBACK_URL) ) && tar xf cpio-$(CPIO_VER).tar.gz
+	cd $(SRC_PATH) && ( $(CURDIR)/scripts/download-gnu-source.sh cpio-$(CPIO_VER).tar.gz $(CPIO_URL) || wget --tries=5 --timeout=30 -O cpio-$(CPIO_VER).tar.gz $(CPIO_FALLBACK_URL) ) && tar xf cpio-$(CPIO_VER).tar.gz
 	touch .cpio-obtained
 
 # Compile cpio
@@ -385,7 +385,7 @@ libisofs: download-libisofs .libisofs-done
 download-mtools: .mtools-obtained
 
 .mtools-obtained:
-	cd $(SRC_PATH) && ( wget --tries=5 --timeout=30 -O mtools-$(MTOOLS_VER).tar.gz $(MTOOLS_URL) || wget --tries=5 --timeout=30 -O mtools-$(MTOOLS_VER).tar.gz $(MTOOLS_FALLBACK_URL) ) && tar xf mtools-$(MTOOLS_VER).tar.gz
+	cd $(SRC_PATH) && ( $(CURDIR)/scripts/download-gnu-source.sh mtools-$(MTOOLS_VER).tar.gz $(MTOOLS_URL) || wget --tries=5 --timeout=30 -O mtools-$(MTOOLS_VER).tar.gz $(MTOOLS_FALLBACK_URL) ) && tar xf mtools-$(MTOOLS_VER).tar.gz
 	touch .mtools-obtained
 
 # Compile mtools
