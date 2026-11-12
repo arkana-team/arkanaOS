@@ -166,15 +166,22 @@ jobs:
             echo "The ISO root does not contain the arkup update client." >&2
             exit 1
           fi
-          if ! sudo chroot --groups="$(id -G)" \
+          ARKUP_GROUPS=$(id -G | tr ' ' ',')
+          ARKUP_HELP="$RUNNER_TEMP/arkup-pack-help.txt"
+          if ! sudo chroot --groups="$ARKUP_GROUPS" \
             --userspec="$(id -u):$(id -g)" output/iso-root \
-            /usr/bin/arkup pack --help 2>&1 | \
-            tee "$RUNNER_TEMP/arkup-pack-help.txt" >/dev/null || \
-            ! grep -Fq -- '--base-sequence' "$RUNNER_TEMP/arkup-pack-help.txt" || \
-            ! grep -Fq -- '--system-update' "$RUNNER_TEMP/arkup-pack-help.txt"; then
+            /usr/bin/arkup pack --help 2>&1 | tee "$ARKUP_HELP" >/dev/null; then
+            cat "$ARKUP_HELP" >&2
             echo "The ISO root arkup client cannot validate base-bound system updates." >&2
             exit 1
           fi
+          for required_option in --base-sequence --system-update; do
+            if ! grep -Fq -- "$required_option" "$ARKUP_HELP"; then
+              cat "$ARKUP_HELP" >&2
+              echo "The ISO root arkup client is missing required option: $required_option" >&2
+              exit 1
+            fi
+          done
           printf 'arkup-client=/usr/bin/arkup\n' > output/arkanaOS-update-client.txt
           chmod 0644 output/arkanaOS-update-client.txt
           if [[ "$SOURCE_RUN_ID" == "$GITHUB_RUN_ID" && \
