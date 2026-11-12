@@ -80,6 +80,7 @@ class GnuSourceDownloadTests(unittest.TestCase):
         self.assertEqual([call[-1] for call in calls], [url])
         self.assertIn("--retry-all-errors", calls[0])
         self.assertEqual(calls[0][calls[0].index("--retry") + 1], "3")
+        self.assertEqual(calls[0][calls[0].index("--max-time") + 1], "600")
         self.assertEqual(self.output.read_bytes(), url.encode())
         self.assertEqual(self.output.stat().st_mode & 0o777, 0o644)
 

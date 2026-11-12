@@ -13,7 +13,7 @@ trap 'rm -f -- "$temporary"' EXIT
 
 download() {
   curl -fsSL --retry 3 --retry-all-errors --retry-delay 2 \
-    --connect-timeout 20 -o "$temporary" "$1"
+    --connect-timeout 20 --max-time 600 -o "$temporary" "$1"
 }
 
 if download "$url"; then
