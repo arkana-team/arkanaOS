@@ -84,6 +84,16 @@ class GnuSourceDownloadTests(unittest.TestCase):
         self.assertEqual(self.output.read_bytes(), url.encode())
         self.assertEqual(self.output.stat().st_mode & 0o777, 0o644)
 
+    def test_transfer_limit_can_be_overridden(self):
+        url = f"{MIRROR_PREFIX}mpfr/mpfr-4.2.2.tar.gz"
+        self.environment["GNU_DOWNLOAD_MAX_TIME"] = "1800"
+
+        result = self.run_fetch(url)
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        calls = self.recorded_calls()
+        self.assertEqual(calls[0][calls[0].index("--max-time") + 1], "1800")
+
     def test_mirror_failure_retries_matching_official_gnu_path(self):
         url = f"{MIRROR_PREFIX}mpfr/mpfr-4.2.2.tar.gz"
         fallback = f"{ORIGIN_PREFIX}mpfr/mpfr-4.2.2.tar.gz"
