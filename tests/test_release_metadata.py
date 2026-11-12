@@ -644,8 +644,15 @@ class ArkUpCapabilityWorkflowTests(unittest.TestCase):
                     self.assertEqual(result.returncode, expected_status, result.stderr)
                     self.assertEqual(marker.is_file(), expected_marker)
                     self.assertEqual(
-                        chroot_args.read_text(encoding="utf-8").splitlines()[0],
-                        "--groups=1001,998",
+                        chroot_args.read_text(encoding="utf-8").splitlines(),
+                        [
+                            "--groups=1001,998",
+                            "--userspec=1001:1001",
+                            "output/iso-root",
+                            "/usr/bin/arkup",
+                            "pack",
+                            "--help",
+                        ],
                     )
                     if missing_option:
                         self.assertIn(
