@@ -351,7 +351,7 @@ all: less procps-ng iproute2 iputils iptables libbpf libmnl libidn2 libunistring
 # Download less
 download-less: .less-obtained
 .less-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O less-$(LESS_VER).tar.gz $(LESS_URL) && tar xf less-$(LESS_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh less-$(LESS_VER).tar.gz $(LESS_URL) && tar xf less-$(LESS_VER).tar.gz
 	touch .less-obtained
 
 # Compile less
@@ -442,7 +442,7 @@ libmnl: download-libmnl .libmnl-done
 # Download libidn2
 download-libidn2: .libidn2-obtained
 .libidn2-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libidn2-$(LIBIDN2_VER).tar.gz $(LIBIDN2_URL) && tar xf libidn2-$(LIBIDN2_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh libidn2-$(LIBIDN2_VER).tar.gz $(LIBIDN2_URL) && tar xf libidn2-$(LIBIDN2_VER).tar.gz
 	touch .libidn2-obtained
 
 # Compile libidn2
@@ -457,7 +457,7 @@ libidn2: download-libidn2 .libidn2-done
 # Download libunistring
 download-libunistring: .libunistring-obtained
 .libunistring-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libunistring-$(LIBUNISTRING_VER).tar.gz $(LIBUNISTRING_URL) && tar xf libunistring-$(LIBUNISTRING_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh libunistring-$(LIBUNISTRING_VER).tar.gz $(LIBUNISTRING_URL) && tar xf libunistring-$(LIBUNISTRING_VER).tar.gz
 	touch .libunistring-obtained
 
 # Compile libunistring
@@ -571,7 +571,7 @@ gnutls: download-gnutls nettle libtasn1 .gnutls-done
 # Download nettle
 download-nettle: .nettle-obtained
 .nettle-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O nettle-$(NETTLE_VER).tar.gz $(NETTLE_URL) && tar xf nettle-$(NETTLE_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh nettle-$(NETTLE_VER).tar.gz $(NETTLE_URL) && tar xf nettle-$(NETTLE_VER).tar.gz
 	touch .nettle-obtained
 
 # Compile nettle
@@ -583,7 +583,7 @@ nettle: download-nettle .nettle-done
 # Download libtasn1
 download-libtasn1: .libtasn1-obtained
 .libtasn1-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O libtasn1-$(LIBTASN1_VER).tar.gz $(LIBTASN1_URL) && tar xf libtasn1-$(LIBTASN1_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh libtasn1-$(LIBTASN1_VER).tar.gz $(LIBTASN1_URL) && tar xf libtasn1-$(LIBTASN1_VER).tar.gz
 	touch .libtasn1-obtained
 
 # Compile libtasn1
@@ -725,7 +725,7 @@ libnvme: download-libnvme .libnvme-done
 # Download findutils
 download-findutils: .findutils-obtained
 .findutils-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O findutils-$(FINDUTILS_VER).tar.xz $(FINDUTILS_URL) && tar xf findutils-$(FINDUTILS_VER).tar.xz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh findutils-$(FINDUTILS_VER).tar.xz $(FINDUTILS_URL) && tar xf findutils-$(FINDUTILS_VER).tar.xz
 	touch .findutils-obtained
 
 # Compile findutils
@@ -737,7 +737,7 @@ findutils: download-findutils .findutils-done
 # Download diffutils
 download-diffutils: .diffutils-obtained
 .diffutils-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O diffutils-$(DIFFUTILS_VER).tar.gz $(DIFFUTILS_URL) && tar xf diffutils-$(DIFFUTILS_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh diffutils-$(DIFFUTILS_VER).tar.gz $(DIFFUTILS_URL) && tar xf diffutils-$(DIFFUTILS_VER).tar.gz
 	touch .diffutils-obtained
 
 # Compile diffutils
@@ -749,7 +749,7 @@ diffutils: download-diffutils .diffutils-done
 # Download sed
 download-sed: .sed-obtained
 .sed-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O sed-$(SED_VER).tar.gz $(SED_URL) && tar xf sed-$(SED_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh sed-$(SED_VER).tar.gz $(SED_URL) && tar xf sed-$(SED_VER).tar.gz
 	touch .sed-obtained
 
 # Compile sed
@@ -761,7 +761,7 @@ sed: download-sed .sed-done
 # Download grep
 download-grep: .grep-obtained
 .grep-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O grep-$(GREP_VER).tar.gz $(GREP_URL) && tar xf grep-$(GREP_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh grep-$(GREP_VER).tar.gz $(GREP_URL) && tar xf grep-$(GREP_VER).tar.gz
 	touch .grep-obtained
 
 # Compile grep
@@ -773,7 +773,7 @@ grep: download-grep .grep-done
 # Download gawk
 download-gawk: .gawk-obtained
 .gawk-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O gawk-$(GAWK_VER).tar.gz $(GAWK_URL) && tar xf gawk-$(GAWK_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh gawk-$(GAWK_VER).tar.gz $(GAWK_URL) && tar xf gawk-$(GAWK_VER).tar.gz
 	touch .gawk-obtained
 
 # Compile gawk
@@ -785,7 +785,7 @@ gawk: download-gawk .gawk-done
 # Download mpfr
 download-mpfr: .mpfr-obtained
 .mpfr-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O mpfr-$(MPFR_VER).tar.gz $(MPFR_URL) && tar xf mpfr-$(MPFR_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh mpfr-$(MPFR_VER).tar.gz $(MPFR_URL) && tar xf mpfr-$(MPFR_VER).tar.gz
 	touch .mpfr-obtained
 
 # Compile mpfr
@@ -798,7 +798,7 @@ mpfr: download-mpfr .mpfr-done
 # Download nano
 download-nano: .nano-obtained
 .nano-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O nano-$(NANO_VER).tar.xz $(NANO_URL) && tar xf nano-$(NANO_VER).tar.xz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh nano-$(NANO_VER).tar.xz $(NANO_URL) && tar xf nano-$(NANO_VER).tar.xz
 	touch .nano-obtained
 
 # Compile nano
@@ -815,7 +815,7 @@ nano: download-nano .nano-done
 download-tar: .tar-obtained
 .tar-obtained:
 	# Ironic, untarring tar using tar.
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O tar-$(TAR_VER).tar.gz $(TAR_URL) && tar xf tar-$(TAR_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh tar-$(TAR_VER).tar.gz $(TAR_URL) && tar xf tar-$(TAR_VER).tar.gz
 	touch .tar-obtained
 
 # Compile the ironic tool
@@ -896,7 +896,7 @@ tzdb: download-tzdb .tzdb-done
 # Download parted
 download-parted: .parted-obtained
 .parted-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O parted-$(PARTED_VER).tar.xz $(PARTED_URL) && tar xf parted-$(PARTED_VER).tar.xz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh parted-$(PARTED_VER).tar.xz $(PARTED_URL) && tar xf parted-$(PARTED_VER).tar.xz
 	touch .parted-obtained
 
 # Compile parted
@@ -928,7 +928,7 @@ make-ca: download-make-ca .make-ca-done
 # Download gettext
 download-gettext: .gettext-obtained
 .gettext-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O gettext-$(GETTEXT_VER).tar.xz $(GETTEXT_URL) && tar xf gettext-$(GETTEXT_VER).tar.xz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh gettext-$(GETTEXT_VER).tar.xz $(GETTEXT_URL) && tar xf gettext-$(GETTEXT_VER).tar.xz
 	touch .gettext-obtained
 
 # Compile gettext
@@ -955,7 +955,7 @@ gettext: download-gettext .gettext-done
 # Download which
 download-which: .which-obtained
 .which-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O which-$(WHICH_VER).tar.gz $(WHICH_URL) && tar xf which-$(WHICH_VER).tar.gz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-gnu-source.sh which-$(WHICH_VER).tar.gz $(WHICH_URL) && tar xf which-$(WHICH_VER).tar.gz
 	touch .which-obtained
 
 # Compile which
