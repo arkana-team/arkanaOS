@@ -431,24 +431,50 @@ linux: download-linux .linux-$(LINUX_VER)-done
 	$(MAKE) -C $(LINUX_PATH) INSTALL_MOD_PATH=$(STAGING_PATH) modules_install
 	touch $@
 
-# Pin host firmware so the live image and installed system support current hardware.
+# These SHA-256 values match kernel.org autosigner's signed checksum lists below.
+# The signatures authenticate the checksum lists, not Linux firmware maintainer releases.
+# Autosigner key fingerprint: B8868C80BA62A1FFFAF5FDA9632D3A06589DA6B1.
+# https://cdn.kernel.org/pub/linux/kernel/firmware/sha256sums.asc
+# https://cdn.kernel.org/pub/software/network/wireless-regdb/sha256sums.asc
 LINUX_FIRMWARE_TAG = 20260916
-LINUX_FIRMWARE_PATH = $(SRC_PATH)/linux-firmware-$(LINUX_FIRMWARE_TAG)
-WIRELESS_REGDB_TAG = master-2026-09-03
-WIRELESS_REGDB_COMMIT = 389b9b702cf9018e9a9078ccc4fa8eaae2e054e3
-WIRELESS_REGDB_PATH = $(SRC_PATH)/wireless-regdb-2026-09-03
+LINUX_FIRMWARE_ARCHIVE = $(SRC_PATH)/linux-firmware-$(LINUX_FIRMWARE_TAG).tar.xz
+LINUX_FIRMWARE_SHA256 = f80dcb757a623deda62200c08e0e1a88c76fb6b54964f31b35fa74da1c90ccc5
+LINUX_FIRMWARE_URL = https://cdn.kernel.org/pub/linux/kernel/firmware/linux-firmware-$(LINUX_FIRMWARE_TAG).tar.xz
+LINUX_FIRMWARE_FALLBACK_URL = https://mirrors.edge.kernel.org/pub/linux/kernel/firmware/linux-firmware-$(LINUX_FIRMWARE_TAG).tar.xz
+LINUX_FIRMWARE_PATH = $(SRC_PATH)/linux-firmware-$(LINUX_FIRMWARE_TAG)-verified
+WIRELESS_REGDB_VERSION = 2026.09.03
+WIRELESS_REGDB_ARCHIVE = $(SRC_PATH)/wireless-regdb-$(WIRELESS_REGDB_VERSION).tar.xz
+WIRELESS_REGDB_SHA256 = b22e0901227b820cd1c280abe681a15b773a5103a5e10dc442e94ebb34cbf58d
+WIRELESS_REGDB_URL = https://cdn.kernel.org/pub/software/network/wireless-regdb/wireless-regdb-$(WIRELESS_REGDB_VERSION).tar.xz
+WIRELESS_REGDB_FALLBACK_URL = https://mirrors.edge.kernel.org/pub/software/network/wireless-regdb/wireless-regdb-$(WIRELESS_REGDB_VERSION).tar.xz
+WIRELESS_REGDB_PATH = $(SRC_PATH)/wireless-regdb-$(WIRELESS_REGDB_VERSION)-verified
 
 .PHONY: linux-firmware
 linux-firmware: .linux-firmware-done
 .linux-firmware-done: $(CURDIR)/arkanas/07_iso.mk
-	if ! [ -d $(LINUX_FIRMWARE_PATH)/.git ]; then \
-	  git clone --depth 1 --branch $(LINUX_FIRMWARE_TAG) https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git $(LINUX_FIRMWARE_PATH); \
+	$(CURDIR)/scripts/download-verified-archive.sh "$(LINUX_FIRMWARE_ARCHIVE)" "$(LINUX_FIRMWARE_SHA256)" "$(LINUX_FIRMWARE_URL)" "$(LINUX_FIRMWARE_FALLBACK_URL)"
+	$(CURDIR)/scripts/download-verified-archive.sh "$(WIRELESS_REGDB_ARCHIVE)" "$(WIRELESS_REGDB_SHA256)" "$(WIRELESS_REGDB_URL)" "$(WIRELESS_REGDB_FALLBACK_URL)"
+	if ! [ -f "$(LINUX_FIRMWARE_PATH)/.arkana-source-sha256" ] || ! grep -Fxq "$(LINUX_FIRMWARE_SHA256)" "$(LINUX_FIRMWARE_PATH)/.arkana-source-sha256" || \
+	  ! [ -d "$(LINUX_FIRMWARE_PATH)/amdgpu" ] || ! [ -d "$(LINUX_FIRMWARE_PATH)/i915" ] || \
+	  ! [ -d "$(LINUX_FIRMWARE_PATH)/xe" ] || ! [ -d "$(LINUX_FIRMWARE_PATH)/radeon" ] || \
+	  ! [ -d "$(LINUX_FIRMWARE_PATH)/amd-ucode" ] || ! [ -d "$(LINUX_FIRMWARE_PATH)/intel" ] || \
+	  ! [ -d "$(LINUX_FIRMWARE_PATH)/LICENSES" ] || ! [ -f "$(LINUX_FIRMWARE_PATH)/WHENCE" ]; then \
+	  mkdir -p "$(LINUX_FIRMWARE_PATH)" && \
+	  tar -xJf "$(LINUX_FIRMWARE_ARCHIVE)" --no-same-owner --no-same-permissions --strip-components=1 -C "$(LINUX_FIRMWARE_PATH)" \
+	    "linux-firmware-$(LINUX_FIRMWARE_TAG)/amdgpu" "linux-firmware-$(LINUX_FIRMWARE_TAG)/i915" \
+	    "linux-firmware-$(LINUX_FIRMWARE_TAG)/xe" "linux-firmware-$(LINUX_FIRMWARE_TAG)/radeon" \
+	    "linux-firmware-$(LINUX_FIRMWARE_TAG)/amd-ucode" "linux-firmware-$(LINUX_FIRMWARE_TAG)/intel" \
+	    "linux-firmware-$(LINUX_FIRMWARE_TAG)/LICENSES" "linux-firmware-$(LINUX_FIRMWARE_TAG)/WHENCE" && \
+	  printf '%s\n' "$(LINUX_FIRMWARE_SHA256)" > "$(LINUX_FIRMWARE_PATH)/.arkana-source-sha256"; \
 	fi
-	if ! [ -d $(WIRELESS_REGDB_PATH)/.git ]; then \
-	  git clone --depth 1 --branch $(WIRELESS_REGDB_TAG) https://git.kernel.org/pub/scm/linux/kernel/git/wens/wireless-regdb.git $(WIRELESS_REGDB_PATH); \
+	if ! [ -f "$(WIRELESS_REGDB_PATH)/.arkana-source-sha256" ] || ! grep -Fxq "$(WIRELESS_REGDB_SHA256)" "$(WIRELESS_REGDB_PATH)/.arkana-source-sha256" || \
+	  ! [ -f "$(WIRELESS_REGDB_PATH)/regulatory.db" ] || ! [ -f "$(WIRELESS_REGDB_PATH)/regulatory.db.p7s" ] || \
+	  ! [ -f "$(WIRELESS_REGDB_PATH)/LICENSE" ]; then \
+	  mkdir -p "$(WIRELESS_REGDB_PATH)" && \
+	  tar -xJf "$(WIRELESS_REGDB_ARCHIVE)" --no-same-owner --no-same-permissions --strip-components=1 -C "$(WIRELESS_REGDB_PATH)" \
+	    "wireless-regdb-$(WIRELESS_REGDB_VERSION)" && \
+	  printf '%s\n' "$(WIRELESS_REGDB_SHA256)" > "$(WIRELESS_REGDB_PATH)/.arkana-source-sha256"; \
 	fi
-	test "$$(git -C $(WIRELESS_REGDB_PATH) rev-parse HEAD)" = "$(WIRELESS_REGDB_COMMIT)"
-	git -C $(LINUX_FIRMWARE_PATH) sparse-checkout set amdgpu i915 xe radeon amd-ucode intel LICENSES
 	install -d $(STAGING_PATH)/lib/firmware $(CPIO_STAGING_PATH)/lib/firmware $(STAGING_PATH)/usr/share/licenses/linux-firmware $(STAGING_PATH)/usr/share/licenses/wireless-regdb
 	rm -rf $(STAGING_PATH)/lib/firmware/ath9k_htc $(STAGING_PATH)/lib/firmware/ath10k $(STAGING_PATH)/lib/firmware/ath11k $(STAGING_PATH)/lib/firmware/ath12k $(STAGING_PATH)/lib/firmware/intel $(CPIO_STAGING_PATH)/lib/firmware/ath9k_htc $(CPIO_STAGING_PATH)/lib/firmware/ath10k $(CPIO_STAGING_PATH)/lib/firmware/ath11k $(CPIO_STAGING_PATH)/lib/firmware/ath12k $(CPIO_STAGING_PATH)/lib/firmware/intel
 	for firmware in amdgpu i915 xe radeon amd-ucode intel; do \
