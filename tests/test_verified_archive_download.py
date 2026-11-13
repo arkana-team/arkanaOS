@@ -237,6 +237,10 @@ class VerifiedArchiveDownloadTests(unittest.TestCase):
         )
         self.assertIn('"linux-firmware-$(LINUX_FIRMWARE_TAG)/WHENCE"', makefile)
         self.assertIn(
+            'rm -f "$(LINUX_FIRMWARE_PATH)/.arkana-source-sha256" && \\',
+            makefile,
+        )
+        self.assertIn(
             '"linux-firmware-$(LINUX_FIRMWARE_TAG)/WHENCE" && \\\n\t  printf',
             makefile,
         )
@@ -247,11 +251,99 @@ class VerifiedArchiveDownloadTests(unittest.TestCase):
             makefile,
         )
         self.assertIn(
+            'rm -f "$(WIRELESS_REGDB_PATH)/.arkana-source-sha256" && \\',
+            makefile,
+        )
+        self.assertIn(
             '"wireless-regdb-$(WIRELESS_REGDB_VERSION)" && \\\n\t  printf',
             makefile,
         )
         for required in ("regulatory.db", "regulatory.db.p7s", "LICENSE"):
             self.assertIn(f'"$(WIRELESS_REGDB_PATH)/{required}"', makefile)
+
+    def test_interrupted_firmware_repair_invalidates_a_matching_marker(self) -> None:
+        makefile = ISO_RECIPE.read_text(encoding="utf-8")
+        start = makefile.index(
+            'if ! [ -f "$(LINUX_FIRMWARE_PATH)/.arkana-source-sha256"'
+        )
+        end = makefile.index("\n\tfi", start) + len("\n\tfi")
+        shell_recipe = makefile[start:end]
+        self.assertLess(
+            shell_recipe.index('rm -f "$(LINUX_FIRMWARE_PATH)/.arkana-source-sha256"'),
+            shell_recipe.index("tar -xJf"),
+        )
+
+        marker = self.root / "firmware-source" / ".arkana-source-sha256"
+        source = marker.parent
+        source.mkdir(parents=True)
+        marker.write_text(f"{EXPECTED_SHA256}\n", encoding="utf-8")
+        for directory in (
+            "amdgpu",
+            "i915",
+            "xe",
+            "radeon",
+            "amd-ucode",
+            "intel",
+            "LICENSES",
+        ):
+            (source / directory).mkdir()
+
+        fake_tar = self.bin_dir / "tar"
+        fake_tar.write_text(
+            "#!/usr/bin/env python3\n"
+            "import os, pathlib, sys\n"
+            "args = sys.argv[1:]\n"
+            "destination = pathlib.Path(args[args.index('-C') + 1])\n"
+            "calls = pathlib.Path(os.environ['TAR_CALLS'])\n"
+            "count = int(calls.read_text()) + 1 if calls.exists() else 1\n"
+            "calls.write_text(str(count))\n"
+            "(destination / 'WHENCE').write_text('restored sentinel\\n')\n"
+            "if count > 1:\n"
+            "    (destination / 'amdgpu' / 'complete.bin').write_bytes(b'complete')\n"
+            "raise SystemExit(2 if count == 1 else 0)\n",
+            encoding="utf-8",
+        )
+        fake_tar.chmod(0o755)
+        environment = self.environment.copy()
+        environment.update(
+            {
+                "PATH": f"{self.bin_dir}{os.pathsep}{os.environ['PATH']}",
+                "TAR_CALLS": str(self.root / "tar-calls"),
+            }
+        )
+        replacements = {
+            "$(LINUX_FIRMWARE_PATH)": str(source),
+            "$(LINUX_FIRMWARE_SHA256)": EXPECTED_SHA256,
+            "$(LINUX_FIRMWARE_ARCHIVE)": str(self.root / "firmware.tar.xz"),
+            "$(LINUX_FIRMWARE_TAG)": "20260916",
+        }
+        for variable, value in replacements.items():
+            shell_recipe = shell_recipe.replace(variable, value)
+
+        interrupted = subprocess.run(
+            ["bash", "-c", shell_recipe],
+            check=False,
+            capture_output=True,
+            env=environment,
+            text=True,
+            timeout=10,
+        )
+        self.assertNotEqual(interrupted.returncode, 0)
+        self.assertFalse(marker.exists())
+        self.assertEqual((self.root / "tar-calls").read_text(), "1")
+
+        retried = subprocess.run(
+            ["bash", "-c", shell_recipe],
+            check=False,
+            capture_output=True,
+            env=environment,
+            text=True,
+            timeout=10,
+        )
+        self.assertEqual(retried.returncode, 0, retried.stderr)
+        self.assertEqual((self.root / "tar-calls").read_text(), "2")
+        self.assertEqual(marker.read_text(encoding="utf-8"), f"{EXPECTED_SHA256}\n")
+        self.assertEqual((source / "amdgpu" / "complete.bin").read_bytes(), b"complete")
 
     def test_firmware_tar_selection_extracts_expected_relative_paths(self) -> None:
         archive = self.root / "firmware.tar.xz"

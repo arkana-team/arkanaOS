@@ -459,6 +459,7 @@ linux-firmware: .linux-firmware-done
 	  ! [ -d "$(LINUX_FIRMWARE_PATH)/xe" ] || ! [ -d "$(LINUX_FIRMWARE_PATH)/radeon" ] || \
 	  ! [ -d "$(LINUX_FIRMWARE_PATH)/amd-ucode" ] || ! [ -d "$(LINUX_FIRMWARE_PATH)/intel" ] || \
 	  ! [ -d "$(LINUX_FIRMWARE_PATH)/LICENSES" ] || ! [ -f "$(LINUX_FIRMWARE_PATH)/WHENCE" ]; then \
+	  rm -f "$(LINUX_FIRMWARE_PATH)/.arkana-source-sha256" && \
 	  mkdir -p "$(LINUX_FIRMWARE_PATH)" && \
 	  tar -xJf "$(LINUX_FIRMWARE_ARCHIVE)" --no-same-owner --no-same-permissions --strip-components=1 -C "$(LINUX_FIRMWARE_PATH)" \
 	    "linux-firmware-$(LINUX_FIRMWARE_TAG)/amdgpu" "linux-firmware-$(LINUX_FIRMWARE_TAG)/i915" \
@@ -470,6 +471,7 @@ linux-firmware: .linux-firmware-done
 	if ! [ -f "$(WIRELESS_REGDB_PATH)/.arkana-source-sha256" ] || ! grep -Fxq "$(WIRELESS_REGDB_SHA256)" "$(WIRELESS_REGDB_PATH)/.arkana-source-sha256" || \
 	  ! [ -f "$(WIRELESS_REGDB_PATH)/regulatory.db" ] || ! [ -f "$(WIRELESS_REGDB_PATH)/regulatory.db.p7s" ] || \
 	  ! [ -f "$(WIRELESS_REGDB_PATH)/LICENSE" ]; then \
+	  rm -f "$(WIRELESS_REGDB_PATH)/.arkana-source-sha256" && \
 	  mkdir -p "$(WIRELESS_REGDB_PATH)" && \
 	  tar -xJf "$(WIRELESS_REGDB_ARCHIVE)" --no-same-owner --no-same-permissions --strip-components=1 -C "$(WIRELESS_REGDB_PATH)" \
 	    "wireless-regdb-$(WIRELESS_REGDB_VERSION)" && \
