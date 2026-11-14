@@ -18,9 +18,15 @@ LESS_PATH = $(SRC_PATH)/less-$(LESS_VER)
 
 # Procps-NG (free, ps, etc.)
 # URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/procps-ng.html
-PROCPS_NG_URL = https://gitlab.com/procps-ng/procps/-/archive/v4.0.5/procps-v4.0.5.tar.gz
 PROCPS_NG_VER = 4.0.5
-PROCPS_NG_PATH = $(SRC_PATH)/procps-v$(PROCPS_NG_VER)
+PROCPS_NG_URL = https://downloads.sourceforge.net/project/procps-ng/Production/procps-ng-$(PROCPS_NG_VER).tar.xz
+# SHA-256 for the upstream release archive; its detached signature was verified
+# with the signing key used by the signed GitLab v4.0.5 tag.
+PROCPS_NG_SHA256 = c2e6d193cc78f84cd6ddb72aaf6d5c6a9162f0470e5992092057f5ff518562fa
+PROCPS_NG_ARCHIVE = procps-ng-$(PROCPS_NG_VER).tar.xz
+PROCPS_NG_PATH = $(SRC_PATH)/procps-ng-$(PROCPS_NG_VER)
+PROCPS_NG_OBTAINED_STAMP = .procps-ng-$(PROCPS_NG_VER)-verified-obtained
+PROCPS_NG_DONE_STAMP = .procps-ng-$(PROCPS_NG_VER)-done
 
 # Iproute2
 # URL: https://www.linuxfromscratch.org/lfs/view/systemd/chapter08/iproute2.html
@@ -360,18 +366,23 @@ less: download-less .less-done
 	cd $(LESS_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
 	touch .less-done
 
-# Download procps-ng
-download-procps-ng: .procps-ng-obtained
-.procps-ng-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O procps-ng-$(PROCPS_NG_VER).tar.gz $(PROCPS_NG_URL) && tar xf procps-ng-$(PROCPS_NG_VER).tar.gz
-	touch .procps-ng-obtained
+# Download and verify the signed upstream procps-ng release archive.
+.PHONY: download-procps-ng
+download-procps-ng: $(PROCPS_NG_OBTAINED_STAMP)
+$(PROCPS_NG_OBTAINED_STAMP):
+	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O "$(PROCPS_NG_ARCHIVE).tmp" "$(PROCPS_NG_URL)" && \
+		echo "$(PROCPS_NG_SHA256)  $(PROCPS_NG_ARCHIVE).tmp" | sha256sum -c - && \
+		mv "$(PROCPS_NG_ARCHIVE).tmp" "$(PROCPS_NG_ARCHIVE)" && \
+		rm -rf "$(PROCPS_NG_PATH)" && \
+		tar xf "$(PROCPS_NG_ARCHIVE)"
+	touch $(PROCPS_NG_OBTAINED_STAMP)
 
 # Compile procps-ng
-procps-ng: download-procps-ng .procps-ng-done
-.procps-ng-done:
-	cd $(PROCPS_NG_PATH) && ./autogen.sh && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --docdir=/usr/share/doc/procps-ng-$(PROCPS_NG_VER) --disable-kill \
+procps-ng: download-procps-ng $(PROCPS_NG_DONE_STAMP)
+$(PROCPS_NG_DONE_STAMP): $(PROCPS_NG_OBTAINED_STAMP)
+	cd $(PROCPS_NG_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --docdir=/usr/share/doc/procps-ng-$(PROCPS_NG_VER) --disable-kill \
 	--enable-watch8bit && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install
-	touch .procps-ng-done
+	touch $(PROCPS_NG_DONE_STAMP)
 
 # Download iproute2
 download-iproute2: .iproute2-obtained
