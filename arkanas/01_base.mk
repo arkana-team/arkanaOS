@@ -260,7 +260,9 @@ LIBTIRPC_PATH = $(SRC_PATH)/libtirpc-$(LIBTIRPC_VER)
 # Keyutils
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/general/keyutils.html
 KEYUTILS_URL = https://git.kernel.org/pub/scm/linux/kernel/git/dhowells/keyutils.git/snapshot/keyutils-1.6.3.tar.gz
+KEYUTILS_FALLBACK_URL = https://distfiles.gentoo.org/distfiles/b1/keyutils-1.6.3.tar.gz
 KEYUTILS_VER = 1.6.3
+KEYUTILS_SHA256 = a61d5706136ae4c05bd48f86186bcfdbd88dd8bd5107e3e195c924cfc1b39bb4
 KEYUTILS_PATH = $(SRC_PATH)/keyutils-$(KEYUTILS_VER)
 
 # Libfuse (Fuse)
@@ -1163,7 +1165,13 @@ libtirpc: download-libtirpc .libtirpc-done
 download-keyutils: .keyutils-obtained
 
 .keyutils-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O keyutils-$(KEYUTILS_VER).tar.gz $(KEYUTILS_URL) && tar xf keyutils-$(KEYUTILS_VER).tar.gz
+	cd $(SRC_PATH) && \
+	  $(CURDIR)/scripts/download-verified-archive.sh \
+	    keyutils-$(KEYUTILS_VER).tar.gz \
+	    $(KEYUTILS_SHA256) \
+	    $(KEYUTILS_URL) \
+	    $(KEYUTILS_FALLBACK_URL) && \
+	  tar xf keyutils-$(KEYUTILS_VER).tar.gz
 	touch .keyutils-obtained
 
 # Compile keyutils
