@@ -6,6 +6,7 @@ import hashlib
 import io
 import json
 import os
+import shutil
 import subprocess
 import tarfile
 import tempfile
@@ -14,11 +15,13 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DOWNLOAD_SCRIPT = REPO_ROOT / "scripts/download-verified-archive.sh"
+BASE_RECIPE = REPO_ROOT / "arkanas/01_base.mk"
 ISO_RECIPE = REPO_ROOT / "arkanas/07_iso.mk"
 PAYLOAD = b"pinned source archive fixture\n"
 PRIMARY_URL = "https://cdn.example.invalid/source.tar.xz"
 FALLBACK_URL = "https://mirror.example.invalid/source.tar.xz"
 EXPECTED_SHA256 = hashlib.sha256(PAYLOAD).hexdigest()
+KEYUTILS_SHA256 = "a61d5706136ae4c05bd48f86186bcfdbd88dd8bd5107e3e195c924cfc1b39bb4"
 
 
 class VerifiedArchiveDownloadTests(unittest.TestCase):
@@ -260,6 +263,127 @@ class VerifiedArchiveDownloadTests(unittest.TestCase):
         )
         for required in ("regulatory.db", "regulatory.db.p7s", "LICENSE"):
             self.assertIn(f'"$(WIRELESS_REGDB_PATH)/{required}"', makefile)
+
+    def test_keyutils_recipe_uses_pinned_verified_sources(self) -> None:
+        makefile = BASE_RECIPE.read_text(encoding="utf-8")
+
+        self.assertIn(
+            "KEYUTILS_URL = https://git.kernel.org/pub/scm/linux/kernel/git/"
+            "dhowells/keyutils.git/snapshot/keyutils-1.6.3.tar.gz",
+            makefile,
+        )
+        self.assertIn(
+            "KEYUTILS_FALLBACK_URL = https://distfiles.gentoo.org/"
+            "distfiles/b1/keyutils-1.6.3.tar.gz",
+            makefile,
+        )
+        self.assertIn(f"KEYUTILS_SHA256 = {KEYUTILS_SHA256}", makefile)
+        recipe_start = makefile.index(".keyutils-obtained:")
+        recipe_end = makefile.index("# Compile keyutils", recipe_start)
+        recipe = makefile[recipe_start:recipe_end]
+        self.assertIn("scripts/download-verified-archive.sh", recipe)
+        self.assertIn(
+            "$(KEYUTILS_FALLBACK_URL) && \\\n\t  tar xf",
+            recipe,
+        )
+        self.assertNotIn("wget", recipe)
+
+    def test_keyutils_make_target_verifies_fallback_and_retries_partial_extract(self) -> None:
+        real_tar = shutil.which("tar")
+        self.assertIsNotNone(real_tar, "tar is required for this recipe integration test")
+
+        test_repo = self.root / "recipe-repo"
+        for relative_path in (
+            Path("arkanas/01_base.mk"),
+            Path("arkanas/staging-guard.mk"),
+            Path("scripts/download-verified-archive.sh"),
+        ):
+            destination = test_repo / relative_path
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(REPO_ROOT / relative_path, destination)
+        (test_repo / ".buildnum").write_text("933\n", encoding="utf-8")
+        source_dir = test_repo / "src"
+        source_dir.mkdir()
+
+        with tarfile.open(self.payload_file, "w:gz") as archive:
+            payload = b"fixture keyutils makefile\n"
+            entry = tarfile.TarInfo("keyutils-1.6.3/Makefile")
+            entry.size = len(payload)
+            archive.addfile(entry, io.BytesIO(payload))
+        fixture_sha256 = hashlib.sha256(self.payload_file.read_bytes()).hexdigest()
+
+        primary_url = "https://upstream.example.invalid/keyutils-1.6.3.tar.gz"
+        fallback_url = "https://mirror.example.invalid/keyutils-1.6.3.tar.gz"
+        self.environment["CURL_PAYLOAD"] = str(self.payload_file)
+        self.environment["CURL_FAIL_URLS"] = json.dumps([primary_url])
+        self.environment["TAR_CALLS"] = str(self.root / "tar-calls")
+        fake_tar = self.bin_dir / "tar"
+        fake_tar.write_text(
+            "#!/usr/bin/env python3\n"
+            "import os, pathlib, sys\n"
+            "calls = pathlib.Path(os.environ['TAR_CALLS'])\n"
+            "count = int(calls.read_text()) + 1 if calls.exists() else 1\n"
+            "calls.write_text(str(count))\n"
+            "if count == 1:\n"
+            "    partial = pathlib.Path('keyutils-1.6.3/Makefile')\n"
+            "    partial.parent.mkdir()\n"
+            "    partial.write_text('incomplete extraction')\n"
+            "    raise SystemExit(2)\n"
+            f"os.execv({real_tar!r}, [{real_tar!r}, *sys.argv[1:]])\n",
+            encoding="utf-8",
+        )
+        fake_tar.chmod(0o755)
+
+        command = [
+            "make",
+            "--no-print-directory",
+            "-f",
+            "arkanas/01_base.mk",
+            "download-keyutils",
+            f"SRC_PATH={source_dir}",
+            f"KEYUTILS_URL={primary_url}",
+            f"KEYUTILS_FALLBACK_URL={fallback_url}",
+            f"KEYUTILS_SHA256={fixture_sha256}",
+        ]
+        interrupted = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            cwd=test_repo,
+            env=self.environment,
+            text=True,
+            timeout=20,
+        )
+        self.assertNotEqual(interrupted.returncode, 0)
+        self.assertIn("trying the verified fallback URL", interrupted.stderr)
+        self.assertFalse((test_repo / ".keyutils-obtained").exists())
+        self.assertTrue(
+            (source_dir / "keyutils-1.6.3" / "Makefile")
+            .read_text(encoding="utf-8")
+            .startswith("incomplete")
+        )
+        self.assertEqual(
+            [call[-1] for call in self.recorded_calls()], [primary_url, fallback_url]
+        )
+
+        retried = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            cwd=test_repo,
+            env=self.environment,
+            text=True,
+            timeout=20,
+        )
+        self.assertEqual(retried.returncode, 0, retried.stderr)
+        self.assertEqual((test_repo / ".keyutils-obtained").read_text(), "")
+        self.assertEqual(
+            (source_dir / "keyutils-1.6.3" / "Makefile").read_bytes(),
+            b"fixture keyutils makefile\n",
+        )
+        self.assertEqual(
+            [call[-1] for call in self.recorded_calls()], [primary_url, fallback_url]
+        )
 
     def test_interrupted_firmware_repair_invalidates_a_matching_marker(self) -> None:
         makefile = ISO_RECIPE.read_text(encoding="utf-8")
