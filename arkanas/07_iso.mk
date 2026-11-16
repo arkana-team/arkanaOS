@@ -70,7 +70,11 @@ LINUX_PATH = $(SRC_PATH)/linux-$(LINUX_VER)
 # GRUB (bootloader)
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/grub-efi.html
 GRUB_URL = https://gitlab.freedesktop.org/api/v4/projects/26558/packages/generic/source-assets/grub-$(GRUB_VER)/grub-$(GRUB_VER).tar.xz
-GRUB_FONT_URL = https://unifoundry.com/pub/unifont/unifont-16.0.01/font-builds/unifont-16.0.01.pcf.gz
+GRUB_FONT_VER = 16.0.01
+GRUB_FONT_ARCHIVE = unifont-$(GRUB_FONT_VER).pcf.gz
+GRUB_FONT_URL = https://unifoundry.com/pub/unifont/unifont-$(GRUB_FONT_VER)/font-builds/$(GRUB_FONT_ARCHIVE)
+GRUB_FONT_FALLBACK_URL = https://mirrors.ibiblio.org/pub/mirrors/gnu/unifont/unifont-$(GRUB_FONT_VER)/$(GRUB_FONT_ARCHIVE)
+GRUB_FONT_SHA256 = e756045ba0893ee2e8369b27afc02436bed90299db4e1672ce766e0470cd9825
 GRUB_SHA256 = f0db0104927df0b9a48bc41b735c702936190d17eb2d73d3018fa77474a0cabe
 GRUB_VER = 2.16
 GRUB_ARCHIVE = grub-$(GRUB_VER).tar.xz
@@ -511,7 +515,11 @@ download-grub: $(GRUB_OBTAINED_STAMP)
 	fi && \
 	echo "$(GRUB_SHA256)  $(GRUB_ARCHIVE)" | sha256sum -c - && \
 	tar xf $(GRUB_ARCHIVE) && \
-	wget --tries=5 --timeout=30 -O unifont-16.0.01.pcf.gz $(GRUB_FONT_URL)
+	$(CURDIR)/scripts/download-verified-archive.sh \
+	  $(GRUB_FONT_ARCHIVE) \
+	  $(GRUB_FONT_SHA256) \
+	  $(GRUB_FONT_URL) \
+	  $(GRUB_FONT_FALLBACK_URL)
 	touch $(GRUB_OBTAINED_STAMP)
 
 # Compile GRUB
@@ -561,7 +569,7 @@ $(GRUB_DONE_STAMP): $(GRUB_BUILD_STAMP)
 	  fi; \
 	done && \
 	mkdir -p $(STAGING_PATH)/usr/share/fonts/unifont $(STAGING_PATH)/usr/share/grub && \
-	gunzip -c $(SRC_PATH)/unifont-16.0.01.pcf.gz > $(STAGING_PATH)/usr/share/fonts/unifont/unifont.pcf && \
+	gunzip -c $(SRC_PATH)/$(GRUB_FONT_ARCHIVE) > $(STAGING_PATH)/usr/share/fonts/unifont/unifont.pcf && \
 	chroot $(STAGING_PATH) /usr/bin/grub-mkfont -o /usr/share/grub/unicode.pf2 /usr/share/fonts/unifont/unifont.pcf
 
 	touch $(GRUB_DONE_STAMP)
