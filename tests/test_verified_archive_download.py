@@ -1,7 +1,8 @@
-"""Test integrity-checked archive downloads and firmware source pinning."""
+"""Test integrity-checked source downloads and pinned build inputs."""
 
 from __future__ import annotations
 
+import gzip
 import hashlib
 import io
 import json
@@ -214,7 +215,7 @@ class VerifiedArchiveDownloadTests(unittest.TestCase):
             "WIRELESS_REGDB_FALLBACK_URL",
         ):
             self.assertIn(f"{variable} = ", makefile)
-        self.assertEqual(makefile.count("scripts/download-verified-archive.sh"), 2)
+        self.assertEqual(makefile.count("scripts/download-verified-archive.sh"), 3)
         self.assertIn("https://cdn.kernel.org/pub/linux/kernel/firmware/", makefile)
         self.assertIn(
             "https://mirrors.edge.kernel.org/pub/linux/kernel/firmware/", makefile
@@ -263,6 +264,145 @@ class VerifiedArchiveDownloadTests(unittest.TestCase):
         )
         for required in ("regulatory.db", "regulatory.db.p7s", "LICENSE"):
             self.assertIn(f'"$(WIRELESS_REGDB_PATH)/{required}"', makefile)
+
+    def test_grub_font_uses_pinned_verified_upstream_and_mirror(self) -> None:
+        makefile = ISO_RECIPE.read_text(encoding="utf-8")
+
+        self.assertIn("GRUB_FONT_VER = 16.0.01", makefile)
+        self.assertIn(
+            "GRUB_FONT_URL = https://unifoundry.com/pub/unifont/"
+            "unifont-$(GRUB_FONT_VER)/font-builds/$(GRUB_FONT_ARCHIVE)",
+            makefile,
+        )
+        self.assertIn(
+            "GRUB_FONT_FALLBACK_URL = https://mirrors.ibiblio.org/"
+            "pub/mirrors/gnu/unifont/unifont-$(GRUB_FONT_VER)/"
+            "$(GRUB_FONT_ARCHIVE)",
+            makefile,
+        )
+        self.assertIn(
+            "GRUB_FONT_SHA256 = e756045ba0893ee2e8369b27afc02436"
+            "bed90299db4e1672ce766e0470cd9825",
+            makefile,
+        )
+        recipe_start = makefile.index(".grub-$(GRUB_VER)-obtained:")
+        recipe_end = makefile.index("# Compile GRUB", recipe_start)
+        recipe = makefile[recipe_start:recipe_end]
+        self.assertIn("scripts/download-verified-archive.sh", recipe)
+        self.assertIn("$(GRUB_FONT_SHA256)", recipe)
+        self.assertIn("$(GRUB_FONT_FALLBACK_URL)", recipe)
+        self.assertNotIn("-O unifont-16.0.01.pcf.gz", recipe)
+        self.assertIn(
+            "gunzip -c $(SRC_PATH)/$(GRUB_FONT_ARCHIVE)",
+            makefile,
+        )
+
+    def test_grub_make_target_uses_verified_font_fallback_before_stamp(self) -> None:
+        test_repo = self.root / "grub-recipe-repo"
+        for relative_path in (
+            Path("arkanas/07_iso.mk"),
+            Path("arkanas/staging-guard.mk"),
+            Path("arkanas/libpng.mk"),
+            Path("scripts/download-verified-archive.sh"),
+        ):
+            destination = test_repo / relative_path
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(REPO_ROOT / relative_path, destination)
+        (test_repo / ".buildnum").write_text("934\n", encoding="utf-8")
+        source_dir = test_repo / "src"
+        source_dir.mkdir()
+
+        grub_payload_file = self.root / "grub-fixture.tar.xz"
+        with tarfile.open(grub_payload_file, "w:xz") as archive:
+            payload = b"fixture GRUB source archive\n"
+            entry = tarfile.TarInfo("grub-2.16/fixture.txt")
+            entry.size = len(payload)
+            archive.addfile(entry, io.BytesIO(payload))
+        grub_sha256 = hashlib.sha256(grub_payload_file.read_bytes()).hexdigest()
+
+        font_payload = b"fixture PCF payload\n"
+        self.payload_file.write_bytes(gzip.compress(font_payload))
+        primary_url = "https://upstream.example.invalid/unifont.pcf.gz"
+        fallback_url = "https://mirror.example.invalid/unifont.pcf.gz"
+        grub_url = "https://grub.example.invalid/grub-2.16.tar.xz"
+        self.environment.update(
+            {
+                "CURL_PAYLOAD": str(self.payload_file),
+                "CURL_FAIL_URLS": json.dumps([primary_url, fallback_url]),
+                "WGET_PAYLOAD": str(grub_payload_file),
+                "WGET_CALLS": str(self.root / "wget-calls.jsonl"),
+            }
+        )
+        fake_wget = self.bin_dir / "wget"
+        fake_wget.write_text(
+            "#!/usr/bin/env python3\n"
+            "import json, os, pathlib, sys\n"
+            "args = sys.argv[1:]\n"
+            "output = pathlib.Path(args[args.index('-O') + 1])\n"
+            "url = args[-1]\n"
+            "with open(os.environ['WGET_CALLS'], 'a', encoding='utf-8') as log:\n"
+            "    log.write(json.dumps(url) + '\\n')\n"
+            "output.write_bytes(pathlib.Path(os.environ['WGET_PAYLOAD']).read_bytes())\n",
+            encoding="utf-8",
+        )
+        fake_wget.chmod(0o755)
+
+        command = [
+            "make",
+            "--no-print-directory",
+            "-f",
+            "arkanas/07_iso.mk",
+            "download-grub",
+            f"SRC_PATH={source_dir}",
+            f"GRUB_URL={grub_url}",
+            f"GRUB_SHA256={grub_sha256}",
+            f"GRUB_FONT_URL={primary_url}",
+            f"GRUB_FONT_FALLBACK_URL={fallback_url}",
+            f"GRUB_FONT_SHA256={hashlib.sha256(self.payload_file.read_bytes()).hexdigest()}",
+        ]
+        failed_download = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            cwd=test_repo,
+            env=self.environment,
+            text=True,
+            timeout=20,
+        )
+        stamp = test_repo / ".grub-2.16-obtained"
+        self.assertNotEqual(failed_download.returncode, 0)
+        self.assertIn("unable to download a SHA-256-verified archive", failed_download.stderr)
+        self.assertFalse(stamp.exists())
+        self.assertFalse((source_dir / "unifont-16.0.01.pcf.gz").exists())
+
+        self.environment["CURL_FAIL_URLS"] = json.dumps([primary_url])
+        retried_download = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            cwd=test_repo,
+            env=self.environment,
+            text=True,
+            timeout=20,
+        )
+        self.assertEqual(retried_download.returncode, 0, retried_download.stderr)
+        self.assertTrue(stamp.exists())
+        self.assertEqual(
+            gzip.decompress((source_dir / "unifont-16.0.01.pcf.gz").read_bytes()),
+            font_payload,
+        )
+        self.assertEqual(
+            (source_dir / "grub-2.16" / "fixture.txt").read_bytes(),
+            b"fixture GRUB source archive\n",
+        )
+        self.assertEqual(
+            [json.loads(line) for line in (self.root / "wget-calls.jsonl").read_text().splitlines()],
+            [grub_url],
+        )
+        self.assertEqual(
+            [call[-1] for call in self.recorded_calls()],
+            [primary_url, fallback_url, primary_url, fallback_url],
+        )
 
     def test_keyutils_recipe_uses_pinned_verified_sources(self) -> None:
         makefile = BASE_RECIPE.read_text(encoding="utf-8")
