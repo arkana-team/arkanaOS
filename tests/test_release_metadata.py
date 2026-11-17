@@ -801,10 +801,18 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
             'python3 "$RUNNER_TEMP/arkanaOS-release-helpers/append-actions-build-details.py"',
             workflow,
         )
-        self.assertIn("The release assets were published, but Actions build details", workflow)
-        self.assertIn("          exit 1", workflow)
         self.assertIn("for attempt in 1 2 3; do", workflow)
-        self.assertIn("release assets were published, but Actions build details", workflow)
+        details_step = workflow.split(
+            "      - name: Add Actions build details to release notes", 1
+        )[1].split("      - name:", 1)[0]
+        self.assertLess(
+            workflow.index("      - name: Add Actions build details to release notes"),
+            workflow.index("      - name: Publish GitHub Release"),
+        )
+        self.assertNotIn("gh release edit", details_step)
+        self.assertIn("--captured-at", details_step)
+        self.assertIn('mv "$UPDATED_NOTES" RELEASE_TEMPLATE.md', details_step)
+        self.assertIn("Actions build details could not be prepared", details_step)
         self.assertIn("# GitHub Generated release notes", template)
     def test_seed_and_signing_keypair_changes_trigger_their_tests(self) -> None:
         workflow = (REPOSITORY / ".github/workflows/update-builder-tests.yml").read_text(

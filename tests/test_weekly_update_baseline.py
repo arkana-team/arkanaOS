@@ -143,16 +143,15 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
         workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
         details_step = workflow.split(
             "      - name: Add Actions build details to release notes", 1
-        )[1]
+        )[1].split("      - name:", 1)[0]
         self.assertIn(
             'python3 "$RUNNER_TEMP/arkanaOS-release-helpers/append-actions-build-details.py"',
             details_step,
         )
         self.assertIn("actions/runs/$SOURCE_RUN_ID", details_step)
-        self.assertIn("gh release edit", details_step)
-        self.assertIn('.published_at', details_step)
-        self.assertIn("The release assets were published, but Actions build details", details_step)
-        self.assertIn("          exit 1", details_step)
+        self.assertIn("--captured-at", details_step)
+        self.assertIn('mv "$UPDATED_NOTES" RELEASE_TEMPLATE.md', details_step)
+        self.assertNotIn("gh release edit", details_step)
         self.assertIn("for attempt in 1 2 3; do", details_step)
         self.assertNotIn("Supported for 7 days.", workflow)
 

@@ -65,7 +65,8 @@ class ActionsBuildDetailsTests(unittest.TestCase):
         self.assertIn("Triggered by: `@debarkak`", details)
         self.assertIn("Trigger: `workflow_dispatch`", details)
         self.assertIn(f"[`{self.run['head_sha'][:12]}`]", details)
-        self.assertIn("Build duration through release publication: `2h 31m 9s`", details)
+        self.assertIn("Notes prepared: `2026-11-16T12:31:09+00:00`", details)
+        self.assertIn("Build duration at release preparation: `2h 31m 9s`", details)
 
     def test_replaces_existing_metadata_without_duplicating_it(self) -> None:
         details = DETAILS["build_details"](

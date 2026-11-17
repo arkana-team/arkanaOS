@@ -543,6 +543,43 @@ jobs:
             echo EOF
           } >> "$GITHUB_OUTPUT"
 
+      - name: Add Actions build details to release notes
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_RUN_ID: ${{ steps.source.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          RUN_JSON=$(mktemp "$RUNNER_TEMP/arkanaOS-actions-run.XXXXXX")
+          UPDATED_NOTES=$(mktemp "$GITHUB_WORKSPACE/.arkanaOS-release-notes.XXXXXX")
+          trap 'rm -f -- "$RUN_JSON" "$UPDATED_NOTES"' EXIT
+          RUN_CAPTURED=false
+          for attempt in 1 2 3; do
+            if gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" > "$RUN_JSON"; then
+              RUN_CAPTURED=true
+              break
+            fi
+            echo "::warning::Could not fetch Actions run details (attempt $attempt of 3)."
+            if [[ "$attempt" -lt 3 ]]; then
+              sleep "$((attempt * 5))"
+            fi
+          done
+          if [[ "$RUN_CAPTURED" != true ]]; then
+            echo "::error::Actions build details could not be fetched; refusing to publish the release without provenance notes."
+            exit 1
+          fi
+          CAPTURED_AT=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          if ! python3 "$RUNNER_TEMP/arkanaOS-release-helpers/append-actions-build-details.py" \
+            --run-json "$RUN_JSON" \
+            --notes RELEASE_TEMPLATE.md \
+            --captured-at "$CAPTURED_AT" \
+            --repository "$GITHUB_REPOSITORY" > "$UPDATED_NOTES"; then
+            echo "::error::Actions build details could not be prepared; refusing to publish the release without provenance notes."
+            exit 1
+          fi
+          mv "$UPDATED_NOTES" RELEASE_TEMPLATE.md
+          echo "Prepared release notes with Actions build details."
+
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v3
         if: success()
@@ -556,38 +593,3 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Add Actions build details to release notes
-        if: success()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: ${{ env.RELEASE_TAG }}
-          SOURCE_RUN_ID: ${{ steps.source.outputs.run_id }}
-        run: |
-          set -euo pipefail
-          RUN_JSON=$(mktemp "$RUNNER_TEMP/arkanaOS-actions-run.XXXXXX")
-          RELEASE_JSON=$(mktemp "$RUNNER_TEMP/arkanaOS-release.XXXXXX")
-          NOTES_FILE=$(mktemp "$RUNNER_TEMP/arkanaOS-release-notes.XXXXXX")
-          UPDATED_NOTES=$(mktemp "$RUNNER_TEMP/arkanaOS-release-notes-updated.XXXXXX")
-          trap 'rm -f -- "$RUN_JSON" "$RELEASE_JSON" "$NOTES_FILE" "$UPDATED_NOTES"' EXIT
-          for attempt in 1 2 3; do
-            if gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" > "$RUN_JSON" && \
-               gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > "$RELEASE_JSON" && \
-               jq -er '.body // ""' "$RELEASE_JSON" > "$NOTES_FILE" && \
-               RELEASE_PUBLISHED_AT=$(jq -er '.published_at | select(type == "string" and length > 0)' "$RELEASE_JSON") && \
-               python3 "$RUNNER_TEMP/arkanaOS-release-helpers/append-actions-build-details.py" \
-                 --run-json "$RUN_JSON" \
-                 --notes "$NOTES_FILE" \
-                 --ended-at "$RELEASE_PUBLISHED_AT" \
-                 --repository "$GITHUB_REPOSITORY" > "$UPDATED_NOTES" && \
-               gh release edit "$RELEASE_TAG" --notes-file "$UPDATED_NOTES"; then
-              echo "Added Actions run details to $RELEASE_TAG."
-              exit 0
-            fi
-            echo "::warning::Could not update release notes for $RELEASE_TAG (attempt $attempt of 3)."
-            if [[ "$attempt" -lt 3 ]]; then
-              sleep "$((attempt * 5))"
-            fi
-          done
-          echo "::error::The release assets were published, but Actions build details could not be appended to the release notes."
-          exit 1

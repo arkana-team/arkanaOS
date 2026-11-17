@@ -1,4 +1,4 @@
-"""Add measured GitHub Actions run details to generated release notes."""
+"""Add GitHub Actions provenance and elapsed build time before release publication."""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ def parse_time(value: Any, field: str) -> datetime:
 
 def format_duration(seconds: int) -> str:
     if seconds < 0:
-        raise ValueError("release publication time precedes the Actions run start")
+        raise ValueError("metadata capture time precedes the Actions run start")
     days, remainder = divmod(seconds, 86_400)
     hours, remainder = divmod(remainder, 3_600)
     minutes, seconds = divmod(remainder, 60)
@@ -60,7 +60,7 @@ def code_span(value: str) -> str:
 
 
 def build_details(
-    run: dict[str, Any], ended_at: str, expected_repository: str
+    run: dict[str, Any], captured_at: str, expected_repository: str
 ) -> str:
     run_id = run.get("id")
     run_number = run.get("run_number")
@@ -78,8 +78,8 @@ def build_details(
         raise ValueError("Actions run URL does not match its repository and run ID")
 
     started = parse_time(run.get("run_started_at") or run.get("created_at"), "start time")
-    ended = parse_time(ended_at, "release publication time")
-    duration = int((ended - started).total_seconds())
+    captured = parse_time(captured_at, "metadata capture time")
+    duration = int((captured - started).total_seconds())
     actor = None
     for actor_data in (run.get("triggering_actor"), run.get("actor")):
         candidate = actor_data.get("login") if isinstance(actor_data, dict) else None
@@ -106,8 +106,8 @@ def build_details(
             f"- Commit: [`{commit[:12]}`](https://github.com/{expected_repository}/commit/{commit})",
             f"- Branch: {code_span(branch)}",
             f"- Started: {code_span(started.isoformat(timespec='seconds'))}",
-            f"- Released: {code_span(ended.isoformat(timespec='seconds'))}",
-            f"- Build duration through release publication: {code_span(format_duration(duration))}",
+            f"- Notes prepared: {code_span(captured.isoformat(timespec='seconds'))}",
+            f"- Build duration at release preparation: {code_span(format_duration(duration))}",
             END_MARKER,
         )
     )
@@ -128,7 +128,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-json", required=True, type=Path)
     parser.add_argument("--notes", required=True, type=Path)
-    parser.add_argument("--ended-at", required=True)
+    parser.add_argument("--captured-at", required=True)
     parser.add_argument("--repository", required=True)
     arguments = parser.parse_args()
     try:
@@ -136,7 +136,7 @@ def main() -> int:
         notes = arguments.notes.read_text(encoding="utf-8")
         if not isinstance(run, dict):
             raise TypeError("Actions run metadata must be a JSON object")
-        details = build_details(run, arguments.ended_at, arguments.repository)
+        details = build_details(run, arguments.captured_at, arguments.repository)
         sys.stdout.write(with_build_details(notes, details))
     except (OSError, UnicodeError, json.JSONDecodeError, TypeError, ValueError) as error:
         parser.error(str(error))
