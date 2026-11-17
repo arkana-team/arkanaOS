@@ -16,7 +16,7 @@ MARKER_VALUES = {
     "system-update": "1",
 }
 RELEASE_TAG = re.compile(
-    r"(?:(?:nightly|weekly)-(?P<scheduled_build>[0-9]+)|"
+    r"(?:(?:nightly|weekly)-(?:(?:[0-9]{8}-build-)?(?P<scheduled_build>[0-9]+))|"
     r"v[1-9][0-9]*\.0-(?:(?:alpha[1-9][0-9]*|beta[1-9][0-9]*)-build|build)-"
     r"(?P<release_build>[0-9]+))\Z"
 )

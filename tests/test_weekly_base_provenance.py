@@ -96,6 +96,10 @@ class WeeklyBaseProvenanceTests(unittest.TestCase):
 
     def test_supports_versioned_release_tags(self) -> None:
         self.assertEqual(PROVENANCE.release_build_number("v1.0-alpha1-build-233"), "233")
+        self.assertEqual(
+            PROVENANCE.release_build_number("nightly-20261116-build-934"),
+            "934",
+        )
 
     def test_rejects_release_tag_or_marker_build_mismatch(self) -> None:
         with self.assertRaises(PROVENANCE.ProvenanceError):
@@ -392,7 +396,7 @@ class WeeklyBasePreflightTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertFalse(self.output.exists())
 
-    def test_monday_preflight_exports_both_verified_update_paths(self) -> None:
+    def test_manual_weekly_preflight_exports_both_verified_update_paths(self) -> None:
         self.environment["UPDATE_BASE_CHANNEL"] = "weekly"
         result = self.execute()
         self.assertEqual(result.returncode, 0, result.stderr)

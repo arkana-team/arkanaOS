@@ -11,7 +11,9 @@ from typing import Any
 UPDATE_CLIENT_ASSET = "arkanaOS-update-client-system-update.txt"
 ISO_RELEASE_ASSET = "arkana.iso"
 SUPPORTED_RELEASE_TAG = re.compile(
-    r"(?:nightly-[0-9]+|weekly-[0-9]+|v[1-9][0-9]*\.0-(?:(?:alpha[1-9][0-9]*|beta[1-9][0-9]*)-build|build)-[0-9]+)\Z"
+    r"(?:nightly-(?:[0-9]+|[0-9]{8}-build-[0-9]+)|"
+    r"weekly-(?:[0-9]+|[0-9]{8}-build-[0-9]+)|"
+    r"v[1-9][0-9]*\.0-(?:(?:alpha[1-9][0-9]*|beta[1-9][0-9]*)-build|build)-[0-9]+)\Z"
 )
 
 
@@ -58,19 +60,24 @@ def select_bases(
     ]
     latest_update = max(update_releases, key=lambda release: release["published_at"]) if update_releases else None
     if channel == "weekly":
-        weekly_updates = [
+        weekly_bases = [
             release
-            for release in update_releases
+            for release in published
             if release["tag_name"].startswith("weekly-")
+            and ISO_RELEASE_ASSET in release_assets(release)
+            and UPDATE_CLIENT_ASSET in release_assets(release)
         ]
-        if weekly_updates:
-            # Monday needs both paths: the previous weekly build for users who
-            # stayed on Mondays, and the latest scheduled build for users who
-            # installed Sunday's nightly. Release assets persist independently
-            # of Actions artifact retention.
-            previous_weekly = max(weekly_updates, key=lambda release: release["published_at"])
-            assert latest_update is not None
-            return list(dict.fromkeys((previous_weekly["tag_name"], latest_update["tag_name"])))
+        if weekly_bases:
+            # Manual weekly runs need both paths: the previous weekly build for
+            # weekly-channel installs and the latest update-capable build for
+            # nightly-channel installs. Release assets persist independently of
+            # Actions artifact retention. The first weekly ISO is a valid base
+            # even though it cannot contain an .aup package yet.
+            previous_weekly = max(weekly_bases, key=lambda release: release["published_at"])
+            bases = [previous_weekly["tag_name"]]
+            if latest_update is not None:
+                bases.append(latest_update["tag_name"])
+            return list(dict.fromkeys(bases))
     if latest_update is not None:
         return [latest_update["tag_name"]]
 

@@ -88,6 +88,22 @@ jobs:
         with:
           ref: ${{ steps.source.outputs.sha }}
 
+      - name: Load release helpers from the verified workflow revision
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORKFLOW_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          HELPER_DIR="$RUNNER_TEMP/arkanaOS-release-helpers"
+          mkdir -p "$HELPER_DIR"
+          for helper in format-scheduled-release-tag.py append-actions-build-details.py; do
+            gh api "repos/$GITHUB_REPOSITORY/contents/scripts/$helper?ref=$WORKFLOW_SHA" --jq .content \
+              | base64 --decode > "$HELPER_DIR/$helper"
+          done
+          python3 -m py_compile \
+            "$HELPER_DIR/format-scheduled-release-tag.py" \
+            "$HELPER_DIR/append-actions-build-details.py"
+
       - name: Seed build number from published releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -205,6 +221,8 @@ jobs:
 
       - name: Generate Release Notes & Tags from Template
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_RUN_ID: ${{ steps.source.outputs.run_id }}
           UPDATE_BASES_JSON: ${{ inputs.update_bases_json }}
         run: |
           BUILD_NUM=$(cat staging/etc/arkana-build-number)
@@ -212,8 +230,9 @@ jobs:
           RELEASE_ID=$(cat staging/etc/arkana-release-id)
           RELEASE_VERSION=$(cat staging/etc/arkana-release-version)
           RELEASE_PRERELEASE=$(cat staging/etc/arkana-release-prerelease)
-          if [[ "$RELEASE_PREFIX" == weekly && "$GITHUB_EVENT_NAME" != schedule ]]; then
-            echo "Weekly release labels are reserved for the Monday schedule." >&2
+          if [[ "$RELEASE_PREFIX" == weekly && \
+                "$GITHUB_WORKFLOW_REF" != "$GITHUB_REPOSITORY/.github/workflows/00_run_all.yml@$GITHUB_REF" ]]; then
+            echo "Weekly releases must be started through the full Run All workflow." >&2
             exit 1
           fi
           if ! [[ "$BUILD_NUM" =~ ^[0-9]+$ ]]; then
@@ -229,10 +248,10 @@ jobs:
             EXPECTED_RELEASE_VERSION="$RELEASE_PREFIX"
             if [[ "$RELEASE_PREFIX" == weekly ]]; then
               RELEASE_CHANNEL=Weekly
-              RELEASE_STATUS="Weekly developer build for testing and development only. Supported for 7 days."
+              RELEASE_STATUS="Weekly developer build for testing and development only."
             else
               RELEASE_CHANNEL=Nightly
-              RELEASE_STATUS="Developer build for testing and development only. Supported for 7 days."
+              RELEASE_STATUS="Developer build for testing and development only."
             fi
           elif [[ "$RELEASE_PREFIX" =~ ^r([1-9][0-9]*)-a([1-9][0-9]*)$ ]]; then
             EXPECTED_RELEASE_ID="v${BASH_REMATCH[1]}.0-alpha${BASH_REMATCH[2]}-build-${BUILD_NUM}"
@@ -266,14 +285,31 @@ jobs:
             echo "Release prerelease status does not match its prefix." >&2
             exit 1
           fi
-          RELEASE_NAME="arkanaOS ${RELEASE_VERSION} build ${BUILD_NUM}"
+          if [[ "$RELEASE_PREFIX" == nightly || "$RELEASE_PREFIX" == weekly ]]; then
+            SOURCE_RUN_JSON=$(mktemp "$RUNNER_TEMP/arkanaOS-release-source-run.XXXXXX")
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" > "$SOURCE_RUN_JSON"
+            RELEASE_TAG=$(python3 "$RUNNER_TEMP/arkanaOS-release-helpers/format-scheduled-release-tag.py" \
+              --prefix "$RELEASE_PREFIX" \
+              --build-number "$BUILD_NUM" \
+              --run-json "$SOURCE_RUN_JSON")
+            rm -f -- "$SOURCE_RUN_JSON"
+            RELEASE_NAME="$RELEASE_TAG"
+          else
+            RELEASE_TAG="$RELEASE_ID"
+            RELEASE_NAME="arkanaOS ${RELEASE_VERSION} build ${BUILD_NUM}"
+          fi
           UPDATE_BASE_COUNT=$(jq -er 'if type == "array" then length else error("update bases must be a JSON array") end' <<< "${UPDATE_BASES_JSON:-[]}")
-          if [[ "$GITHUB_EVENT_NAME" == schedule && "$UPDATE_BASE_COUNT" -eq 0 ]]; then
-            RELEASE_UPDATE_ASSETS="This is the initial scheduled ISO bootstrap. It includes the verification public key and seeds the signed .aup update path; update packages begin with the next scheduled release."
-            RELEASE_UPDATE_GUIDANCE=$'No .aup package is attached because there is no earlier update-capable release to target. After the next scheduled release includes its update package, trust the verification key once on the installed system:\n\n```sh\nsudo arkup trust ./arkanaOS-update-signing.pub\n```'
-          elif [[ "$GITHUB_EVENT_NAME" == schedule ]]; then
-            RELEASE_UPDATE_ASSETS="This scheduled release includes the bootable ISO and signed arkup .aup update package or packages, checksums, and the verification public key."
-            RELEASE_UPDATE_GUIDANCE=$'Each update package filename includes from-build-N; use the package whose base build matches the build installed on your system. After applying it, choose the next package using your new build number. Nightly packages are based on the latest scheduled release. The Monday weekly release includes a package from the previous weekly build and, when those builds differ, a second package from Sunday\'s nightly build. This keeps both update paths available to weekly and nightly installations. Update-base ISOs are downloaded from persistent GitHub Release assets and checked against GitHub\'s SHA-256 digest and the source workflow provenance.\n\nBefore applying an update, download the verification key from the official arkanaOS release and trust it once on the installed system:\n\n```sh\nsudo arkup trust ./arkanaOS-update-signing.pub\nsudo arkup apply ./path/to/update.aup\n```'
+          UPDATE_RELEASE_BUILD=false
+          if [[ "$GITHUB_EVENT_NAME" == schedule || \
+                ( "$GITHUB_EVENT_NAME" == workflow_dispatch && "$RELEASE_PREFIX" == weekly && -n "${UPDATE_BASES_JSON:-}" ) ]]; then
+            UPDATE_RELEASE_BUILD=true
+          fi
+          if [[ "$UPDATE_RELEASE_BUILD" == true && "$UPDATE_BASE_COUNT" -eq 0 ]]; then
+            RELEASE_UPDATE_ASSETS="This is the initial update-capable ISO bootstrap. It includes the verification public key and seeds the signed .aup update path; update packages begin with the next update-enabled release."
+            RELEASE_UPDATE_GUIDANCE=$'No .aup package is attached because there is no earlier update-capable release to target. After the next release includes its update package, trust the verification key once on the installed system:\n\n```sh\nsudo arkup trust ./arkanaOS-update-signing.pub\n```'
+          elif [[ "$UPDATE_RELEASE_BUILD" == true ]]; then
+            RELEASE_UPDATE_ASSETS="This update-enabled release includes the bootable ISO and signed arkup .aup update package or packages, checksums, and the verification public key."
+            RELEASE_UPDATE_GUIDANCE=$'Each update package filename includes from-build-N; use the package whose base build matches the build installed on your system. After applying it, choose the next package using your new build number. Nightly packages are based on the latest scheduled release. Manually triggered weekly releases include an update from the previous weekly build and, when those builds differ, an update from the latest nightly build. This keeps both update paths available. Update-base ISOs are downloaded from persistent GitHub Release assets and checked against GitHub\'s SHA-256 digest and the source workflow provenance.\n\nBefore applying an update, download the verification key from the official arkanaOS release and trust it once on the installed system:\n\n```sh\nsudo arkup trust ./arkanaOS-update-signing.pub\nsudo arkup apply ./path/to/update.aup\n```'
           else
             RELEASE_UPDATE_ASSETS="This manually triggered release includes the bootable ISO only."
             RELEASE_UPDATE_GUIDANCE="No signed .aup update package is attached to a manually triggered release."
@@ -302,14 +338,16 @@ jobs:
           PY
           {
             echo "RELEASE_ID=$RELEASE_ID"
+            echo "RELEASE_TAG=$RELEASE_TAG"
             echo "RELEASE_NAME=$RELEASE_NAME"
             echo "RELEASE_ARTIFACT_NAME=arkanaOS-${RELEASE_ID#v}-iso"
             echo "RELEASE_PRERELEASE=$RELEASE_PRERELEASE"
+            echo "UPDATE_RELEASE_BUILD=$UPDATE_RELEASE_BUILD"
           } >> "$GITHUB_ENV"
 
-      - name: Build signed update packages for scheduled developer release
+      - name: Build signed update packages for scheduled or manual weekly release
         id: build-updates
-        if: github.event_name == 'schedule'
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.update_bases_json != '')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
@@ -356,7 +394,7 @@ jobs:
             UPDATE_BASE_MARKER_DIGEST=$(jq -er '.marker_digest' <<< "$BASE_JSON")
             UPDATE_BASE_BUILD_NUMBER=$(jq -er '.build_number' <<< "$BASE_JSON")
             UPDATE_BASE_SOURCE_SHA=$(jq -er '.source_sha' <<< "$BASE_JSON")
-            if ! [[ "$UPDATE_BASE_RELEASE_TAG" =~ ^(nightly-[0-9]+|weekly-[0-9]+|v[1-9][0-9]*\.0-((alpha[1-9][0-9]*|beta[1-9][0-9]*)-build|build)-[0-9]+)$ && \
+            if ! [[ "$UPDATE_BASE_RELEASE_TAG" =~ ^(nightly-([0-9]+|[0-9]{8}-build-[0-9]+)|weekly-([0-9]+|[0-9]{8}-build-[0-9]+)|v[1-9][0-9]*\.0-((alpha[1-9][0-9]*|beta[1-9][0-9]*)-build|build)-[0-9]+)$ && \
                   "$UPDATE_BASE_RUN_ID" =~ ^[1-9][0-9]*$ && \
                   "$UPDATE_BASE_ISO_ASSET_ID" =~ ^[1-9][0-9]*$ && \
                   "$UPDATE_BASE_ISO_SIZE" =~ ^[1-9][0-9]*$ && \
@@ -473,7 +511,7 @@ jobs:
           retention-days: 14
 
       - name: Upload Signed arkanaOS Update Artifact
-        if: github.event_name == 'schedule' && steps.build-updates.outputs.update_count != '0'
+        if: (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.update_bases_json != '')) && steps.build-updates.outputs.update_count != '0'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.RELEASE_ARTIFACT_NAME }}-update
@@ -487,7 +525,7 @@ jobs:
       - name: Select release assets
         id: release-assets
         env:
-          SCHEDULED_UPDATE_RELEASE: ${{ github.event_name == 'schedule' }}
+          UPDATE_RELEASE_BUILD: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.update_bases_json != '') }}
           UPDATE_COUNT: ${{ steps.build-updates.outputs.update_count || '0' }}
         run: |
           set -euo pipefail
@@ -498,7 +536,7 @@ jobs:
             if [[ -f output/arkanaOS-update-client-system-update.txt ]]; then
               echo "output/arkanaOS-update-client-system-update.txt"
             fi
-            if [[ "$SCHEDULED_UPDATE_RELEASE" == true ]]; then
+            if [[ "$UPDATE_RELEASE_BUILD" == true ]]; then
               if [[ -f output/updates/arkanaOS-update-signing.pub ]]; then
                 echo "output/updates/arkanaOS-update-signing.pub"
               fi
@@ -515,7 +553,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         if: success()
         with:
-          tag_name: ${{ env.RELEASE_ID }}
+          tag_name: ${{ env.RELEASE_TAG }}
           name: ${{ env.RELEASE_NAME }}
           target_commitish: ${{ steps.source.outputs.sha }}
           body_path: RELEASE_TEMPLATE.md
@@ -524,3 +562,38 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add Actions build details to release notes
+        if: success()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+          SOURCE_RUN_ID: ${{ steps.source.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          RUN_JSON=$(mktemp "$RUNNER_TEMP/arkanaOS-actions-run.XXXXXX")
+          RELEASE_JSON=$(mktemp "$RUNNER_TEMP/arkanaOS-release.XXXXXX")
+          NOTES_FILE=$(mktemp "$RUNNER_TEMP/arkanaOS-release-notes.XXXXXX")
+          UPDATED_NOTES=$(mktemp "$RUNNER_TEMP/arkanaOS-release-notes-updated.XXXXXX")
+          trap 'rm -f -- "$RUN_JSON" "$RELEASE_JSON" "$NOTES_FILE" "$UPDATED_NOTES"' EXIT
+          for attempt in 1 2 3; do
+            if gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" > "$RUN_JSON" && \
+               gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > "$RELEASE_JSON" && \
+               jq -er '.body // ""' "$RELEASE_JSON" > "$NOTES_FILE" && \
+               RELEASE_PUBLISHED_AT=$(jq -er '.published_at | select(type == "string" and length > 0)' "$RELEASE_JSON") && \
+               python3 "$RUNNER_TEMP/arkanaOS-release-helpers/append-actions-build-details.py" \
+                 --run-json "$RUN_JSON" \
+                 --notes "$NOTES_FILE" \
+                 --ended-at "$RELEASE_PUBLISHED_AT" \
+                 --repository "$GITHUB_REPOSITORY" > "$UPDATED_NOTES" && \
+               gh release edit "$RELEASE_TAG" --notes-file "$UPDATED_NOTES"; then
+              echo "Added Actions run details to $RELEASE_TAG."
+              exit 0
+            fi
+            echo "::warning::Could not update release notes for $RELEASE_TAG (attempt $attempt of 3)."
+            if [[ "$attempt" -lt 3 ]]; then
+              sleep "$((attempt * 5))"
+            fi
+          done
+          echo "::warning::The release assets were published, but Actions build details could not be appended to the release notes."

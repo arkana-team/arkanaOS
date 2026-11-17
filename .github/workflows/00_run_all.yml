@@ -4,15 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       release_prefix:
-        description: "Release label before the automatic build number (nightly, r1-a1, r1-b1, r1-1); weekly releases run on Mondays"
+        description: "Release label before the automatic build number (nightly, weekly, r1-a1, r1-b1, r1-1); run weekly builds manually"
         required: true
         default: nightly
         type: string
   schedule:
     # Publish a nightly ISO and signed update Sunday and Tuesday through Saturday.
     - cron: "17 3 * * 0,2-6"
-    # Monday is the weekly developer release; it also includes the ISO and .aup.
-    - cron: "17 3 * * 1"
 
 concurrency:
   group: run-all-${{ github.ref }}
@@ -24,38 +22,27 @@ permissions:
   contents: write
 
 jobs:
-  validate-scheduled-update-prerequisites:
-    name: Validate scheduled update release prerequisites
+  validate-update-release-prerequisites:
+    name: Validate scheduled and manual weekly update prerequisites
     runs-on: ubuntu-latest
     outputs:
       update_bases_json: ${{ steps.verify-update-base.outputs.update_bases_json }}
     steps:
-      - name: Reject manual weekly release labels
-        if: github.event_name == 'workflow_dispatch'
-        env:
-          RELEASE_PREFIX: ${{ inputs.release_prefix }}
-        run: |
-          set -euo pipefail
-          if [[ "$RELEASE_PREFIX" == weekly ]]; then
-            echo "Weekly releases are published by the Monday schedule and cannot be manually labeled weekly." >&2
-            exit 1
-          fi
-
-      - name: Check out source for scheduled release preflight
-        if: github.event_name == 'schedule'
+      - name: Check out source for update release preflight
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.release_prefix == 'weekly')
         uses: actions/checkout@v4
         with:
           persist-credentials: false
 
-      - name: Require the release signing keypair for scheduled builds
-        if: github.event_name == 'schedule'
+      - name: Require the release signing keypair for update builds
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.release_prefix == 'weekly')
         env:
           ARKUP_UPDATE_SIGNING_KEY_B64: ${{ secrets.ARKUP_UPDATE_SIGNING_KEY_B64 }}
           ARKUP_UPDATE_PUBLIC_KEY_B64: ${{ secrets.ARKUP_UPDATE_PUBLIC_KEY_B64 }}
         run: |
           set -euo pipefail
           if [[ -z "$ARKUP_UPDATE_SIGNING_KEY_B64" || -z "$ARKUP_UPDATE_PUBLIC_KEY_B64" ]]; then
-            echo "Configure the Actions secrets ARKUP_UPDATE_SIGNING_KEY_B64 and ARKUP_UPDATE_PUBLIC_KEY_B64 before scheduled releases." >&2
+            echo "Configure the Actions signing keypair secrets before scheduled or manual weekly releases." >&2
             exit 1
           fi
           KEY_DIR=$(mktemp -d)
@@ -80,11 +67,11 @@ jobs:
 
       - name: Verify persistent release ISOs as update bases
         id: verify-update-base
-        if: github.event_name == 'schedule'
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.release_prefix == 'weekly')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          UPDATE_BASE_CHANNEL: ${{ github.event.schedule == '17 3 * * 1' && 'weekly' || 'nightly' }}
+          UPDATE_BASE_CHANNEL: ${{ inputs.release_prefix == 'weekly' && 'weekly' || 'nightly' }}
         run: |
           set -euo pipefail
           BASE_RELEASE_TAGS_JSON=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
@@ -96,7 +83,7 @@ jobs:
             exit 1
           fi
           if [[ "$(jq 'length' <<< "$BASE_RELEASE_TAGS_JSON")" -eq 0 ]]; then
-            echo "No compatible update-capable release exists yet; this scheduled run will publish a signed ISO base, and .aup packages will start with the next scheduled release." >&2
+            echo "No compatible update-capable release exists yet; this run will publish a signed ISO base, and .aup packages will start with the next update-enabled release." >&2
           fi
 
           VERIFY_DIR=$(mktemp -d "$RUNNER_TEMP/arkana-update-base.XXXXXX")
@@ -104,7 +91,7 @@ jobs:
           WORKFLOW_ID=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/00_run_all.yml" --jq .id)
           VERIFIED_BASES='[]'
           while IFS= read -r BASE_RELEASE_TAG; do
-            if ! [[ "$BASE_RELEASE_TAG" =~ ^(nightly-[0-9]+|weekly-[0-9]+|v[1-9][0-9]*\.0-((alpha[1-9][0-9]*|beta[1-9][0-9]*)-build|build)-[0-9]+)$ ]]; then
+            if ! [[ "$BASE_RELEASE_TAG" =~ ^(nightly-([0-9]+|[0-9]{8}-build-[0-9]+)|weekly-([0-9]+|[0-9]{8}-build-[0-9]+)|v[1-9][0-9]*\.0-((alpha[1-9][0-9]*|beta[1-9][0-9]*)-build|build)-[0-9]+)$ ]]; then
               echo "The update-base selector returned an unsupported release tag." >&2
               exit 1
             fi
@@ -162,9 +149,9 @@ jobs:
 
   stage1:
     uses: ./.github/workflows/01_stage1_base.yml
-    needs: validate-scheduled-update-prerequisites
+    needs: validate-update-release-prerequisites
     with:
-      release_prefix: ${{ inputs.release_prefix || (github.event_name == 'schedule' && github.event.schedule == '17 3 * * 1' && 'weekly' || 'nightly') }}
+      release_prefix: ${{ inputs.release_prefix || 'nightly' }}
     secrets: inherit
 
   stage2:
@@ -178,8 +165,8 @@ jobs:
     secrets: inherit
 
   stage4:
-    needs: [stage3, validate-scheduled-update-prerequisites]
+    needs: [stage3, validate-update-release-prerequisites]
     uses: ./.github/workflows/04_stage4_iso.yml
     with:
-      update_bases_json: ${{ needs.validate-scheduled-update-prerequisites.outputs.update_bases_json }}
+      update_bases_json: ${{ needs.validate-update-release-prerequisites.outputs.update_bases_json }}
     secrets: inherit

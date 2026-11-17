@@ -18,22 +18,60 @@ MARKER = "arkanaOS-update-client-system-update.txt"
 BASE_PROVENANCE = runpy.run_path(
     str(REPOSITORY / "scripts/verify-weekly-base-provenance.py")
 )
+UPDATE_BASE_SELECTOR = runpy.run_path(
+    str(REPOSITORY / "scripts/select-weekly-update-base.py")
+)
 
 
 class WeeklyUpdateBaseTests(unittest.TestCase):
     def test_release_tag_resolves_to_expected_build_number(self) -> None:
         self.assertEqual(BASE_PROVENANCE["release_build_number"]("weekly-233"), "233")
+        self.assertEqual(
+            BASE_PROVENANCE["release_build_number"]("weekly-20261116-build-935"),
+            "935",
+        )
 
-    def test_scheduled_preflight_selects_persistent_release_isos_before_stage_one(self) -> None:
+    def test_weekly_selector_recognizes_date_build_tags_for_both_channels(self) -> None:
+        weekly_tag = "weekly-20261109-build-933"
+        nightly_tag = "nightly-20261115-build-934"
+        release_assets = [
+            {"name": "arkana.iso"},
+            {"name": "arkanaOS-update-client-system-update.txt"},
+            {"name": "arkanaos-update.aup"},
+        ]
+        releases = [
+            {
+                "tag_name": weekly_tag,
+                "published_at": "2026-11-09T12:00:00Z",
+                "draft": False,
+                "assets": release_assets,
+            },
+            {
+                "tag_name": nightly_tag,
+                "published_at": "2026-11-15T12:00:00Z",
+                "draft": False,
+                "assets": release_assets,
+            },
+        ]
+
+        selected = UPDATE_BASE_SELECTOR["select_bases"](
+            releases, set(), "weekly"
+        )
+        self.assertEqual(selected, [weekly_tag, nightly_tag])
+
+    def test_scheduled_and_manual_weekly_preflight_selects_persistent_isos(self) -> None:
         workflow = RUN_ALL.read_text(encoding="utf-8")
         preflight = workflow.split("  stage1:", 1)[0]
 
-        self.assertIn("if: github.event_name == 'schedule'", preflight)
+        self.assertIn(
+            "if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.release_prefix == 'weekly')",
+            preflight,
+        )
         self.assertIn("Verify persistent release ISOs as update bases", preflight)
         self.assertIn(MARKER, preflight)
         self.assertIn("scripts/verify-weekly-base-provenance.py", preflight)
         self.assertIn(
-            "UPDATE_BASE_CHANNEL: ${{ github.event.schedule == '17 3 * * 1' && 'weekly' || 'nightly' }}",
+            "UPDATE_BASE_CHANNEL: ${{ inputs.release_prefix == 'weekly' && 'weekly' || 'nightly' }}",
             preflight,
         )
         self.assertIn(
@@ -44,7 +82,8 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
         self.assertIn("will publish a signed ISO base", preflight)
         self.assertIn('update_bases_json=%s\\n', preflight)
         self.assertNotIn("actions/runs/$SOURCE_RUN_ID/artifacts", preflight)
-        self.assertIn("needs: validate-scheduled-update-prerequisites", workflow)
+        self.assertIn("needs: validate-update-release-prerequisites", workflow)
+        self.assertNotIn('cron: "17 3 * * 1"', workflow)
 
     def test_signing_preflight_validates_key_material_before_stage_one(self) -> None:
         workflow = RUN_ALL.read_text(encoding="utf-8")
@@ -63,7 +102,7 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
             "      - name: Mark ISO as arkup system-update-capable", 1
         )[1].split("      - name:", 1)[0]
         update_step = workflow.split(
-            "      - name: Build signed update packages for scheduled developer release", 1
+            "      - name: Build signed update packages for scheduled or manual weekly release", 1
         )[1].split("      - name:", 1)[0]
         release_assets = workflow.split(
             "      - name: Select release assets", 1
@@ -92,13 +131,29 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
         self.assertIn("from-build-{base_release.build}", (REPOSITORY / "scripts/build-update-pack.py").read_text())
         self.assertIn(f'echo "output/{MARKER}"', release_assets)
 
-    def test_monday_builds_both_weekly_and_latest_release_paths(self) -> None:
+    def test_manual_weekly_builds_previous_weekly_and_latest_nightly_paths(self) -> None:
         selector = (REPOSITORY / "scripts/select-weekly-update-base.py").read_text()
         workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("previous_weekly", selector)
         self.assertIn("latest_update", selector)
         self.assertIn("for ((base_index = 0; base_index < BASE_COUNT; base_index++))", workflow)
         self.assertIn("from-build-${UPDATE_BASE_BUILD_NUMBER}.aup", workflow)
+
+    def test_release_notes_include_actions_run_metadata_and_no_seven_day_claim(self) -> None:
+        workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
+        details_step = workflow.split(
+            "      - name: Add Actions build details to release notes", 1
+        )[1]
+        self.assertIn(
+            'python3 "$RUNNER_TEMP/arkanaOS-release-helpers/append-actions-build-details.py"',
+            details_step,
+        )
+        self.assertIn("actions/runs/$SOURCE_RUN_ID", details_step)
+        self.assertIn("gh release edit", details_step)
+        self.assertIn('.published_at', details_step)
+        self.assertIn("continue-on-error: true", details_step)
+        self.assertIn("for attempt in 1 2 3; do", details_step)
+        self.assertNotIn("Supported for 7 days.", workflow)
 
     def test_update_base_tag_validation_accepts_supported_build_tags(self) -> None:
         workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
@@ -111,6 +166,7 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
         accepted_tags = (
             "nightly-231", "weekly-232", "v1.0-alpha1-build-233",
             "v1.0-beta2-build-234", "v1.0-build-235",
+            "nightly-20261115-build-934", "weekly-20261116-build-935",
         )
         rejected_tags = ("v1.0-alpha1-233", "v1.0-beta2-234", "Nightly-231")
         for tag in accepted_tags:
@@ -130,7 +186,7 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
                 )
                 self.assertNotEqual(result.returncode, 0, tag)
 
-    def test_scheduled_bootstrap_skips_empty_update_artifact_then_publishes_updates(self) -> None:
+    def test_scheduled_or_manual_bootstrap_skips_empty_update_artifact_then_publishes_updates(self) -> None:
         workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
         upload_step = workflow.split(
             "      - name: Upload Signed arkanaOS Update Artifact", 1
@@ -139,26 +195,26 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
             "      - name: Select release assets", 1
         )[1].split("      - name:", 1)[0]
         self.assertIn(
-            "if: github.event_name == 'schedule' && steps.build-updates.outputs.update_count != '0'",
+            "if: (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.update_bases_json != '')) && steps.build-updates.outputs.update_count != '0'",
             upload_step,
         )
         self.assertIn(
-            "SCHEDULED_UPDATE_RELEASE: ${{ github.event_name == 'schedule' }}",
+            "UPDATE_RELEASE_BUILD: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.update_bases_json != '') }}",
             release_assets,
         )
-        self.assertIn('if [[ "$SCHEDULED_UPDATE_RELEASE" == true ]]', release_assets)
+        self.assertIn('if [[ "$UPDATE_RELEASE_BUILD" == true ]]', release_assets)
         self.assertIn('if [[ "$UPDATE_COUNT" -gt 0 ]]; then', release_assets)
         self.assertIn("output/updates/arkanaOS-update-signing.pub", release_assets)
         self.assertIn(
             "@@RELEASE_UPDATE_ASSETS@@",
             (REPOSITORY / "RELEASE_TEMPLATE.md").read_text(encoding="utf-8"),
         )
-        self.assertIn("initial scheduled ISO bootstrap", workflow)
+        self.assertIn("initial update-capable ISO bootstrap", workflow)
 
     def test_bootstrap_update_step_publishes_key_without_downloading_a_base(self) -> None:
         workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
         step = workflow.split(
-            "      - name: Build signed update packages for scheduled developer release\n",
+            "      - name: Build signed update packages for scheduled or manual weekly release\n",
             1,
         )[1].split("      - name:", 1)[0]
         script = textwrap.dedent(step.split("        run: |\n", 1)[1])
@@ -239,7 +295,7 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
                 environment.update(
                     {
                         "GITHUB_OUTPUT": str(github_output),
-                        "SCHEDULED_UPDATE_RELEASE": "true",
+                        "UPDATE_RELEASE_BUILD": "true",
                         "UPDATE_COUNT": str(update_count),
                     }
                 )
