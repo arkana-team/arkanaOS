@@ -51,14 +51,15 @@ class ReleaseMetadataTests(unittest.TestCase):
 
     def test_valid_release_labels_write_expected_metadata(self) -> None:
         cases = (
-            ("nightly", "nightly", "nightly", "nightly-233", "true"),
-            ("weekly", "weekly", "weekly", "weekly-233", "true"),
+            ("nightly", "nightly", "nightly", "nightly-233", "true", "nightly"),
+            ("weekly", "nightly", "nightly", "nightly-233", "true", "nightly"),
             (
                 "r1-a1",
                 "1.0 (alpha 1)",
                 "1.0-alpha1",
                 "v1.0-alpha1-build-233",
                 "true",
+                "r1-a1",
             ),
             (
                 "r1-b1",
@@ -66,10 +67,11 @@ class ReleaseMetadataTests(unittest.TestCase):
                 "1.0-beta1",
                 "v1.0-beta1-build-233",
                 "true",
+                "r1-b1",
             ),
-            ("r1-1", "1.0", "1.0", "v1.0-build-233", "false"),
+            ("r1-1", "1.0", "1.0", "v1.0-build-233", "false", "r1-1"),
         )
-        for prefix, version, version_id, release_id, prerelease in cases:
+        for prefix, version, version_id, release_id, prerelease, metadata_prefix in cases:
             with self.subTest(prefix=prefix), tempfile.TemporaryDirectory(
                 prefix="arkana-release-metadata-"
             ) as temporary:
@@ -81,7 +83,8 @@ class ReleaseMetadataTests(unittest.TestCase):
                     (metadata / "arkana-build-number").read_text().strip(), "233"
                 )
                 self.assertEqual(
-                    (metadata / "arkana-release-prefix").read_text().strip(), prefix
+                    (metadata / "arkana-release-prefix").read_text().strip(),
+                    metadata_prefix,
                 )
                 self.assertEqual(
                     (metadata / "arkana-release-id").read_text().strip(),
@@ -229,10 +232,6 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
                 "Developer build for testing and development only.",
             ),
             (
-                "weekly", "weekly", "weekly-233", "true", "Weekly",
-                "Weekly developer build for testing and development only.",
-            ),
-            (
                 "r1-a1", "1.0 (alpha 1)", "v1.0-alpha1-build-233", "true", "Alpha",
                 "Early pre-release for testing and development. Supported for 2 weeks.",
             ),
@@ -258,15 +257,15 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
                     version=f"{version}\n",
                     prerelease=prerelease,
                     event_name=event_name,
-                    update_bases_json="[]" if prefix == "weekly" else None,
+                    update_bases_json=None,
                 )
                 self.assertEqual(result.returncode, 0, result.stderr)
                 expected_name = (
                     f"{prefix}-20261116-build-233"
-                    if prefix in {"nightly", "weekly"}
+                    if prefix == "nightly"
                     else f"arkanaOS {version} build 233"
                 )
-                if prefix in {"nightly", "weekly"}:
+                if prefix == "nightly":
                     update_assets = (
                         "This is the initial update-capable ISO bootstrap. It includes the verification public key "
                         "and seeds the signed .aup update path; update packages begin with the next update-enabled release."
@@ -291,7 +290,7 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
                     (root / "RELEASE_TEMPLATE.md").read_text(encoding="utf-8"),
                     expected_template,
                 )
-                if prefix in {"nightly", "weekly"}:
+                if prefix == "nightly":
                     self.assertIn(
                         "sudo arkup trust ./arkanaOS-update-signing.pub",
                         expected_template,
@@ -325,7 +324,7 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
             rendered = (root / "RELEASE_TEMPLATE.md").read_text(encoding="utf-8")
             self.assertIn("signed arkup .aup update package", rendered)
             self.assertIn("Each update package filename includes from-build-N", rendered)
-            self.assertIn("latest nightly build", rendered)
+            self.assertIn("latest update-capable release", rendered)
             self.assertIn("sudo arkup trust ./arkanaOS-update-signing.pub", rendered)
             self.assertIn("sudo arkup apply ./path/to/update.aup", rendered)
             self.assertNotIn("@@RELEASE_", rendered)
@@ -346,7 +345,7 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
             )
 
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("started through the full Run All workflow", result.stderr)
+            self.assertIn("manual input alias", result.stderr)
 
     def test_release_version_cannot_inject_commands_into_template_processing(self) -> None:
         """Reject a multiline version that could add a sed file-write command."""
@@ -754,8 +753,8 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
             if line.lstrip().startswith("- cron:")
         ]
         self.assertEqual(cron_entries, ['- cron: "17 3 * * 0,2-6"'])
-        self.assertIn("default: nightly", workflow)
-        self.assertIn("run weekly builds manually", workflow)
+        self.assertIn("default: weekly", workflow)
+        self.assertIn("Use weekly for a manual developer run", workflow)
         self.assertNotIn("Monday is the weekly developer release", workflow)
     def test_scheduled_nightly_and_manual_weekly_build_update_packages(self) -> None:
         run_all = RUN_ALL_WORKFLOW.read_text(encoding="utf-8")
@@ -778,7 +777,8 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
         workflow = RUN_ALL_WORKFLOW.read_text(encoding="utf-8")
         input_block = workflow.split("      release_prefix:", 1)[1].split("  schedule:", 1)[0]
         self.assertIn("weekly", input_block)
-        self.assertIn("default: nightly", input_block)
+        self.assertIn("default: weekly", input_block)
+        self.assertIn("all developer builds publish with nightly tags", input_block)
         self.assertNotIn("Reject manual weekly release labels", workflow)
     def test_release_notes_document_build_assets_and_actions_metadata(self) -> None:
         template = RELEASE_TEMPLATE.read_text(encoding="utf-8")
@@ -788,7 +788,7 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
         self.assertIn("initial update-capable ISO bootstrap", workflow)
         self.assertIn("signed arkup .aup update package", workflow)
         self.assertIn("from-build-N", workflow)
-        self.assertIn("latest nightly build", workflow)
+        self.assertIn("latest update-capable release", workflow)
         self.assertIn("append-actions-build-details.py", workflow)
         self.assertNotIn("Supported for 7 days.", workflow)
         self.assertIn("WORKFLOW_SHA: ${{ github.sha }}", workflow)
@@ -801,9 +801,18 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
             'python3 "$RUNNER_TEMP/arkanaOS-release-helpers/append-actions-build-details.py"',
             workflow,
         )
-        self.assertIn("continue-on-error: true", workflow)
         self.assertIn("for attempt in 1 2 3; do", workflow)
-        self.assertIn("release assets were published, but Actions build details", workflow)
+        details_step = workflow.split(
+            "      - name: Add Actions build details to release notes", 1
+        )[1].split("      - name:", 1)[0]
+        self.assertLess(
+            workflow.index("      - name: Add Actions build details to release notes"),
+            workflow.index("      - name: Publish GitHub Release"),
+        )
+        self.assertNotIn("gh release edit", details_step)
+        self.assertIn("--captured-at", details_step)
+        self.assertIn('mv "$UPDATED_NOTES" RELEASE_TEMPLATE.md', details_step)
+        self.assertIn("Actions build details could not be prepared", details_step)
         self.assertIn("# GitHub Generated release notes", template)
     def test_seed_and_signing_keypair_changes_trigger_their_tests(self) -> None:
         workflow = (REPOSITORY / ".github/workflows/update-builder-tests.yml").read_text(

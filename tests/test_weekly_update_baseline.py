@@ -64,14 +64,14 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
         preflight = workflow.split("  stage1:", 1)[0]
 
         self.assertIn(
-            "if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.release_prefix == 'weekly')",
+            "if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (inputs.release_prefix == 'weekly' || inputs.release_prefix == 'nightly'))",
             preflight,
         )
         self.assertIn("Verify persistent release ISOs as update bases", preflight)
         self.assertIn(MARKER, preflight)
         self.assertIn("scripts/verify-weekly-base-provenance.py", preflight)
         self.assertIn(
-            "UPDATE_BASE_CHANNEL: ${{ inputs.release_prefix == 'weekly' && 'weekly' || 'nightly' }}",
+            "UPDATE_BASE_CHANNEL: nightly",
             preflight,
         )
         self.assertIn(
@@ -102,7 +102,7 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
             "      - name: Mark ISO as arkup system-update-capable", 1
         )[1].split("      - name:", 1)[0]
         update_step = workflow.split(
-            "      - name: Build signed update packages for scheduled or manual weekly release", 1
+            "      - name: Build signed update packages for scheduled or manual nightly release", 1
         )[1].split("      - name:", 1)[0]
         release_assets = workflow.split(
             "      - name: Select release assets", 1
@@ -143,15 +143,15 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
         workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
         details_step = workflow.split(
             "      - name: Add Actions build details to release notes", 1
-        )[1]
+        )[1].split("      - name:", 1)[0]
         self.assertIn(
             'python3 "$RUNNER_TEMP/arkanaOS-release-helpers/append-actions-build-details.py"',
             details_step,
         )
         self.assertIn("actions/runs/$SOURCE_RUN_ID", details_step)
-        self.assertIn("gh release edit", details_step)
-        self.assertIn('.published_at', details_step)
-        self.assertIn("continue-on-error: true", details_step)
+        self.assertIn("--captured-at", details_step)
+        self.assertIn('mv "$UPDATED_NOTES" RELEASE_TEMPLATE.md', details_step)
+        self.assertNotIn("gh release edit", details_step)
         self.assertIn("for attempt in 1 2 3; do", details_step)
         self.assertNotIn("Supported for 7 days.", workflow)
 
@@ -214,7 +214,7 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
     def test_bootstrap_update_step_publishes_key_without_downloading_a_base(self) -> None:
         workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
         step = workflow.split(
-            "      - name: Build signed update packages for scheduled or manual weekly release\n",
+            "      - name: Build signed update packages for scheduled or manual nightly release\n",
             1,
         )[1].split("      - name:", 1)[0]
         script = textwrap.dedent(step.split("        run: |\n", 1)[1])
