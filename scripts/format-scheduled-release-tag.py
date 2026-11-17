@@ -1,4 +1,4 @@
-"""Format the dated GitHub tag for a scheduled or manual channel build."""
+"""Format the shared dated GitHub tag for a scheduled or manual nightly build."""
 
 from __future__ import annotations
 
@@ -11,8 +11,8 @@ from typing import Any
 
 
 def release_tag(prefix: str, build_number: str, run: dict[str, Any]) -> str:
-    if prefix not in {"nightly", "weekly"}:
-        raise ValueError("release prefix must be nightly or weekly")
+    if prefix != "nightly":
+        raise ValueError("developer release prefix must be nightly")
     if not re.fullmatch(r"[1-9][0-9]*", build_number):
         raise ValueError("build number must be a positive decimal integer")
     started_at = run.get("run_started_at") or run.get("created_at")
@@ -30,7 +30,7 @@ def release_tag(prefix: str, build_number: str, run: dict[str, Any]) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--prefix", required=True, choices=("nightly", "weekly"))
+    parser.add_argument("--prefix", required=True, choices=("nightly",))
     parser.add_argument("--build-number", required=True)
     parser.add_argument("--run-json", required=True, type=Path)
     arguments = parser.parse_args()

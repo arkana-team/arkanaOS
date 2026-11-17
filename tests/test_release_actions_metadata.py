@@ -17,8 +17,8 @@ class ScheduledReleaseTagTests(unittest.TestCase):
     def test_tag_uses_the_source_run_date_and_build_number(self) -> None:
         run = {"run_started_at": "2026-11-16T11:07:14Z"}
         self.assertEqual(
-            TAG_FORMATTER["release_tag"]("weekly", "935", run),
-            "weekly-20261116-build-935",
+            TAG_FORMATTER["release_tag"]("nightly", "935", run),
+            "nightly-20261116-build-935",
         )
 
     def test_tag_date_uses_utc_when_source_timestamp_has_an_offset(self) -> None:
@@ -32,9 +32,11 @@ class ScheduledReleaseTagTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             TAG_FORMATTER["release_tag"]("stable", "935", {"created_at": "2026-11-16"})
         with self.assertRaises(ValueError):
-            TAG_FORMATTER["release_tag"]("weekly", "0", {"created_at": "2026-11-16T00:00:00Z"})
+            TAG_FORMATTER["release_tag"]("weekly", "935", {"created_at": "2026-11-16T00:00:00Z"})
         with self.assertRaises(ValueError):
-            TAG_FORMATTER["release_tag"]("weekly", "935", {"created_at": "2026-11-16"})
+            TAG_FORMATTER["release_tag"]("nightly", "0", {"created_at": "2026-11-16T00:00:00Z"})
+        with self.assertRaises(ValueError):
+            TAG_FORMATTER["release_tag"]("nightly", "935", {"created_at": "2026-11-16"})
 
 
 class ActionsBuildDetailsTests(unittest.TestCase):
@@ -69,11 +71,18 @@ class ActionsBuildDetailsTests(unittest.TestCase):
         details = DETAILS["build_details"](
             self.run, "2026-11-16T12:31:09Z", REPOSITORY
         )
-        original = "# Weekly Release\n\n## Changes\n\n"
+        original = "# Nightly Release\n\n## Changes\n\n"
         updated = DETAILS["with_build_details"](original, details)
         updated_again = DETAILS["with_build_details"](updated, details)
         self.assertEqual(updated_again.count(DETAILS["START_MARKER"]), 1)
-        self.assertTrue(updated_again.startswith("# Weekly Release"))
+        self.assertTrue(updated_again.startswith("# Nightly Release"))
+
+    def test_missing_trigger_actor_is_rejected(self) -> None:
+        run = dict(self.run)
+        run.pop("triggering_actor")
+        run.pop("actor")
+        with self.assertRaisesRegex(ValueError, "no verifiable triggering actor"):
+            DETAILS["build_details"](run, "2026-11-16T12:31:09Z", REPOSITORY)
 
     def test_rejects_unexpected_repository_and_negative_duration(self) -> None:
         with self.assertRaises(ValueError):

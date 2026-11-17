@@ -66,39 +66,36 @@ option required to mark release metadata as system-managed. Set
 commit. Rootless Podman runs use `keep-id` so the unprivileged container can read
 private input trees and signing keys owned by the invoking account.
 
-## Nightly and weekly developer releases
+## Nightly developer releases
 
 GitHub Actions publishes scheduled nightly releases Sunday and Tuesday through
-Saturday at 03:17 UTC. Weekly releases use the same staged pipeline but are
-started manually through the `Run All Pipeline Stages` workflow with
-`release_prefix=weekly`. Both channels use dated tags in the
-`nightly-YYYYMMDD-build-N` or `weekly-YYYYMMDD-build-N` format. Their release notes
-include the Actions run link, run number and attempt, event, triggering
+Saturday at 03:17 UTC. The same `Run All Pipeline Stages` workflow can be started
+manually with `release_prefix=weekly`; this is an input alias for a nightly
+developer build. Scheduled and manually triggered developer builds share the
+`nightly-YYYYMMDD-build-N` tag format and the same signed update path. Release
+notes include the Actions run link, run number and attempt, event, triggering
 account, source commit, branch, timestamps, and elapsed time through release
 publication.
 
 Each update-enabled release attaches the ISO and signed `.aup` delta package(s),
 their checksums, and the public verification key. Every update filename
-includes its required `from-build-N` base. Nightlies use the latest
-update-capable release as their base. A manual weekly release publishes a
-package from the previous weekly build and, when different, another from the
-latest update-capable release (normally the latest nightly). Users choose the
-package that matches their installed build, then use the next package matching
-the new build number. Installations must trust the published key before
-applying updates.
+includes its required `from-build-N` base. Developer releases use the latest
+update-capable release as their base. Users choose the package that matches
+their installed build, then use the next package matching the new build number.
+Installations must trust the published key before applying updates.
 
 The base ISO is downloaded from its persistent GitHub Release asset. The
 workflow validates the asset's GitHub SHA-256 digest, release marker, tag
 commit, and successful default-branch Run All provenance before extracting the
 filesystem. This avoids reliance on expiring Actions artifact storage.
 
-If no earlier update-capable release exists, the first scheduled nightly or
-manually triggered weekly release acts as a bootstrap. It includes the ISO and
+If no earlier update-capable release exists, the first scheduled or manually
+triggered nightly build acts as a bootstrap. It includes the ISO and
 provenance marker needed to validate a persistent base release asset, but no
 update package. Later update-enabled releases attach both the ISO and package
 assets.
 
-Before scheduled or manual weekly runs, configure the organization or
+Before scheduled or manual nightly runs, configure the organization or
 repository Actions secrets
 ``ARKUP_UPDATE_SIGNING_KEY_B64`` and ``ARKUP_UPDATE_PUBLIC_KEY_B64`` with the
 base64-encoded keypair files. The workflow checks that both exist before it

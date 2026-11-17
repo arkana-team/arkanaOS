@@ -80,12 +80,14 @@ def build_details(
     started = parse_time(run.get("run_started_at") or run.get("created_at"), "start time")
     ended = parse_time(ended_at, "release publication time")
     duration = int((ended - started).total_seconds())
-    actor = "unknown"
+    actor = None
     for actor_data in (run.get("triggering_actor"), run.get("actor")):
         candidate = actor_data.get("login") if isinstance(actor_data, dict) else None
         if isinstance(candidate, str) and LOGIN.fullmatch(candidate) is not None:
             actor = candidate
             break
+    if actor is None:
+        raise ValueError("Actions run has no verifiable triggering actor")
     event = code_text(run.get("event"), "event")
     branch = code_text(run.get("head_branch"), "branch")
     workflow = code_text(run.get("name"), "workflow name")

@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       release_prefix:
-        description: "Release label before the automatic build number (nightly, weekly, r1-a1, r1-b1, r1-1); run weekly builds manually"
+        description: "Use weekly for a manual developer run; all developer builds publish with nightly tags (or use r1-a1, r1-b1, r1-1)"
         required: true
-        default: nightly
+        default: weekly
         type: string
   schedule:
     # Publish a nightly ISO and signed update Sunday and Tuesday through Saturday.
@@ -23,26 +23,26 @@ permissions:
 
 jobs:
   validate-update-release-prerequisites:
-    name: Validate scheduled and manual weekly update prerequisites
+    name: Validate scheduled and manual nightly update prerequisites
     runs-on: ubuntu-latest
     outputs:
       update_bases_json: ${{ steps.verify-update-base.outputs.update_bases_json }}
     steps:
       - name: Check out source for update release preflight
-        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.release_prefix == 'weekly')
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (inputs.release_prefix == 'weekly' || inputs.release_prefix == 'nightly'))
         uses: actions/checkout@v4
         with:
           persist-credentials: false
 
       - name: Require the release signing keypair for update builds
-        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.release_prefix == 'weekly')
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (inputs.release_prefix == 'weekly' || inputs.release_prefix == 'nightly'))
         env:
           ARKUP_UPDATE_SIGNING_KEY_B64: ${{ secrets.ARKUP_UPDATE_SIGNING_KEY_B64 }}
           ARKUP_UPDATE_PUBLIC_KEY_B64: ${{ secrets.ARKUP_UPDATE_PUBLIC_KEY_B64 }}
         run: |
           set -euo pipefail
           if [[ -z "$ARKUP_UPDATE_SIGNING_KEY_B64" || -z "$ARKUP_UPDATE_PUBLIC_KEY_B64" ]]; then
-            echo "Configure the Actions signing keypair secrets before scheduled or manual weekly releases." >&2
+            echo "Configure the Actions signing keypair secrets before scheduled or manual nightly releases." >&2
             exit 1
           fi
           KEY_DIR=$(mktemp -d)
@@ -67,11 +67,11 @@ jobs:
 
       - name: Verify persistent release ISOs as update bases
         id: verify-update-base
-        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.release_prefix == 'weekly')
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (inputs.release_prefix == 'weekly' || inputs.release_prefix == 'nightly'))
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-          UPDATE_BASE_CHANNEL: ${{ inputs.release_prefix == 'weekly' && 'weekly' || 'nightly' }}
+          UPDATE_BASE_CHANNEL: nightly
         run: |
           set -euo pipefail
           BASE_RELEASE_TAGS_JSON=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" |
