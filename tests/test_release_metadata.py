@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Exercise release metadata generation using isolated build-number files."""
 
 from __future__ import annotations
@@ -135,6 +134,7 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
         self, root: Path, *, prefix: str, release_id: str, version: str,
         prerelease: str, event_name: str = "workflow_dispatch",
         update_bases_json: str | None = None,
+        workflow_ref: str | None = None,
     ) -> subprocess.CompletedProcess[str]:
         """Run release processing with isolated metadata and template files."""
         metadata = root / "staging/etc"
@@ -148,11 +148,58 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
         }
         for name, value in values.items():
             (metadata / name).write_text(value, encoding="utf-8")
+        scripts = root / "scripts"
+        scripts.mkdir()
+        shutil.copy2(
+            REPOSITORY / "scripts/format-scheduled-release-tag.py",
+            scripts / "format-scheduled-release-tag.py",
+        )
         shutil.copy2(RELEASE_TEMPLATE, root / "RELEASE_TEMPLATE.md")
+        runner_temp = root / "runner-temp"
+        runner_temp.mkdir()
+        fake_bin = root / "bin"
+        fake_bin.mkdir()
+        fake_gh = fake_bin / "gh"
+        fake_gh.write_text(
+            "#!/bin/sh\n"
+            'if [ "$1" = api ]; then cat "$FAKE_RUN_JSON"; else exit 2; fi\n',
+            encoding="utf-8",
+        )
+        fake_gh.chmod(0o755)
+        source_run_json = root / "source-run.json"
+        source_run_json.write_text(
+            json.dumps(
+                {
+                    "id": 12345,
+                    "run_number": 29,
+                    "run_attempt": 1,
+                    "name": "Run All Pipeline Stages",
+                    "event": event_name,
+                    "actor": {"login": "debarkak"},
+                    "triggering_actor": {"login": "debarkak"},
+                    "repository": {"full_name": "arkana-team/arkanaOS"},
+                    "head_branch": "main",
+                    "head_sha": "a" * 40,
+                    "run_started_at": "2026-11-16T11:07:03Z",
+                    "html_url": "https://github.com/arkana-team/arkanaOS/actions/runs/12345",
+                }
+            ),
+            encoding="utf-8",
+        )
         github_env = root / "github-env"
         environment = os.environ.copy()
         environment["GITHUB_ENV"] = str(github_env)
         environment["GITHUB_EVENT_NAME"] = event_name
+        environment["GITHUB_REPOSITORY"] = "arkana-team/arkanaOS"
+        environment["GITHUB_REF"] = "refs/heads/main"
+        environment["GITHUB_WORKFLOW_REF"] = workflow_ref or (
+            "arkana-team/arkanaOS/.github/workflows/00_run_all.yml@refs/heads/main"
+        )
+        environment["SOURCE_RUN_ID"] = "12345"
+        environment["FAKE_RUN_JSON"] = str(source_run_json)
+        environment["RUNNER_TEMP"] = str(runner_temp)
+        environment["GH_TOKEN"] = "test-token"
+        environment["PATH"] = f"{fake_bin}:{environment['PATH']}"
         if update_bases_json is not None:
             environment["UPDATE_BASES_JSON"] = update_bases_json
         return subprocess.run(
@@ -179,11 +226,11 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
         cases = (
             (
                 "nightly", "nightly", "nightly-233", "true", "Nightly",
-                "Developer build for testing and development only. Supported for 7 days.",
+                "Developer build for testing and development only.",
             ),
             (
                 "weekly", "weekly", "weekly-233", "true", "Weekly",
-                "Weekly developer build for testing and development only. Supported for 7 days.",
+                "Weekly developer build for testing and development only.",
             ),
             (
                 "r1-a1", "1.0 (alpha 1)", "v1.0-alpha1-build-233", "true", "Alpha",
@@ -203,9 +250,7 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
                 prefix="arkana-iso-release-"
             ) as temporary:
                 root = Path(temporary)
-                event_name = (
-                    "schedule" if prefix == "weekly" else "workflow_dispatch"
-                )
+                event_name = "schedule" if prefix == "nightly" else "workflow_dispatch"
                 result = self.run_release_step(
                     root,
                     prefix=prefix,
@@ -213,17 +258,22 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
                     version=f"{version}\n",
                     prerelease=prerelease,
                     event_name=event_name,
+                    update_bases_json="[]" if prefix == "weekly" else None,
                 )
                 self.assertEqual(result.returncode, 0, result.stderr)
-                expected_name = f"arkanaOS {version} build 233"
-                if event_name == "schedule" and prefix == "weekly":
+                expected_name = (
+                    f"{prefix}-20261116-build-233"
+                    if prefix in {"nightly", "weekly"}
+                    else f"arkanaOS {version} build 233"
+                )
+                if prefix in {"nightly", "weekly"}:
                     update_assets = (
-                        "This is the initial scheduled ISO bootstrap. It includes the verification public key "
-                        "and seeds the signed .aup update path; update packages begin with the next scheduled release."
+                        "This is the initial update-capable ISO bootstrap. It includes the verification public key "
+                        "and seeds the signed .aup update path; update packages begin with the next update-enabled release."
                     )
                     update_guidance = (
                         "No .aup package is attached because there is no earlier update-capable release to target. "
-                        "After the next scheduled release includes its update package, trust the verification key "
+                        "After the next release includes its update package, trust the verification key "
                         "once on the installed system:\n\n```sh\nsudo arkup trust ./arkanaOS-update-signing.pub\n```"
                     )
                 else:
@@ -241,7 +291,7 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
                     (root / "RELEASE_TEMPLATE.md").read_text(encoding="utf-8"),
                     expected_template,
                 )
-                if event_name == "schedule":
+                if prefix in {"nightly", "weekly"}:
                     self.assertIn(
                         "sudo arkup trust ./arkanaOS-update-signing.pub",
                         expected_template,
@@ -275,12 +325,12 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
             rendered = (root / "RELEASE_TEMPLATE.md").read_text(encoding="utf-8")
             self.assertIn("signed arkup .aup update package", rendered)
             self.assertIn("Each update package filename includes from-build-N", rendered)
-            self.assertIn("Sunday's nightly build", rendered)
+            self.assertIn("latest nightly build", rendered)
             self.assertIn("sudo arkup trust ./arkanaOS-update-signing.pub", rendered)
             self.assertIn("sudo arkup apply ./path/to/update.aup", rendered)
             self.assertNotIn("@@RELEASE_", rendered)
 
-    def test_weekly_release_label_is_rejected_for_manual_dispatch(self) -> None:
+    def test_weekly_release_label_requires_full_pipeline_workflow(self) -> None:
         with tempfile.TemporaryDirectory(prefix="arkana-iso-release-") as temporary:
             root = Path(temporary)
             result = self.run_release_step(
@@ -289,10 +339,14 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
                 release_id="weekly-233",
                 version="weekly",
                 prerelease="true",
+                workflow_ref=(
+                    "arkana-team/arkanaOS/.github/workflows/"
+                    "04_stage4_iso.yml@refs/heads/main"
+                ),
             )
 
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("reserved for the Monday schedule", result.stderr)
+            self.assertIn("started through the full Run All workflow", result.stderr)
 
     def test_release_version_cannot_inject_commands_into_template_processing(self) -> None:
         """Reject a multiline version that could add a sed file-write command."""
@@ -383,7 +437,7 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(self.selected_tags(result), ["nightly-233"])
 
-    def test_weekly_release_keeps_previous_weekly_and_sunday_nightly_paths(self) -> None:
+    def test_weekly_release_keeps_previous_weekly_and_latest_nightly_paths(self) -> None:
         releases = [
             self.release(
                 "weekly-230",
@@ -404,7 +458,7 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(self.selected_tags(result), ["weekly-230", "nightly-233"])
 
-    def test_nightly_uses_newer_weekly_as_base_after_monday(self) -> None:
+    def test_nightly_uses_newer_weekly_as_base_after_manual_weekly_release(self) -> None:
         releases = [
             self.release(
                 "nightly-233",
@@ -666,8 +720,7 @@ class ArkUpCapabilityWorkflowTests(unittest.TestCase):
 
 
 class ScheduledReleaseWorkflowTests(unittest.TestCase):
-    def test_pipeline_schedules_nightly_and_weekly_releases_once_per_day(self) -> None:
-        """Run the nightly pipeline Sunday and Tuesday-Saturday, weekly Monday."""
+    def test_pipeline_schedules_nightly_and_keeps_weekly_manual(self) -> None:
         workflow = RUN_ALL_WORKFLOW.read_text(encoding="utf-8")
         schedule = workflow.split("  schedule:\n", 1)[1].split(
             "\n\nconcurrency:", 1
@@ -677,26 +730,17 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
             for line in schedule.splitlines()
             if line.lstrip().startswith("- cron:")
         ]
-        self.assertEqual(
-            cron_entries,
-            ['- cron: "17 3 * * 0,2-6"', '- cron: "17 3 * * 1"'],
-        )
-        self.assertIn(
-            "release_prefix: ${{ inputs.release_prefix || (github.event_name == 'schedule' && github.event.schedule == '17 3 * * 1' && 'weekly' || 'nightly') }}",
-            workflow,
-        )
-    def test_all_scheduled_runs_build_and_publish_updates(self) -> None:
-        """Publish both ISO and signed update packages on nightlies and Mondays."""
-        scheduled_condition = "if: github.event_name == 'schedule'"
+        self.assertEqual(cron_entries, ['- cron: "17 3 * * 0,2-6"'])
+        self.assertIn("default: nightly", workflow)
+        self.assertIn("run weekly builds manually", workflow)
+        self.assertNotIn("Monday is the weekly developer release", workflow)
+    def test_scheduled_nightly_and_manual_weekly_build_update_packages(self) -> None:
         run_all = RUN_ALL_WORKFLOW.read_text(encoding="utf-8")
         iso = ISO_WORKFLOW.read_text(encoding="utf-8")
-        self.assertEqual(run_all.count(scheduled_condition), 3)
-        self.assertEqual(iso.count(scheduled_condition), 2)
-        self.assertIn(
-            "SCHEDULED_UPDATE_RELEASE: ${{ github.event_name == 'schedule' }}",
-            iso,
-        )
-        self.assertIn('if [[ "$SCHEDULED_UPDATE_RELEASE" == true ]]; then', iso)
+        self.assertEqual(run_all.count("if: github.event_name == 'schedule'"), 3)
+        self.assertIn("inputs.update_bases_json != ''", iso)
+        self.assertIn("UPDATE_RELEASE_BUILD", iso)
+        self.assertIn("if [[ \"$UPDATE_RELEASE_BUILD\" == true ]]; then", iso)
         self.assertIn("python3 scripts/select-weekly-update-base.py", run_all)
         self.assertIn("update_bases_json", run_all + iso)
         self.assertIn("releases/assets/$UPDATE_BASE_ISO_ASSET_ID", iso)
@@ -707,51 +751,24 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
         self.assertIn("body_path: RELEASE_TEMPLATE.md", iso)
         self.assertIn("generate_release_notes: true", iso)
         self.assertNotIn("sort_by(.published_at) | last", run_all + iso)
-
-    def test_manual_pipeline_rejects_weekly_before_building(self) -> None:
+    def test_manual_pipeline_accepts_weekly_as_an_explicit_release_prefix(self) -> None:
         workflow = RUN_ALL_WORKFLOW.read_text(encoding="utf-8")
-        step = workflow.split(
-            "      - name: Reject manual weekly release labels\n", 1
-        )[1].split("\n      - name:", 1)[0]
-        script = textwrap.dedent(step.split("        run: |\n", 1)[1])
-
-        for prefix, expected_returncode in (("weekly", 1), ("nightly", 0)):
-            with self.subTest(prefix=prefix):
-                environment = os.environ.copy()
-                environment["RELEASE_PREFIX"] = prefix
-                result = subprocess.run(
-                    [
-                        "bash",
-                        "--noprofile",
-                        "--norc",
-                        "-e",
-                        "-o",
-                        "pipefail",
-                        "-c",
-                        script,
-                    ],
-                    env=environment,
-                    capture_output=True,
-                    text=True,
-                    timeout=10,
-                    check=False,
-                )
-                self.assertEqual(result.returncode, expected_returncode, result.stderr)
-                if prefix == "weekly":
-                    self.assertIn("cannot be manually labeled weekly", result.stderr)
-
-    def test_release_notes_document_nightly_and_weekly_assets(self) -> None:
-        """Keep scheduled assets clear while reusing the existing release template."""
+        input_block = workflow.split("      release_prefix:", 1)[1].split("  schedule:", 1)[0]
+        self.assertIn("weekly", input_block)
+        self.assertIn("default: nightly", input_block)
+        self.assertNotIn("Reject manual weekly release labels", workflow)
+    def test_release_notes_document_build_assets_and_actions_metadata(self) -> None:
         template = RELEASE_TEMPLATE.read_text(encoding="utf-8")
         workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("@@RELEASE_UPDATE_ASSETS@@", template)
         self.assertIn("@@RELEASE_UPDATE_GUIDANCE@@", template)
-        self.assertIn("initial scheduled ISO bootstrap", workflow)
+        self.assertIn("initial update-capable ISO bootstrap", workflow)
         self.assertIn("signed arkup .aup update package", workflow)
         self.assertIn("from-build-N", workflow)
-        self.assertIn("Sunday", workflow)
+        self.assertIn("latest nightly build", workflow)
+        self.assertIn("scripts/append-actions-build-details.py", workflow)
+        self.assertNotIn("Supported for 7 days.", workflow)
         self.assertIn("# GitHub Generated release notes", template)
-
     def test_seed_and_signing_keypair_changes_trigger_their_tests(self) -> None:
         workflow = (REPOSITORY / ".github/workflows/update-builder-tests.yml").read_text(
             encoding="utf-8"
