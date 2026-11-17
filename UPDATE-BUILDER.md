@@ -1,6 +1,6 @@
 # arkana-update-builder
 
-`arkana-builder` can create the complete bootable ISO, a signed `.aup` delta,
+`arkana-builder` can create the complete bootable ISO, a signed ``.aup`` delta,
 or both in one run. The update package contains changed files and explicit file
 deletions for systems that already have arkanaOS installed.
 
@@ -19,7 +19,7 @@ update target. The base tree and key arguments are required before the ISO
 build starts. `--update` forwards its arguments to `build-update.sh`.
 
 The base system build installs the pinned `arkup` client at `/usr/bin/arkup`,
-so installed systems can verify and apply `.aup` update packages.
+so installed systems can verify and apply ``.aup`` update packages.
 
 ## Build an update
 
@@ -43,7 +43,7 @@ build sequence before comparing file contents and modes. It excludes mutable
 runtime and package-manager state, including `/etc/ld.so.cache`, `/etc/localtime`,
 `/etc/resolv.conf`, `/home`, `/root`, `/srv`, `/usr/local`, and `/var/lib`. It
 refuses file/directory transitions and directory permission changes that the
-current `.aup` format cannot represent. The output is verified with the supplied
+current ``.aup`` format cannot represent. The output is verified with the supplied
 public key and includes a SHA-256 sidecar.
 
 The pack marks release identity files (`/etc/os-release`, `/etc/issue`, and the
@@ -66,32 +66,41 @@ option required to mark release metadata as system-managed. Set
 commit. Rootless Podman runs use `keep-id` so the unprivileged container can read
 private input trees and signing keys owned by the invoking account.
 
-## Scheduled developer releases
+## Nightly and weekly developer releases
 
-GitHub Actions publishes a scheduled release every day at 03:00 UTC. Sunday
-and Tuesday through Saturday are nightly builds; Monday is the weekly developer
-release. Each scheduled release uses the same staged ISO pipeline and release
-note template, and attaches the ISO and signed `.aup` delta package(s), their
-checksums, and the public verification key. Every update filename includes its
-required `from-build-N` base. Nightlies use the latest scheduled release as the
-base. Monday publishes a package from the previous weekly build and, when
-different, another from Sunday's nightly build. Users choose the package that
-matches their installed build, then use the next package matching the new build
-number. Installations must trust the published key before applying updates.
+GitHub Actions publishes scheduled nightly releases Sunday and Tuesday through
+Saturday at 03:17 UTC. Weekly releases use the same staged pipeline but are
+started manually through the `Run All Pipeline Stages` workflow with
+`release_prefix=weekly`. Both channels use dated tags in the
+`nightly-YYYYMMDD-build-N` or `weekly-YYYYMMDD-build-N` format. Their release notes
+include the Actions run link, run number and attempt, event, triggering
+account, source commit, branch, timestamps, and elapsed time through release
+publication.
+
+Each update-enabled release attaches the ISO and signed `.aup` delta package(s),
+their checksums, and the public verification key. Every update filename
+includes its required `from-build-N` base. Nightlies use the latest
+update-capable release as their base. A manual weekly release publishes a
+package from the previous weekly build and, when different, another from the
+latest update-capable release (normally the latest nightly). Users choose the
+package that matches their installed build, then use the next package matching
+the new build number. Installations must trust the published key before
+applying updates.
 
 The base ISO is downloaded from its persistent GitHub Release asset. The
 workflow validates the asset's GitHub SHA-256 digest, release marker, tag
 commit, and successful default-branch Run All provenance before extracting the
 filesystem. This avoids reliance on expiring Actions artifact storage.
 
-Before the first scheduled update release, run `Run All Pipeline Stages` once
-with `workflow_dispatch` on the default branch. That bootstrap release includes
-the ISO and provenance marker needed to validate the persistent base release
-asset; it does not include an update package. Scheduled releases then publish
-both the ISO and update package assets.
+If no earlier update-capable release exists, the first scheduled nightly or
+manually triggered weekly release acts as a bootstrap. It includes the ISO and
+provenance marker needed to validate a persistent base release asset, but no
+update package. Later update-enabled releases attach both the ISO and package
+assets.
 
-Before scheduled runs, configure organization or repository Actions secrets
-`ARKUP_UPDATE_SIGNING_KEY_B64` and `ARKUP_UPDATE_PUBLIC_KEY_B64` with the
+Before scheduled or manual weekly runs, configure the organization or
+repository Actions secrets
+``ARKUP_UPDATE_SIGNING_KEY_B64`` and ``ARKUP_UPDATE_PUBLIC_KEY_B64`` with the
 base64-encoded keypair files. The workflow checks that both exist before it
 starts the multi-hour build and refuses to publish if signing or verification
 fails. Restrict changes to the default branch and treat the private key as a
