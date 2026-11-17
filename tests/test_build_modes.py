@@ -212,15 +212,19 @@ class BuildNumberSeedTests(unittest.TestCase):
             build_file.write_text("907\n", encoding="ascii")
             result = subprocess.run(
                 [sys.executable, str(script), "--build-file", str(build_file)],
-                input="nightly-build-912\nweekly-915\n",
+                input=(
+                    "nightly-build-912\n"
+                    "nightly-20261014-build-877\n"
+                    "weekly-20261116-build-935\n"
+                ),
                 text=True,
                 capture_output=True,
                 check=False,
             )
 
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-            self.assertEqual(build_file.read_text(encoding="ascii"), "915\n")
-            self.assertIn("latest-published=915", result.stdout)
+            self.assertEqual(build_file.read_text(encoding="ascii"), "935\n")
+            self.assertIn("latest-published=935", result.stdout)
 
 
 if __name__ == "__main__":

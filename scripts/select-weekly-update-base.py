@@ -11,7 +11,9 @@ from typing import Any
 UPDATE_CLIENT_ASSET = "arkanaOS-update-client-system-update.txt"
 ISO_RELEASE_ASSET = "arkana.iso"
 SUPPORTED_RELEASE_TAG = re.compile(
-    r"(?:nightly-[0-9]+|weekly-[0-9]+|v[1-9][0-9]*\.0-(?:(?:alpha[1-9][0-9]*|beta[1-9][0-9]*)-build|build)-[0-9]+)\Z"
+    r"(?:nightly-(?:[0-9]+|[0-9]{8}-build-[0-9]+)|"
+    r"weekly-(?:[0-9]+|[0-9]{8}-build-[0-9]+)|"
+    r"v[1-9][0-9]*\.0-(?:(?:alpha[1-9][0-9]*|beta[1-9][0-9]*)-build|build)-[0-9]+)\Z"
 )
 
 
@@ -64,10 +66,10 @@ def select_bases(
             if release["tag_name"].startswith("weekly-")
         ]
         if weekly_updates:
-            # Monday needs both paths: the previous weekly build for users who
-            # stayed on Mondays, and the latest scheduled build for users who
-            # installed Sunday's nightly. Release assets persist independently
-            # of Actions artifact retention.
+            # Manual weekly runs need both paths: the previous weekly build for
+            # weekly-channel installs and the latest update-capable build for
+            # nightly-channel installs. Release assets persist independently of
+            # Actions artifact retention.
             previous_weekly = max(weekly_updates, key=lambda release: release["published_at"])
             assert latest_update is not None
             return list(dict.fromkeys((previous_weekly["tag_name"], latest_update["tag_name"])))
