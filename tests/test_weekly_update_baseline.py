@@ -144,10 +144,15 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
         details_step = workflow.split(
             "      - name: Add Actions build details to release notes", 1
         )[1]
-        self.assertIn("scripts/append-actions-build-details.py", details_step)
+        self.assertIn(
+            'python3 "$RUNNER_TEMP/arkanaOS-release-helpers/append-actions-build-details.py"',
+            details_step,
+        )
         self.assertIn("actions/runs/$SOURCE_RUN_ID", details_step)
         self.assertIn("gh release edit", details_step)
         self.assertIn('.published_at', details_step)
+        self.assertIn("continue-on-error: true", details_step)
+        self.assertIn("for attempt in 1 2 3; do", details_step)
         self.assertNotIn("Supported for 7 days.", workflow)
 
     def test_update_base_tag_validation_accepts_supported_build_tags(self) -> None:

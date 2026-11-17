@@ -148,15 +148,15 @@ class ISOReleaseWorkflowTests(unittest.TestCase):
         }
         for name, value in values.items():
             (metadata / name).write_text(value, encoding="utf-8")
-        scripts = root / "scripts"
-        scripts.mkdir()
+        helper_dir = root / "runner-temp/arkanaOS-release-helpers"
+        helper_dir.mkdir(parents=True)
         shutil.copy2(
             REPOSITORY / "scripts/format-scheduled-release-tag.py",
-            scripts / "format-scheduled-release-tag.py",
+            helper_dir / "format-scheduled-release-tag.py",
         )
         shutil.copy2(RELEASE_TEMPLATE, root / "RELEASE_TEMPLATE.md")
         runner_temp = root / "runner-temp"
-        runner_temp.mkdir()
+        runner_temp.mkdir(exist_ok=True)
         fake_bin = root / "bin"
         fake_bin.mkdir()
         fake_gh = fake_bin / "gh"
@@ -457,6 +457,29 @@ class WeeklyUpdateBaseSelectionTests(unittest.TestCase):
         result = self.select(releases, channel="weekly")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(self.selected_tags(result), ["weekly-230", "nightly-233"])
+
+    def test_weekly_keeps_iso_only_weekly_bootstrap_and_latest_update_release(self) -> None:
+        releases = [
+            self.release(
+                "weekly-935",
+                "2026-11-16T15:36:55Z",
+                "arkana.iso",
+                "arkanaOS-update-client-system-update.txt",
+            ),
+            self.release(
+                "nightly-20261117-build-936",
+                "2026-11-17T10:00:00Z",
+                "arkana.iso",
+                "arkanaos-nightly.aup",
+                "arkanaOS-update-client-system-update.txt",
+            ),
+        ]
+        result = self.select(releases, channel="weekly")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(
+            self.selected_tags(result),
+            ["weekly-935", "nightly-20261117-build-936"],
+        )
 
     def test_nightly_uses_newer_weekly_as_base_after_manual_weekly_release(self) -> None:
         releases = [
@@ -766,8 +789,21 @@ class ScheduledReleaseWorkflowTests(unittest.TestCase):
         self.assertIn("signed arkup .aup update package", workflow)
         self.assertIn("from-build-N", workflow)
         self.assertIn("latest nightly build", workflow)
-        self.assertIn("scripts/append-actions-build-details.py", workflow)
+        self.assertIn("append-actions-build-details.py", workflow)
         self.assertNotIn("Supported for 7 days.", workflow)
+        self.assertIn("WORKFLOW_SHA: ${{ github.sha }}", workflow)
+        self.assertIn("contents/scripts/$helper?ref=$WORKFLOW_SHA", workflow)
+        self.assertIn(
+            'python3 "$RUNNER_TEMP/arkanaOS-release-helpers/format-scheduled-release-tag.py"',
+            workflow,
+        )
+        self.assertIn(
+            'python3 "$RUNNER_TEMP/arkanaOS-release-helpers/append-actions-build-details.py"',
+            workflow,
+        )
+        self.assertIn("continue-on-error: true", workflow)
+        self.assertIn("for attempt in 1 2 3; do", workflow)
+        self.assertIn("release assets were published, but Actions build details", workflow)
         self.assertIn("# GitHub Generated release notes", template)
     def test_seed_and_signing_keypair_changes_trigger_their_tests(self) -> None:
         workflow = (REPOSITORY / ".github/workflows/update-builder-tests.yml").read_text(

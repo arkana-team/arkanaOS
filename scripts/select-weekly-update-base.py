@@ -60,19 +60,24 @@ def select_bases(
     ]
     latest_update = max(update_releases, key=lambda release: release["published_at"]) if update_releases else None
     if channel == "weekly":
-        weekly_updates = [
+        weekly_bases = [
             release
-            for release in update_releases
+            for release in published
             if release["tag_name"].startswith("weekly-")
+            and ISO_RELEASE_ASSET in release_assets(release)
+            and UPDATE_CLIENT_ASSET in release_assets(release)
         ]
-        if weekly_updates:
+        if weekly_bases:
             # Manual weekly runs need both paths: the previous weekly build for
             # weekly-channel installs and the latest update-capable build for
             # nightly-channel installs. Release assets persist independently of
-            # Actions artifact retention.
-            previous_weekly = max(weekly_updates, key=lambda release: release["published_at"])
-            assert latest_update is not None
-            return list(dict.fromkeys((previous_weekly["tag_name"], latest_update["tag_name"])))
+            # Actions artifact retention. The first weekly ISO is a valid base
+            # even though it cannot contain an .aup package yet.
+            previous_weekly = max(weekly_bases, key=lambda release: release["published_at"])
+            bases = [previous_weekly["tag_name"]]
+            if latest_update is not None:
+                bases.append(latest_update["tag_name"])
+            return list(dict.fromkeys(bases))
     if latest_update is not None:
         return [latest_update["tag_name"]]
 

@@ -88,6 +88,22 @@ jobs:
         with:
           ref: ${{ steps.source.outputs.sha }}
 
+      - name: Load release helpers from the verified workflow revision
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORKFLOW_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          HELPER_DIR="$RUNNER_TEMP/arkanaOS-release-helpers"
+          mkdir -p "$HELPER_DIR"
+          for helper in format-scheduled-release-tag.py append-actions-build-details.py; do
+            gh api "repos/$GITHUB_REPOSITORY/contents/scripts/$helper?ref=$WORKFLOW_SHA" --jq .content \
+              | base64 --decode > "$HELPER_DIR/$helper"
+          done
+          python3 -m py_compile \
+            "$HELPER_DIR/format-scheduled-release-tag.py" \
+            "$HELPER_DIR/append-actions-build-details.py"
+
       - name: Seed build number from published releases
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -272,7 +288,7 @@ jobs:
           if [[ "$RELEASE_PREFIX" == nightly || "$RELEASE_PREFIX" == weekly ]]; then
             SOURCE_RUN_JSON=$(mktemp "$RUNNER_TEMP/arkanaOS-release-source-run.XXXXXX")
             gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" > "$SOURCE_RUN_JSON"
-            RELEASE_TAG=$(python3 scripts/format-scheduled-release-tag.py \
+            RELEASE_TAG=$(python3 "$RUNNER_TEMP/arkanaOS-release-helpers/format-scheduled-release-tag.py" \
               --prefix "$RELEASE_PREFIX" \
               --build-number "$BUILD_NUM" \
               --run-json "$SOURCE_RUN_JSON")
@@ -549,6 +565,7 @@ jobs:
 
       - name: Add Actions build details to release notes
         if: success()
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
@@ -560,13 +577,23 @@ jobs:
           NOTES_FILE=$(mktemp "$RUNNER_TEMP/arkanaOS-release-notes.XXXXXX")
           UPDATED_NOTES=$(mktemp "$RUNNER_TEMP/arkanaOS-release-notes-updated.XXXXXX")
           trap 'rm -f -- "$RUN_JSON" "$RELEASE_JSON" "$NOTES_FILE" "$UPDATED_NOTES"' EXIT
-          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" > "$RUN_JSON"
-          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > "$RELEASE_JSON"
-          jq -er '.body // ""' "$RELEASE_JSON" > "$NOTES_FILE"
-          RELEASE_PUBLISHED_AT=$(jq -er '.published_at | select(type == "string" and length > 0)' "$RELEASE_JSON")
-          python3 scripts/append-actions-build-details.py \
-            --run-json "$RUN_JSON" \
-            --notes "$NOTES_FILE" \
-            --ended-at "$RELEASE_PUBLISHED_AT" \
-            --repository "$GITHUB_REPOSITORY" > "$UPDATED_NOTES"
-          gh release edit "$RELEASE_TAG" --notes-file "$UPDATED_NOTES"
+          for attempt in 1 2 3; do
+            if gh api "repos/$GITHUB_REPOSITORY/actions/runs/$SOURCE_RUN_ID" > "$RUN_JSON" && \
+               gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > "$RELEASE_JSON" && \
+               jq -er '.body // ""' "$RELEASE_JSON" > "$NOTES_FILE" && \
+               RELEASE_PUBLISHED_AT=$(jq -er '.published_at | select(type == "string" and length > 0)' "$RELEASE_JSON") && \
+               python3 "$RUNNER_TEMP/arkanaOS-release-helpers/append-actions-build-details.py" \
+                 --run-json "$RUN_JSON" \
+                 --notes "$NOTES_FILE" \
+                 --ended-at "$RELEASE_PUBLISHED_AT" \
+                 --repository "$GITHUB_REPOSITORY" > "$UPDATED_NOTES" && \
+               gh release edit "$RELEASE_TAG" --notes-file "$UPDATED_NOTES"; then
+              echo "Added Actions run details to $RELEASE_TAG."
+              exit 0
+            fi
+            echo "::warning::Could not update release notes for $RELEASE_TAG (attempt $attempt of 3)."
+            if [[ "$attempt" -lt 3 ]]; then
+              sleep "$((attempt * 5))"
+            fi
+          done
+          echo "::warning::The release assets were published, but Actions build details could not be appended to the release notes."
