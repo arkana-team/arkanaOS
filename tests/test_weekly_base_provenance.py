@@ -113,6 +113,14 @@ class WeeklyBaseProvenanceTests(unittest.TestCase):
             ],
         )
 
+    def test_reports_extra_null_valued_preflight_field(self) -> None:
+        actual = self.verify()
+        expected = {**actual, "unexpected": None}
+        self.assertEqual(
+            PROVENANCE.provenance_differences(expected, actual),
+            [{"field": "unexpected", "expected": None, "actual": None}],
+        )
+
     def test_cli_fails_closed_and_prints_differing_metadata_fields(self) -> None:
         actual = self.verify()
         expected = {**actual, "iso_asset_id": "986"}

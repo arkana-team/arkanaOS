@@ -73,7 +73,11 @@ def provenance_differences(
     return [
         {"field": key, "expected": expected.get(key), "actual": actual.get(key)}
         for key in sorted(set(expected) | set(actual))
-        if expected.get(key) != actual.get(key)
+        if (
+            key not in expected
+            or key not in actual
+            or expected[key] != actual[key]
+        )
     ]
 
 

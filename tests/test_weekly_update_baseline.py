@@ -141,10 +141,19 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
 
     def test_stage4_reports_preflight_metadata_differences(self) -> None:
         workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
+        helpers_step = workflow.split(
+            "      - name: Load release helpers from the verified workflow revision",
+            1,
+        )[1].split("      - name:", 1)[0]
         update_step = workflow.split(
             "      - name: Build signed update packages for scheduled or manual nightly release",
             1,
         )[1].split("      - name:", 1)[0]
+        verifier = "$RUNNER_TEMP/arkanaOS-release-helpers/verify-weekly-base-provenance.py"
+        self.assertIn("verify-weekly-base-provenance.py", helpers_step)
+        self.assertIn('"$HELPER_DIR/verify-weekly-base-provenance.py"', helpers_step)
+        self.assertIn(f'python3 "{verifier}"', update_step)
+        self.assertNotIn("python3 scripts/verify-weekly-base-provenance.py", update_step)
         self.assertIn('--expected-json "$BASE_JSON"', update_step)
         self.assertNotIn("The update base release metadata changed after preflight.", update_step)
 
