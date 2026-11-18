@@ -139,6 +139,15 @@ class WeeklyUpdateBaseTests(unittest.TestCase):
         self.assertIn("for ((base_index = 0; base_index < BASE_COUNT; base_index++))", workflow)
         self.assertIn("from-build-${UPDATE_BASE_BUILD_NUMBER}.aup", workflow)
 
+    def test_stage4_reports_preflight_metadata_differences(self) -> None:
+        workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
+        update_step = workflow.split(
+            "      - name: Build signed update packages for scheduled or manual nightly release",
+            1,
+        )[1].split("      - name:", 1)[0]
+        self.assertIn('--expected-json "$BASE_JSON"', update_step)
+        self.assertNotIn("The update base release metadata changed after preflight.", update_step)
+
     def test_release_notes_include_actions_run_metadata_and_no_seven_day_claim(self) -> None:
         workflow = ISO_WORKFLOW.read_text(encoding="utf-8")
         details_step = workflow.split(

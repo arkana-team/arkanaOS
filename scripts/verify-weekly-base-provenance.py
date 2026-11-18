@@ -66,6 +66,17 @@ def release_build_number(release_tag: str) -> str:
     return match.group("scheduled_build") or match.group("release_build")
 
 
+def provenance_differences(
+    expected: dict[str, Any], actual: dict[str, Any]
+) -> list[dict[str, Any]]:
+    """Return sorted public metadata differences for a preflight comparison."""
+    return [
+        {"field": key, "expected": expected.get(key), "actual": actual.get(key)}
+        for key in sorted(set(expected) | set(actual))
+        if expected.get(key) != actual.get(key)
+    ]
+
+
 def _asset(release: dict[str, Any], name: str, max_size: int) -> dict[str, Any]:
     assets = release.get("assets")
     if not isinstance(assets, list):
@@ -163,6 +174,10 @@ def verify_base_provenance(
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--release-tag", required=True)
+    parser.add_argument(
+        "--expected-json",
+        help="Compare verified metadata with this preflight JSON object",
+    )
     parser.add_argument("--tag-sha", required=True)
     parser.add_argument("--marker", required=True, type=Path)
     parser.add_argument("--run-json", required=True, type=Path)
@@ -185,6 +200,18 @@ def main() -> int:
             default_branch=args.default_branch,
             workflow_id=args.workflow_id,
         )
+        if args.expected_json is not None:
+            expected = json.loads(args.expected_json)
+            if not isinstance(expected, dict):
+                raise TypeError("expected preflight metadata must be a JSON object")
+            differences = provenance_differences(expected, result)
+            if differences:
+                print(
+                    "verify-weekly-base-provenance: metadata differs from preflight: "
+                    + json.dumps(differences, sort_keys=True),
+                    file=sys.stderr,
+                )
+                return 1
     except (OSError, json.JSONDecodeError, TypeError, ProvenanceError) as error:
         print(f"verify-weekly-base-provenance: {error}", file=sys.stderr)
         return 1

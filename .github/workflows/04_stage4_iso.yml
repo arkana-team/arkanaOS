@@ -421,6 +421,7 @@ jobs:
             fi
             python3 scripts/verify-weekly-base-provenance.py \
               --release-tag "$UPDATE_BASE_RELEASE_TAG" \
+              --expected-json "$BASE_JSON" \
               --tag-sha "$TAG_SHA" \
               --marker "$BASE_MARKER" \
               --run-json "$BASE_RUN_JSON" \
@@ -428,11 +429,6 @@ jobs:
               --repository "$GITHUB_REPOSITORY" \
               --default-branch "$DEFAULT_BRANCH" \
               --workflow-id "$WORKFLOW_ID" > "$VERIFIED_BASE_JSON"
-            jq -e --argjson expected "$BASE_JSON" --argjson actual "$(cat "$VERIFIED_BASE_JSON")" \
-              '$expected == $actual' >/dev/null || {
-                echo "The update base release metadata changed after preflight." >&2
-                exit 1
-              }
             gh api -H 'Accept: application/octet-stream' \
               "repos/$GITHUB_REPOSITORY/releases/assets/$UPDATE_BASE_ISO_ASSET_ID" > "$BASE_ISO"
             if [[ ! -f "$BASE_ISO" || -L "$BASE_ISO" || \
