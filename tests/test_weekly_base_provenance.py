@@ -8,6 +8,7 @@ import importlib.util
 import json
 import os
 import subprocess
+import sys
 import tempfile
 import textwrap
 import unittest
@@ -100,6 +101,60 @@ class WeeklyBaseProvenanceTests(unittest.TestCase):
             PROVENANCE.release_build_number("nightly-20261116-build-934"),
             "934",
         )
+
+    def test_reports_exact_preflight_metadata_differences(self) -> None:
+        actual = self.verify()
+        expected = {**actual, "iso_asset_id": "986", "extra": "unexpected"}
+        self.assertEqual(
+            PROVENANCE.provenance_differences(expected, actual),
+            [
+                {"field": "extra", "expected": "unexpected", "actual": None},
+                {"field": "iso_asset_id", "expected": "986", "actual": "987"},
+            ],
+        )
+
+    def test_reports_extra_null_valued_preflight_field(self) -> None:
+        actual = self.verify()
+        expected = {**actual, "unexpected": None}
+        self.assertEqual(
+            PROVENANCE.provenance_differences(expected, actual),
+            [{"field": "unexpected", "expected": None, "actual": None}],
+        )
+
+    def test_cli_fails_closed_and_prints_differing_metadata_fields(self) -> None:
+        actual = self.verify()
+        expected = {**actual, "iso_asset_id": "986"}
+        with tempfile.TemporaryDirectory(prefix="arkana-weekly-provenance-cli-") as temporary:
+            root = Path(temporary)
+            marker = root / "marker.txt"
+            run = root / "run.json"
+            release = root / "release.json"
+            marker.write_text(self.marker, encoding="utf-8")
+            run.write_text(json.dumps(self.run), encoding="utf-8")
+            release.write_text(json.dumps(self.release), encoding="utf-8")
+            result = subprocess.run(
+                [
+                    sys.executable, str(SCRIPT_PATH),
+                    "--release-tag", "nightly-233",
+                    "--expected-json", json.dumps(expected),
+                    "--tag-sha", self.sha,
+                    "--marker", str(marker),
+                    "--run-json", str(run),
+                    "--release-json", str(release),
+                    "--repository", "arkana-team/arkanaOS",
+                    "--default-branch", "main",
+                    "--workflow-id", "678",
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("metadata differs from preflight", result.stderr)
+        self.assertIn('"field": "iso_asset_id"', result.stderr)
+        self.assertIn('"expected": "986"', result.stderr)
+        self.assertIn('"actual": "987"', result.stderr)
+        self.assertEqual(result.stdout, "")
 
     def test_rejects_release_tag_or_marker_build_mismatch(self) -> None:
         with self.assertRaises(PROVENANCE.ProvenanceError):
