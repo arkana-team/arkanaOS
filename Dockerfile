@@ -17,6 +17,7 @@ RUN yes | pacman -Syu --noconfirm && \
         base-devel \
         coreutils \
         git \
+        curl \
         util-linux \
         sudo \
         rsync \

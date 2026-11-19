@@ -101,8 +101,10 @@ FRIBIDI_PATH = $(SRC_PATH)/fribidi-$(FRIBIDI_VER)
 
 # Xterm
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/x/xterm.html
-XTERM_URL = https://invisible-mirror.net/archives/xterm/xterm-401.tgz
+XTERM_URL = https://invisible-island.net/archives/xterm/xterm-401.tgz
+XTERM_FALLBACK_URL = https://invisible-mirror.net/archives/xterm/xterm-401.tgz
 XTERM_VER = 401
+XTERM_SHA256 = 3da2b5e64cb49b03aa13057d85e62e1f2e64f7c744719c00d338d11cd3e6ca1a
 XTERM_PATH = $(SRC_PATH)/xterm-$(XTERM_VER)
 
 # Luit
@@ -650,7 +652,9 @@ fribidi: download-fribidi .fribidi-done
 # Download xterm
 download-xterm: .xterm-obtained
 .xterm-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O xterm-$(XTERM_VER).tar.xz $(XTERM_URL) && tar xf xterm-$(XTERM_VER).tar.xz
+	cd $(SRC_PATH) && $(CURDIR)/scripts/download-verified-archive.sh \
+	  "xterm-$(XTERM_VER).tgz" "$(XTERM_SHA256)" "$(XTERM_URL)" "$(XTERM_FALLBACK_URL)" && \
+	  tar xf "xterm-$(XTERM_VER).tgz"
 	touch .xterm-obtained
 
 # Compile xterm

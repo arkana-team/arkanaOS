@@ -17,12 +17,15 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DOWNLOAD_SCRIPT = REPO_ROOT / "scripts/download-verified-archive.sh"
 BASE_RECIPE = REPO_ROOT / "arkanas/01_base.mk"
+GRAPHICS_RECIPE = REPO_ROOT / "arkanas/05_graphics.mk"
 ISO_RECIPE = REPO_ROOT / "arkanas/07_iso.mk"
+DOCKERFILE = REPO_ROOT / "Dockerfile"
 PAYLOAD = b"pinned source archive fixture\n"
 PRIMARY_URL = "https://cdn.example.invalid/source.tar.xz"
 FALLBACK_URL = "https://mirror.example.invalid/source.tar.xz"
 EXPECTED_SHA256 = hashlib.sha256(PAYLOAD).hexdigest()
 KEYUTILS_SHA256 = "a61d5706136ae4c05bd48f86186bcfdbd88dd8bd5107e3e195c924cfc1b39bb4"
+XTERM_SHA256 = "3da2b5e64cb49b03aa13057d85e62e1f2e64f7c744719c00d338d11cd3e6ca1a"
 
 
 class VerifiedArchiveDownloadTests(unittest.TestCase):
@@ -427,6 +430,29 @@ class VerifiedArchiveDownloadTests(unittest.TestCase):
             recipe,
         )
         self.assertNotIn("wget", recipe)
+
+    def test_xterm_recipe_uses_pinned_verified_upstream_and_mirror(self) -> None:
+        makefile = GRAPHICS_RECIPE.read_text(encoding="utf-8")
+        self.assertIn(
+            "XTERM_URL = https://invisible-island.net/archives/xterm/xterm-401.tgz",
+            makefile,
+        )
+        self.assertIn(
+            "XTERM_FALLBACK_URL = https://invisible-mirror.net/archives/xterm/xterm-401.tgz",
+            makefile,
+        )
+        self.assertIn(f"XTERM_SHA256 = {XTERM_SHA256}", makefile)
+        recipe_start = makefile.index(".xterm-obtained:")
+        recipe_end = makefile.index("# Compile xterm", recipe_start)
+        recipe = makefile[recipe_start:recipe_end]
+        self.assertIn("scripts/download-verified-archive.sh", recipe)
+        self.assertIn('"$(XTERM_SHA256)" "$(XTERM_URL)" "$(XTERM_FALLBACK_URL)"', recipe)
+        self.assertIn('tar xf "xterm-$(XTERM_VER).tgz"', recipe)
+        self.assertNotIn("wget", recipe)
+
+    def test_builder_image_installs_curl_for_verified_archive_downloads(self) -> None:
+        dockerfile = DOCKERFILE.read_text(encoding="utf-8")
+        self.assertRegex(dockerfile, r"(?m)^\s+curl\s+\\$")
 
     def test_keyutils_make_target_verifies_fallback_and_retries_partial_extract(self) -> None:
         real_tar = shutil.which("tar")
