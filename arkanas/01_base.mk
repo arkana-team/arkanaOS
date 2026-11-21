@@ -535,7 +535,9 @@ bash: download-bash .bash-done
 
 .bash-done:
 	cd $(BASH_PATH) && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --without-bash-malloc && $(MAKE) -j$(THREADS) && $(MAKE) DESTDIR=$(STAGING_PATH) install && \
-	ln -sf bash $(STAGING_PATH)/usr/bin/sh && cp -a /etc/profile $(STAGING_PATH)/etc/profile && cp -a /etc/bash.bashrc $(STAGING_PATH)/etc/bash.bashrc
+	ln -sf bash $(STAGING_PATH)/usr/bin/sh && \
+install -D -m 0644 $(CURDIR)/bash_profile $(STAGING_PATH)/etc/profile && \
+install -D -m 0644 $(CURDIR)/bashrc $(STAGING_PATH)/etc/bash.bashrc
 	touch .bash-done
 
 .PHONY: download-file

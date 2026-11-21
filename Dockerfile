@@ -1,4 +1,8 @@
-FROM archlinux:latest
+# Override this (e.g. --build-arg ARCHLINUX_TAG=archlinux@sha256:...) to pin
+# the builder base image for reproducible builds. archlinux:latest is a rolling
+# tag and mutates silently on a rolling distro.
+ARG ARCHLINUX_TAG=latest
+FROM archlinux:${ARCHLINUX_TAG}
 
 ENV PACMAN_NOCONFIRM=1
 ENV CFLAGS="-O2 -pipe -std=gnu17"
