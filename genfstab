@@ -3,9 +3,6 @@
 
 shopt -s extglob
 
-#!/hint/bash
-# SPDX-License-Identifier: GPL-2.0-only
-
 # generated from util-linux source: libmount/src/utils.c
 declare -A pseudofs_types=([anon_inodefs]=1
                            [apparmorfs]=1
