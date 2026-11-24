@@ -235,9 +235,14 @@ LIBAIO_PATH = $(SRC_PATH)/libaio-$(LIBAIO_VER)
 
 # Krb5 (MIT Kerberos V5)
 # URL: https://www.linuxfromscratch.org/blfs/view/systemd/postlfs/mitkrb.html
-KRB5_URL = https://kerberos.org/dist/krb5/1.22/krb5-1.22.tar.gz
-KRB5_VER = 1.22
+KRB5_VER = 1.22.3
+KRB5_ARCHIVE = krb5-$(KRB5_VER).tar.gz
+KRB5_URL = https://kerberos.org/dist/krb5/1.22/$(KRB5_ARCHIVE)
+KRB5_FALLBACK_URL = https://web.mit.edu/kerberos/dist/krb5/1.22/$(KRB5_ARCHIVE)
+KRB5_SHA256 = fe90af8441ad9fa9b064b8e53077cefb782a96f8a68276b031dc54af1789ff0b
 KRB5_PATH = $(SRC_PATH)/krb5-$(KRB5_VER)
+KRB5_OBTAINED_STAMP = .krb5-$(KRB5_VER)-verified-obtained
+KRB5_DONE_STAMP = .krb5-$(KRB5_VER)-openssl-$(OPENSSL_VER)-done
 
 # Lmdb
 # URL: https://github.com/LMDB/lmdb (official GitHub mirror)
@@ -1112,21 +1117,28 @@ libaio: download-libaio .libaio-done
 
 # Download krb5
 .PHONY: download-krb5
-download-krb5: .krb5-obtained
+download-krb5: $(KRB5_OBTAINED_STAMP)
 
-.krb5-obtained:
-	cd $(SRC_PATH) && wget --tries=5 --timeout=30 -O krb5-$(KRB5_VER).tar.gz $(KRB5_URL) && tar xf krb5-$(KRB5_VER).tar.gz
-	touch .krb5-obtained
+$(KRB5_OBTAINED_STAMP):
+	scripts/download-verified-archive.sh "$(SRC_PATH)/$(KRB5_ARCHIVE)" "$(KRB5_SHA256)" "$(KRB5_URL)" "$(KRB5_FALLBACK_URL)"
+	cd $(SRC_PATH) && tar xf "$(KRB5_ARCHIVE)"
+	touch $(KRB5_OBTAINED_STAMP)
 
 # Compile krb5
 .PHONY: krb5
-krb5: download-krb5 .krb5-done
+krb5: openssl download-krb5 $(KRB5_DONE_STAMP)
 
-.krb5-done:
-	cd $(KRB5_PATH)/src && CFLAGS="-O2 -std=gnu17" ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var/lib --runstatedir=/run --with-system-et \
-	--with-system-ss --with-system-verto=no --enable-dns-for-realm --disable-rpath && $(MAKE) WARN_CFLAGS="" -j$(THREADS) && \
+$(KRB5_DONE_STAMP): $(KRB5_OBTAINED_STAMP)
+	cd $(KRB5_PATH)/src && test -f "$(STAGING_PATH)/usr/include/openssl/ssl.h" && \
+	test -f "$(STAGING_PATH)/usr/lib/libssl.so" && test -f "$(STAGING_PATH)/usr/lib/libcrypto.so" && \
+	CFLAGS="-O2 -std=gnu17" CPPFLAGS="-I$(STAGING_PATH)/usr/include" \
+	LDFLAGS="-L$(STAGING_PATH)/usr/lib" \
+	LD_LIBRARY_PATH="$(STAGING_PATH)/usr/lib" \
+	./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var/lib --runstatedir=/run --with-system-et \
+	--with-system-ss --with-system-verto=no --enable-dns-for-realm --disable-rpath --with-tls-impl=openssl && \
+	$(MAKE) WARN_CFLAGS="" -j$(THREADS) && \
 	$(MAKE) DESTDIR=$(STAGING_PATH) install && cp -fr ../doc $(STAGING_PATH)/usr/share/doc/krb5-$(KRB5_VER)
-	touch .krb5-done
+	touch $(KRB5_DONE_STAMP)
 
 # Download libnsl
 .PHONY: download-libnsl
