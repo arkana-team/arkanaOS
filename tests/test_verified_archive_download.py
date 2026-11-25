@@ -60,6 +60,14 @@ class Krb5BuildRecipeTests(unittest.TestCase):
         self.assertIn('CPPFLAGS="-I$(STAGING_PATH)/usr/include"', build_rule)
         self.assertIn('LDFLAGS="-L$(STAGING_PATH)/usr/lib"', build_rule)
         self.assertIn('LD_LIBRARY_PATH="$(STAGING_PATH)/usr/lib"', build_rule)
+        self.assertIn(
+            'if test -f "$(KRB5_PATH)/src/Makefile"; then '
+            '$(MAKE) -C "$(KRB5_PATH)/src" distclean; fi',
+            build_rule,
+        )
+        self.assertLess(
+            build_rule.index("distclean; fi"), build_rule.index("./configure")
+        )
         self.assertNotIn("PKG_CONFIG_LIBDIR=", build_rule)
         self.assertNotIn("PKG_CONFIG_SYSROOT_DIR=", build_rule)
         self.assertNotIn("OPENSSL_CFLAGS=", build_rule)

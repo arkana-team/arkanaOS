@@ -1129,6 +1129,7 @@ $(KRB5_OBTAINED_STAMP):
 krb5: openssl download-krb5 $(KRB5_DONE_STAMP)
 
 $(KRB5_DONE_STAMP): $(KRB5_OBTAINED_STAMP)
+	if test -f "$(KRB5_PATH)/src/Makefile"; then $(MAKE) -C "$(KRB5_PATH)/src" distclean; fi
 	cd $(KRB5_PATH)/src && test -f "$(STAGING_PATH)/usr/include/openssl/ssl.h" && \
 	test -f "$(STAGING_PATH)/usr/lib/libssl.so" && test -f "$(STAGING_PATH)/usr/lib/libcrypto.so" && \
 	CFLAGS="-O2 -std=gnu17" CPPFLAGS="-I$(STAGING_PATH)/usr/include" \
