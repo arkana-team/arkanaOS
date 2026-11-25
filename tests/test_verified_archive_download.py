@@ -23,6 +23,56 @@ PRIMARY_URL = "https://cdn.example.invalid/source.tar.xz"
 FALLBACK_URL = "https://mirror.example.invalid/source.tar.xz"
 EXPECTED_SHA256 = hashlib.sha256(PAYLOAD).hexdigest()
 KEYUTILS_SHA256 = "a61d5706136ae4c05bd48f86186bcfdbd88dd8bd5107e3e195c924cfc1b39bb4"
+KRB5_SHA256 = "fe90af8441ad9fa9b064b8e53077cefb782a96f8a68276b031dc54af1789ff0b"
+
+
+class Krb5BuildRecipeTests(unittest.TestCase):
+    def test_release_archive_is_pinned_and_verified(self) -> None:
+        recipe = BASE_RECIPE.read_text(encoding="utf-8")
+
+        self.assertIn("KRB5_VER = 1.22.3", recipe)
+        self.assertIn(f"KRB5_SHA256 = {KRB5_SHA256}", recipe)
+        self.assertIn(
+            "KRB5_FALLBACK_URL = https://web.mit.edu/kerberos/dist/krb5/1.22/",
+            recipe,
+        )
+        download_rule = recipe.split("$(KRB5_OBTAINED_STAMP):", maxsplit=1)[1].split(
+            "# Compile krb5", maxsplit=1
+        )[0]
+        self.assertIn("scripts/download-verified-archive.sh", download_rule)
+        self.assertIn("$(KRB5_SHA256)", download_rule)
+
+    def test_krb5_build_uses_staged_openssl(self) -> None:
+        recipe = BASE_RECIPE.read_text(encoding="utf-8")
+        build_rule = recipe.split("$(KRB5_DONE_STAMP):", maxsplit=1)[1].split(
+            "# Download libnsl", maxsplit=1
+        )[0]
+
+        self.assertIn("krb5: openssl download-krb5 $(KRB5_DONE_STAMP)", recipe)
+        self.assertIn("$(KRB5_DONE_STAMP): $(KRB5_OBTAINED_STAMP)", recipe)
+        self.assertIn(
+            "KRB5_DONE_STAMP = .krb5-$(KRB5_VER)-openssl-$(OPENSSL_VER)-done",
+            recipe,
+        )
+        self.assertIn('$(STAGING_PATH)/usr/include/openssl/ssl.h', build_rule)
+        self.assertIn('$(STAGING_PATH)/usr/lib/libssl.so', build_rule)
+        self.assertIn('$(STAGING_PATH)/usr/lib/libcrypto.so', build_rule)
+        self.assertIn('CPPFLAGS="-I$(STAGING_PATH)/usr/include"', build_rule)
+        self.assertIn('LDFLAGS="-L$(STAGING_PATH)/usr/lib"', build_rule)
+        self.assertIn('LD_LIBRARY_PATH="$(STAGING_PATH)/usr/lib"', build_rule)
+        self.assertIn(
+            'if test -f "$(KRB5_PATH)/src/Makefile"; then '
+            '$(MAKE) -C "$(KRB5_PATH)/src" distclean; fi',
+            build_rule,
+        )
+        self.assertLess(
+            build_rule.index("distclean; fi"), build_rule.index("./configure")
+        )
+        self.assertNotIn("PKG_CONFIG_LIBDIR=", build_rule)
+        self.assertNotIn("PKG_CONFIG_SYSROOT_DIR=", build_rule)
+        self.assertNotIn("OPENSSL_CFLAGS=", build_rule)
+        self.assertNotIn("OPENSSL_LIBS=", build_rule)
+        self.assertIn("--with-tls-impl=openssl", build_rule)
 
 
 class VerifiedArchiveDownloadTests(unittest.TestCase):
