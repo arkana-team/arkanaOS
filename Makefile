@@ -118,7 +118,8 @@ check-libs:
 	  library_path=; case "$$file" in /opt/firefox/*) library_path=/opt/firefox ;; esac; \
 	  chroot $(STAGING_PATH) /bin/sh -c "LD_LIBRARY_PATH=$$library_path ldd \"$$file\"" 2>/dev/null | grep "not found" | awk -v f="$$file" '{$$1=$$1;print $$0, "in", f}' >> $(MISSING_LIBS) || true; \
 	done < $(LIBRARIES)
-	rm -f $(STAGING_PATH)/dev/null
+	# Keep $(STAGING_PATH)/dev/null intact: later chroot-based steps
+	# (grub-mkfont, ldconfig, ...) need the staging root's device node.
 	if [ -s $(MISSING_LIBS) ]; then \
 	  echo "warning: found missing libraries:"; cat $(MISSING_LIBS) | sort -u; \
 	else \
